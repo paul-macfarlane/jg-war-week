@@ -20,17 +20,16 @@ export function OrganizerGuide({
   /** What each admin section is for, in the tour of the nav. */
   const help: Record<AdminSection, string> = {
     Competitions:
-      "Competitions, each with one page for its settings, scoring, Placement Points, Hosts and description, and for running its Placements, Bracket, Games or Participation.",
+      "Competitions, each with one page for its settings, scoring, Placement Points, Hosts and description, and for running its Placements, Bracket, Head-to-head, Best score or Participation.",
     "Discretionary points":
       "Give points to a Team or Participant with a reason and no Competition behind them; edit or delete them in the ledger.",
     Schedule:
       "The War Week's Days with their Day Themes and short descriptions, and each Day's Schedule Items.",
-    Roster: `${teamLabel}s, Participants and ${leaderTitle}s, with Import from a sheet or CSV.`,
+    Roster: `${teamLabel}s, Participants and ${leaderTitle}s, with Import from a sheet or CSV and a search by name or email.`,
     Announcements: "Post, pin and edit Announcements.",
-    Awards: `Give Awards to a ${teamLower} or to Participants, and manage the Award Categories that group them.`,
+    Awards: `Give Awards to a ${teamLower} or to Participants, and add one from a preset name.`,
     FAQ: "FAQ Items and their order on the public FAQ.",
-    Finale:
-      "Open the Finale, and each finalized Bracket's Finale, on the projector.",
+    Finale: "Open the Finale on the projector, and order or hide its slides.",
     Settings:
       "Story Theme, dates, mode, labels, links and the Appearance Theme; the Lifecycle box (Start, End, Unstart, Reopen) and Create next War Week.",
     Organizers: "Who the Organizers are.",
@@ -86,13 +85,14 @@ export function OrganizerGuide({
         </ul>
         <p className="text-foreground/70">
           On a phone, Competitions, Discretionary points, Schedule and
-          Announcements are tabs on the bar at the bottom of the screen; the
-          rest are under More, with the edition switcher. Display, Back to War
-          Week and Sign out are in the account menu (your initials, top right).
+          Announcements are tabs (with shortened labels) on the bar at the
+          bottom of the screen; the rest are under More, with the edition
+          switcher. Display, Back to War Week and Sign out are in the account
+          menu (your initials, top right).
         </p>
         <p className="text-foreground/70">
-          A Host sees Competitions, Schedule, Announcements, Finale and Guide;
-          the other pages are for Organizers.
+          A Host sees only the Competitions they host and the Guide; the other
+          pages are for Organizers.
         </p>
       </section>
 
@@ -128,7 +128,8 @@ export function OrganizerGuide({
           yourself included, as long as one Organizer is left.
         </p>
         <p className="text-foreground/70">
-          A Host runs one Competition for you. Assign Hosts on{" "}
+          A Host runs one Competition for you, and is a Participant on the
+          roster. Assign Hosts on{" "}
           <Link
             href="/admin/competitions"
             className="text-primary underline underline-offset-4"
@@ -136,12 +137,15 @@ export function OrganizerGuide({
             Competitions
           </Link>{" "}
           (the Hosts field in each Competition&apos;s Settings, picked from the
-          roster by name). A Host sees only their Competitions in Admin: they
-          record its results, run its Bracket and Games, change its settings and
-          see its Hosts by name, and manage its linked Schedule Items, and can
-          post Announcements. Everything else stays with Organizers. A Schedule
-          Item&apos;s host text is just what the schedule shows; it doesn&apos;t
-          make anyone a Host.
+          roster by name; no email is shown). A Host gets access when they sign
+          in with the email on their roster entry, so add it in Roster if they
+          have none (changing a Participant&apos;s email moves their Host access
+          to whoever owns the new one). A Host sees only the Competitions they
+          host and this Guide in Admin: they record a Competition&apos;s
+          results, run its Bracket, Matches and Attempts, and change its
+          settings. Schedule, Announcements, the Finale and everything else stay
+          with Organizers. A Schedule Item&apos;s host text is just what the
+          schedule shows; it doesn&apos;t make anyone a Host.
         </p>
       </section>
 
@@ -154,12 +158,13 @@ export function OrganizerGuide({
           the individual leaderboards, Award recipients on the Awards page and
           Participation lists; their Entrant in a Bracket (themselves, their
           Squad, or their {teamLower} in a team Bracket) is marked
-          &quot;You&quot;; and a Games Competition&apos;s leaderboard marks
-          their enrolled {teamLower} &quot;Your Team&quot;. {teamLabel}{" "}
-          standings rows are not highlighted. They can log Games, report Heats
-          and check in. A Participant without an email is never linked. It
-          isn&apos;t used for sign-in and grants nothing beyond those
-          Participant writes.
+          &quot;You&quot;; and a Head-to-head or Best score Competition&apos;s
+          leaderboard marks their {teamLower} &quot;Your Team&quot;. {teamLabel}{" "}
+          standings rows are not highlighted. They can log Matches and Attempts
+          and report Bracket Matches when &quot;Participants can log their own
+          results&quot; is on, and check in when Self check-in is on. A
+          Participant without an email is never linked. It isn&apos;t used for
+          sign-in and grants nothing beyond those Participant writes.
         </p>
       </section>
 
@@ -187,7 +192,7 @@ export function OrganizerGuide({
           (a Bracket allows up to 5). A new Competition is a Placement: open its
           page and, under Record placements, add who took part, give each a
           Place (or a Score, with a Score direction that fills the Places) and
-          Finalize, and the Standings move through its Placement Points. Reopen
+          Close, and the Standings move through its Placement Points. Reopen
           withdraws them. A Competition&apos;s top prize is its 1st place.
         </p>
       </section>
@@ -207,36 +212,44 @@ export function OrganizerGuide({
           any Formats until the Competition has a result. Settings that decide
           how it runs lock as it goes, each showing why: the Format and scoring
           once any result exists; a Head-to-head Competition&apos;s draws and
-          Best of, and whether Entrants are open or a fixed list, once it has a
-          Game; and the heat size, how many advance, the 3rd place game, the
-          Entrants and building the Bracket once a Heat has a result. Nothing
-          resets a Bracket; add a new Competition to start over. A Bracket has
-          one Format: choose how many Entrants are in each Heat (2 to 8) and how
-          many advance. Two per Heat with one advancing is one against one, the
-          winner going on; bigger Heats send their top few on, Round after
-          Round, until one Heat is left. With one against one and at least 4
-          Entrants, turn on the 3rd place game to have the semifinal losers play
-          for 3rd and 4th beside the final. Placings come only from the final
-          and the 3rd place game: the final gives 1st and 2nd, the 3rd place
-          game 3rd and 4th; without one, both semifinal losers tie 3rd. With
-          more per Heat, the final&apos;s finishing order gives places 1 to 4.
-          Nothing goes past 4th, and nobody else is placed. On the same page,
-          pick Entrants — all {teamLower}s, or specific Participants — and
-          Generate the Bracket (Seed Positions are random; Re-roll before any
-          Heat is played to try again). Below it is the Bracket&apos;s tree, the
-          same one Participants see. Press Record result on a Heat in the tree
-          (Edit once it&apos;s recorded) to enter it: its winner, or for a
-          bigger Heat its Entrants in finishing order, with scores, in a dialog
-          centered on a screen or a bottom sheet on a phone; the tree shows when
-          each Heat was recorded. Changing who advances resets the later Heats
-          that followed from it, while a score-only edit keeps them. Finalize,
-          once every Heat is played (the 3rd place game too), turns the
-          Bracket&apos;s placings into Points Entries marked &quot;From
-          bracket&quot;; un-finalize removes them so you can fix a Heat and
-          finalize again. While it&apos;s finalized, its settings except the
+          Best of once it has a Match; and the Match size, how many advance, the
+          3rd place Match, the Entrants and building the Bracket once a Match
+          has a result. Nothing resets a Bracket; add a new Competition to start
+          over. A Bracket is Head-to-head or Group: Head-to-head is one against
+          one, the Winner going on Round after Round to the final; Group puts 3
+          to 8 Entrants per Match and sends the top few on, Round after Round,
+          until one Match is left. In a Head-to-head Bracket with at least 4
+          Entrants, turn on the 3rd place Match to have the semifinal losers
+          play for 3rd and 4th beside the final. Placings come only from the
+          final and the 3rd place Match: the final gives 1st and 2nd, the 3rd
+          place Match 3rd and 4th; without one, only 1st and 2nd are placed and
+          the semifinal losers get nothing. In a Group Bracket, the final&apos;s
+          finishing order gives places 1 to 4. Nothing goes past 4th, and nobody
+          else is placed. On the same page, pick Entrants — all {teamLower}s, or
+          specific Participants — and Generate the Bracket (Seed Positions are
+          random; Re-roll before any Match is played to try again). Once a Match
+          has a result, the Entrants and Seed Positions fold away under
+          &quot;Entrants and Seed Positions&quot;. Below it is the
+          Bracket&apos;s tree, the same one Participants see (an Entrant gets a
+          &quot;Jump to your Match&quot; button on it). In a Group Bracket, Edit
+          on each Round heading sets that Round&apos;s defaults (Match size and
+          how many advance), how many advance from one Match, and moves an
+          Entrant to another Match of the Round. A Round locks once it has a
+          result. Press Record result on a Match in the tree (Edit once
+          it&apos;s recorded) to enter it: its Winner, or for a bigger Match its
+          Entrants in finishing order, with scores, in a dialog centered on a
+          screen or a bottom sheet on a phone; the tree shows when each Match
+          was recorded. Only the latest result along a path changes: a Match a
+          later Match already used shows Edit and Clear result disabled with
+          &quot;Change that Match first&quot;, and in a Group Bracket every
+          Match before a round with a result says &quot;Change that round
+          first&quot;. To correct one, clear results back from the latest one,
+          then record again. Close, once every Match is played (the 3rd place
+          Match too), turns the Bracket&apos;s placings into Points Entries
+          marked &quot;From bracket&quot;; Reopen removes them so you can fix a
+          Match and Close again. While it&apos;s Closed, its settings except the
           name, description, Group, Hosts and Placement Points are locked:
-          un-finalize first (a Placement Points change applies at the next
-          Finalize).
+          Reopen first (a Placement Points change applies at the next Close).
         </p>
         <h3 className="font-semibold">Squads and self-report</h3>
         <p className="text-foreground/70">
@@ -245,12 +258,14 @@ export function OrganizerGuide({
           group of one {teamLower}&apos;s Participants (each in one Squad per
           Competition); then set Entrants are to Squads and press All Squads.
           Each Squad&apos;s Placement Points go to its {teamLower}, and Squads
-          are seeded at random. Turn on Self-report and a Participant whose
-          roster email matches their sign-in can record their own Heat, from
-          Your next Heat or its Record result in the tree, while it has no
-          result; it counts at once. The tree shows &quot;Reported by&quot; on
-          that Heat, and you can still change any result there. Turn Self-report
-          off to stop new reports; results already reported stand.
+          are seeded at random. Turn on Participants can log their own results
+          and a Participant whose roster email matches their sign-in can record
+          their own Match, from Your next Match or its Record result in the
+          tree, and change it until a later Match uses it (in a Group Bracket,
+          until a later round has a result); it counts at once. The tree shows
+          &quot;Reported by&quot; on that Match, and you can still change any
+          result there. Turn it off to stop new reports; results already
+          reported stand.
         </p>
       </section>
 
@@ -280,20 +295,21 @@ export function OrganizerGuide({
       </section>
 
       <section className="flex flex-col gap-2">
-        <h2 className="text-lg font-semibold">Award Categories</h2>
+        <h2 className="text-lg font-semibold">Awards across years</h2>
         <p className="text-foreground/70">
-          A Category groups Awards across War Weeks (War Week MVP, Grow…).
-          Manage them in the Categories section of{" "}
+          When you add an Award on{" "}
           <Link
             href="/admin/awards"
             className="text-primary underline underline-offset-4"
           >
             Awards
           </Link>
-          : add, rename, archive or restore, never delete. An archived Category
-          stays on its past Awards but can&apos;t be picked for new ones. Pick
-          an Award&apos;s Category in the Award form; the Awards page groups by
-          it, and History shows each Category through the years.
+          , the Preset picker offers every Award name used in any War Week, plus
+          War Week MVP, Billable Hours Champ, Black Midnight, Grow, Grind, Serve
+          and Inspire. Picking one fills in the name and its latest description;
+          both stay editable, and a brand-new name works too. There are no
+          Categories: the same name, ignoring case and punctuation, is what
+          History uses to show an Award through the years.
         </p>
       </section>
 
@@ -313,19 +329,13 @@ export function OrganizerGuide({
           on the projector: it is a slideshow, and you step through it with the
           right arrow, Space or a click (the left arrow goes back, Escape
           returns to the first slide). Nothing moves on its own. The slides are
-          Title, By the numbers, Awards, Champions, the Standings countdown
-          (last place to first) and Winner; the countdown plays when you arrive
-          on it, and Replay runs it again. On the Finale page you can reorder or
-          hide the slides, add your own Custom slides, and choose whether the
-          Awards are on one slide or one per Category (Hosts see the list but
-          can&apos;t change it). The Finale never changes the Standings, it only
-          plays them.
-        </p>
-        <p className="text-foreground/70">
-          A finalized Bracket has its own Finale: open it from the same page
-          (&quot;Finale:&quot; and the Competition&apos;s name) or from
-          &quot;Play the Finale&quot; on its champion card, and press Start to
-          count its placings in to the champion.
+          Title, By the numbers, Awards, Winners, the Standings countdown (last
+          place to first, for the top 10 only, then how many more scored) and
+          Winner; the countdown plays when you arrive on it, and Replay runs it
+          again. On the Finale page you can reorder or hide the slides, add your
+          own Custom slides (only Organizers open this page). The Awards slide
+          reveals one Award per step. The Finale never changes the Standings, it
+          only plays them.
         </p>
       </section>
 
@@ -349,13 +359,13 @@ export function OrganizerGuide({
           tie, blank when nobody scored, with no way to type a different one —
           and any highlights) before the next can Start. Create next War Week,
           further down Settings, copies what you choose (settings by default;
-          Competitions, with their Hosts, and the FAQ are off) and opens the new
+          Competitions, without Hosts, and the FAQ are off) and opens the new
           edition as upcoming, so you can set it up while this one stays live.
-          The End confirm names any Bracket that isn&apos;t finalized: finalize
-          it first so its placings count (it warns, it doesn&apos;t stop you).
-          The header&apos;s edition switcher (in More on a phone) moves the
-          admin between editions you may administer — a banner marks the Archive
-          so you don&apos;t mistake it for the live one.
+          The End confirm names any Bracket that isn&apos;t closed: close it
+          first so its placings count (it warns, it doesn&apos;t stop you). The
+          header&apos;s edition switcher (in More on a phone) moves the admin
+          between editions you may administer — a banner marks the Archive so
+          you don&apos;t mistake it for the live one.
         </p>
       </section>
 

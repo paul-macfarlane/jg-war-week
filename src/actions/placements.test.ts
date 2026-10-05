@@ -3,6 +3,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 
 import type { DBTx } from "@/db";
 import { isLocalDatabaseUrl } from "@/db/local-url";
+import { insertHosts } from "@/db/test-hosts";
 import { inRolledBackTransaction } from "@/db/test-transaction";
 
 // Runs only against a local Postgres (see vitest.config.ts).
@@ -148,7 +149,7 @@ async function fixture(tx: DBTx) {
       },
     ])
     .returning({ id: schema.competition.id });
-  await tx.insert(schema.competitionHost).values([
+  await insertHosts(tx, [
     { competitionId: darts.id, email: HOST },
     { competitionId: quiz.id, email: OTHER_HOST },
     { competitionId: relay.id, email: HOST },
@@ -182,7 +183,7 @@ async function fixture(tx: DBTx) {
         scoring: schema.competition.scoring,
         placementPoints: schema.competition.placementPoints,
         scoreDirection: schema.competition.scoreDirection,
-        finalizedAt: schema.competition.finalizedAt,
+        closedAt: schema.competition.closedAt,
       })
       .from(schema.competition)
       .where(inArray(schema.competition.id, ids))
@@ -219,7 +220,6 @@ async function rowChanges(f: Fixture, competitionId = f.ids.darts) {
       "addPlacement",
       () => a.addPlacement(competitionId, { participantId: f.ids.trinity }),
     ],
-    ["addEveryone", () => a.addEveryone(competitionId)],
     [
       "removePlacement",
       () => a.removePlacement(competitionId, { placementId: f.ids.row }),
@@ -239,7 +239,7 @@ async function everyAction(f: Fixture, competitionId = f.ids.darts) {
   const a = await actions();
   return [
     ...(await rowChanges(f, competitionId)),
-    ["finalizePlacements", () => a.finalizePlacements(competitionId)],
+    ["closePlacements", () => a.closePlacements(competitionId)],
     ["reopenPlacements", () => a.reopenPlacements(competitionId)],
   ] as const;
 }
@@ -277,12 +277,12 @@ describe.skipIf(!isLocalDatabase)("the placement actions' refusals", () => {
     });
   });
 
-  it("the Competition's Host gets through: Finalize writes its Points Entries", async () => {
+  it("the Competition's Host gets through: Close writes its Points Entries", async () => {
     await inRolledBackTransaction(async (tx) => {
       const f = await fixture(tx);
       session.email = HOST;
       const a = await actions();
-      expect(await a.finalizePlacements(f.ids.darts)).toEqual({ ok: true });
+      expect(await a.closePlacements(f.ids.darts)).toEqual({ ok: true });
       const { entries } = await f.snapshot();
       expect(
         entries.map(({ participantId, points }) => ({ participantId, points })),
@@ -349,12 +349,12 @@ describe.skipIf(!isLocalDatabase)("the placement actions' refusals", () => {
     });
   });
 
-  it("refuses, as the Host, every row change and a Format change while Finalized, writing nothing", async () => {
+  it("refuses, as the Host, every row change and a Format change while Closed, writing nothing", async () => {
     await inRolledBackTransaction(async (tx) => {
       const f = await fixture(tx);
       session.email = HOST;
       const a = await actions();
-      expect(await a.finalizePlacements(f.ids.darts)).toEqual({ ok: true });
+      expect(await a.closePlacements(f.ids.darts)).toEqual({ ok: true });
       const before = await f.snapshot();
       for (const [name, run] of await rowChanges(f)) {
         expect(await run(), name).toEqual({
@@ -381,7 +381,7 @@ describe.skipIf(!isLocalDatabase)("the placement actions' refusals", () => {
       const f = await fixture(tx);
       const before = await f.snapshot();
       session.email = HOST;
-      for (const [name, run] of await everyAction(f, f.ids.pong)) {
+      for (const [name, run] of await rowChanges(f, f.ids.pong)) {
         expect(await run(), name).toEqual({
           ok: false,
           error: "This Competition isn't run as Placement.",

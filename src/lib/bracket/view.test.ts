@@ -2,14 +2,16 @@ import { describe, expect, it } from "vitest";
 
 import { DEFAULT_BRACKET_CONFIG } from "@/lib/bracket/config";
 import { applyResult, generate as generateFormat } from "@/lib/bracket/formats";
+import { matches } from "@/lib/bracket/groups";
 import type { Bracket, Entrant } from "@/lib/bracket/types";
 import {
+  currentMatchFor,
   entrantForYou,
   formatLabel,
   groupRounds,
-  heatName,
   isBracketFormat,
-  nextHeatFor,
+  matchName,
+  nextMatchFor,
   roundName,
 } from "@/lib/bracket/view";
 
@@ -22,10 +24,16 @@ const newId = (round: number, position: number) => `r${round}h${position}`;
 const generate = (list: Entrant[]): Bracket =>
   generateFormat(DEFAULT_BRACKET_CONFIG, list, newId);
 
-/** A Heats Bracket of these Entrants, 4 per Heat, top 2 advancing. */
-const generateHeats = (list: Entrant[]): Bracket =>
+/** A Matches Bracket of these Entrants, 4 per Match, top 2 advancing. */
+const generateMatches = (list: Entrant[]): Bracket =>
   generateFormat(
-    { entrantsPerHeat: 4, advancePerHeat: 2, thirdPlaceGame: false },
+    {
+      kind: "group" as const,
+      entrantsPerMatch: 4,
+      advancePerMatch: 2,
+      thirdPlaceMatch: false,
+      rounds: {},
+    },
     list,
     newId,
   );
@@ -51,34 +59,38 @@ describe("roundName", () => {
     expect(roundName(generate(entrants(letters(9))), 2)).toBe("Round 2");
   });
 
-  it("never says Semifinal in a Heats Bracket", () => {
-    // 16 Entrants, 4 per Heat, 2 advance: 4 Heats, then 2, then the Final.
-    const sixteen = generateHeats(entrants(letters(16)));
+  it("never says Semifinal in a Matches Bracket", () => {
+    // 16 Entrants, 4 per Match, 2 advance: 4 Matches, then 2, then the Final.
+    const sixteen = generateMatches(entrants(letters(16)));
     expect(roundName(sixteen, 1)).toBe("Round 1");
     expect(roundName(sixteen, 2)).toBe("Round 2");
     expect(roundName(sixteen, 3)).toBe("Final");
   });
 });
 
-describe("heatName", () => {
-  it("names Heats by Round and position", () => {
-    expect(heatName(five, { round: 3, position: 1 })).toBe("Final");
-    expect(heatName(five, { round: 2, position: 2 })).toBe("Semifinal 2");
-    expect(heatName(five, { round: 1, position: 4 })).toBe("Round 1 Heat 4");
+describe("matchName", () => {
+  it("names Matches by Round and position", () => {
+    expect(matchName(five, { round: 3, position: 1 })).toBe("Final");
+    expect(matchName(five, { round: 2, position: 2 })).toBe("Semifinal 2");
+    expect(matchName(five, { round: 1, position: 4 })).toBe("Round 1 Match 4");
   });
 
-  it("names a Heats Bracket's Heats by Round and position, the last the Final", () => {
-    const sixteen = generateHeats(entrants(letters(16)));
-    expect(heatName(sixteen, { round: 1, position: 2 })).toBe("Round 1 Heat 2");
-    expect(heatName(sixteen, { round: 2, position: 1 })).toBe("Round 2 Heat 1");
-    expect(heatName(sixteen, { round: 3, position: 1 })).toBe("Final");
+  it("names a Matches Bracket's Matches by Round and position, the last the Final", () => {
+    const sixteen = generateMatches(entrants(letters(16)));
+    expect(matchName(sixteen, { round: 1, position: 2 })).toBe(
+      "Round 1 Match 2",
+    );
+    expect(matchName(sixteen, { round: 2, position: 1 })).toBe(
+      "Round 2 Match 1",
+    );
+    expect(matchName(sixteen, { round: 3, position: 1 })).toBe("Final");
   });
 });
 
 describe("groupRounds", () => {
-  it("groups a 5-Entrant Bracket's Heats into named Rounds in order", () => {
+  it("groups a 5-Entrant Bracket's Matches into named Rounds in order", () => {
     expect(
-      groupRounds(five).map((r) => [r.name, r.heats.map((h) => h.id)]),
+      groupRounds(five).map((r) => [r.name, r.matches.map((h) => h.id)]),
     ).toEqual([
       ["Round 1", ["r1h1", "r1h2", "r1h3", "r1h4"]],
       ["Semifinal", ["r2h1", "r2h2"]],
@@ -87,64 +99,64 @@ describe("groupRounds", () => {
   });
 
   it("has no Rounds before Generate", () => {
-    expect(groupRounds({ config: DEFAULT_BRACKET_CONFIG, heats: [] })).toEqual(
-      [],
-    );
+    expect(
+      groupRounds({ config: DEFAULT_BRACKET_CONFIG, matches: [] }),
+    ).toEqual([]);
   });
 });
 
-describe("nextHeatFor", () => {
-  // 3 Entrants: A has a bye into the Final; B plays C in Round 1 Heat 2.
+describe("nextMatchFor", () => {
+  // 3 Entrants: A has a bye into the Final; B plays C in Round 1 Match 2.
   const three = generate(entrants(["A", "B", "C"]));
 
-  it("waits on the Heat feeding the empty slot after a bye", () => {
-    const next = nextHeatFor(three, "A");
+  it("waits on the Match feeding the empty slot after a bye", () => {
+    const next = nextMatchFor(three, "A");
     expect(next).toMatchObject({
-      kind: "heat",
-      heat: { id: "r2h1" },
+      kind: "match",
+      match: { id: "r2h1" },
       opponentIds: [],
     });
-    expect(next?.kind === "heat" && next.waitingFor?.id).toBe("r1h2");
+    expect(next?.kind === "match" && next.waitingFor?.id).toBe("r1h2");
   });
 
-  it("names the opponent of a ready Heat", () => {
-    const next = nextHeatFor(three, "C");
+  it("names the opponent of a ready Match", () => {
+    const next = nextMatchFor(three, "C");
     expect(next).toMatchObject({
-      kind: "heat",
-      heat: { id: "r1h2" },
+      kind: "match",
+      match: { id: "r1h2" },
       opponentIds: ["B"],
       waitingFor: null,
     });
   });
 
-  it("finds the opponent once the feeding Heat is decided", () => {
+  it("finds the opponent once the feeding Match is decided", () => {
     const played = applyResult(three, "r1h2", { order: ["B", "C"] });
-    expect(nextHeatFor(played, "A")).toMatchObject({ opponentIds: ["B"] });
-    expect(nextHeatFor(played, "B")).toMatchObject({ heat: { id: "r2h1" } });
+    expect(nextMatchFor(played, "A")).toMatchObject({ opponentIds: ["B"] });
+    expect(nextMatchFor(played, "B")).toMatchObject({ match: { id: "r2h1" } });
   });
 
   it("has nothing for an eliminated Entrant or after the Final", () => {
     const played = applyResult(three, "r1h2", { order: ["B", "C"] });
-    expect(nextHeatFor(played, "C")).toBeNull();
+    expect(nextMatchFor(played, "C")).toBeNull();
     const done = applyResult(played, "r2h1", { order: ["A", "B"] });
-    expect(nextHeatFor(done, "A")).toBeNull();
-    expect(nextHeatFor(done, "B")).toBeNull();
+    expect(nextMatchFor(done, "A")).toBeNull();
+    expect(nextMatchFor(done, "B")).toBeNull();
   });
 
   it("has nothing for someone who isn't an Entrant", () => {
-    expect(nextHeatFor(three, "Z")).toBeNull();
+    expect(nextMatchFor(three, "Z")).toBeNull();
   });
 });
 
-describe("nextHeatFor in a Heats Bracket", () => {
-  // 8 Entrants dealt snake-style into two Heats of 4:
-  // Round 1 Heat 1 is A, D, E, H; Round 1 Heat 2 is B, C, F, G.
-  const eight = generateHeats(entrants(letters(8)));
+describe("nextMatchFor in a Matches Bracket", () => {
+  // 8 Entrants dealt snake-style into two Matches of 4:
+  // Round 1 Match 1 is A, D, E, H; Round 1 Match 2 is B, C, F, G.
+  const eight = generateMatches(entrants(letters(8)));
 
-  it("names every other Entrant of the Heat as an opponent", () => {
-    expect(nextHeatFor(eight, "A")).toEqual({
-      kind: "heat",
-      heat: expect.objectContaining({ id: "r1h1" }),
+  it("names every other Entrant of the Match as an opponent", () => {
+    expect(nextMatchFor(eight, "A")).toEqual({
+      kind: "match",
+      match: expect.objectContaining({ id: "r1h1" }),
       opponentIds: ["D", "E", "H"],
       waitingFor: null,
     });
@@ -152,14 +164,26 @@ describe("nextHeatFor in a Heats Bracket", () => {
 
   it("says an Entrant advanced while the rest of their Round is unfinished", () => {
     const played = applyResult(eight, "r1h1", { order: ["D", "A", "E", "H"] });
-    expect(nextHeatFor(played, "D")).toEqual({ kind: "advanced", round: 2 });
-    expect(nextHeatFor(played, "A")).toEqual({ kind: "advanced", round: 2 });
+    expect(nextMatchFor(played, "D")).toEqual({ kind: "advanced", round: 2 });
+    expect(nextMatchFor(played, "A")).toEqual({ kind: "advanced", round: 2 });
   });
 
   it("has nothing for an Entrant who finished below the advancing places", () => {
     const played = applyResult(eight, "r1h1", { order: ["D", "A", "E", "H"] });
-    expect(nextHeatFor(played, "E")).toBeNull();
-    expect(nextHeatFor(played, "H")).toBeNull();
+    expect(nextMatchFor(played, "E")).toBeNull();
+    expect(nextMatchFor(played, "H")).toBeNull();
+  });
+
+  it("goes by the Match's own advancing count", () => {
+    const one = matches.setMatchAdvance(
+      eight,
+      "r1h1",
+      1,
+      (r, p) => `r${r}h${p}`,
+    );
+    const played = applyResult(one, "r1h1", { order: ["D", "A", "E", "H"] });
+    expect(nextMatchFor(played, "D")).toEqual({ kind: "advanced", round: 2 });
+    expect(nextMatchFor(played, "A")).toBeNull();
   });
 
   it("finds the Final once Round 1 is complete", () => {
@@ -168,9 +192,9 @@ describe("nextHeatFor in a Heats Bracket", () => {
       "r1h2",
       { order: ["B", "C", "F", "G"] },
     );
-    const next = nextHeatFor(played, "A");
-    expect(next).toMatchObject({ kind: "heat", heat: { id: "r2h1" } });
-    expect(next?.kind === "heat" && [...next.opponentIds].sort()).toEqual([
+    const next = nextMatchFor(played, "A");
+    expect(next).toMatchObject({ kind: "match", match: { id: "r2h1" } });
+    expect(next?.kind === "match" && [...next.opponentIds].sort()).toEqual([
       "B",
       "C",
       "D",
@@ -187,8 +211,8 @@ describe("nextHeatFor in a Heats Bracket", () => {
       "r2h1",
       { order: ["A", "B", "C", "D"] },
     );
-    expect(nextHeatFor(done, "A")).toBeNull();
-    expect(nextHeatFor(done, "D")).toBeNull();
+    expect(nextMatchFor(done, "A")).toBeNull();
+    expect(nextMatchFor(done, "D")).toBeNull();
   });
 });
 
@@ -292,7 +316,7 @@ describe("formatLabel", () => {
 });
 
 describe("isBracketFormat", () => {
-  it("is false for placement, a Games Format or no Format chosen", () => {
+  it("is false for placement, Head-to-head, Best score or no Format chosen", () => {
     expect(isBracketFormat("placement")).toBe(false);
     expect(isBracketFormat("head-to-head")).toBe(false);
     expect(isBracketFormat("best-score")).toBe(false);
@@ -302,5 +326,44 @@ describe("isBracketFormat", () => {
 
   it("is true for a Bracket Format", () => {
     expect(isBracketFormat("bracket")).toBe(true);
+  });
+});
+
+describe("currentMatchFor", () => {
+  // 3 Entrants: A has a bye into the Final; B plays C in Round 1 Match 2.
+  const three = generate(entrants(["A", "B", "C"]));
+
+  it("is the next unplayed Match", () => {
+    expect(currentMatchFor(three, "C", false)?.id).toBe("r1h2");
+    expect(currentMatchFor(three, "A", false)?.id).toBe("r2h1");
+  });
+
+  it("is the last played Match once eliminated", () => {
+    const played = applyResult(three, "r1h2", { order: ["B", "C"] });
+    expect(currentMatchFor(played, "C", false)?.id).toBe("r1h2");
+  });
+
+  it("is the last played Match for everyone once Closed", () => {
+    const played = applyResult(three, "r1h2", { order: ["B", "C"] });
+    const done = applyResult(played, "r2h1", { order: ["A", "B"] });
+    expect(currentMatchFor(done, "A", true)?.id).toBe("r2h1");
+    expect(currentMatchFor(done, "B", true)?.id).toBe("r2h1");
+    expect(currentMatchFor(done, "C", true)?.id).toBe("r1h2");
+  });
+
+  it("is none for someone who isn't an Entrant", () => {
+    expect(currentMatchFor(three, "Z", false)).toBeNull();
+    expect(currentMatchFor(three, "Z", true)).toBeNull();
+  });
+
+  it("works the same for a Squad or Team Entrant (any Entrant id)", () => {
+    const teams = generate([
+      { id: "squad-1", seedPosition: 1, label: "Squad One" },
+      { id: "team-2", seedPosition: 2, label: "Team Two" },
+    ]);
+    const played = applyResult(teams, "r1h1", { order: ["team-2", "squad-1"] });
+    expect(currentMatchFor(teams, "squad-1", false)?.id).toBe("r1h1");
+    expect(currentMatchFor(played, "squad-1", false)?.id).toBe("r1h1");
+    expect(currentMatchFor(played, "team-2", true)?.id).toBe("r1h1");
   });
 });

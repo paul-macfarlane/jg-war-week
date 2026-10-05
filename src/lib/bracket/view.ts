@@ -1,12 +1,18 @@
 /**
- * Display helpers for a Bracket: Round and Heat names, Rounds in order, and
- * the Heat an Entrant plays next. Pure, like the engine.
+ * Display helpers for a Bracket: Round and Match names, Rounds in order, and
+ * the Match an Entrant plays next. Pure, like the engine.
  */
 import { isHeadToHead } from "@/lib/bracket/config";
 import { finalRoundOf } from "@/lib/bracket/final";
 import { isBye } from "@/lib/bracket/formats";
-import { isDecided } from "@/lib/bracket/heat-status";
-import type { Bracket, BracketFormat, Format, Heat } from "@/lib/bracket/types";
+import { matchAdvanceCount } from "@/lib/bracket/groups";
+import { isDecided } from "@/lib/bracket/match-status";
+import type {
+  Bracket,
+  BracketFormat,
+  Format,
+  Match,
+} from "@/lib/bracket/types";
 import { WAR_WEEK_TIME_ZONE } from "@/lib/schedule";
 
 export type { Format } from "@/lib/bracket/types";
@@ -18,6 +24,7 @@ const FORMAT_LABELS: Record<Format, string> = {
   "head-to-head": "Head-to-head",
   "best-score": "Best score",
   participation: "Participation",
+  league: "League",
 };
 
 /** A Format as Organizers read it. */
@@ -35,16 +42,16 @@ export function isBracketFormat(
 /** Every Format that runs as a Bracket. */
 export const BRACKET_FORMATS: BracketFormat[] = ["bracket"];
 
-/** The 3rd place game's name, beside the final. */
-export const THIRD_PLACE_GAME = "3rd place game";
+/** The 3rd place Match's name, beside the final. */
+export const THIRD_PLACE_MATCH = "3rd place Match";
 
 /**
  * "Final", "Round N", or (head-to-head only) "Semifinal", by distance
- * from the final Round; with a `position`, "Round N Heat P" or
- * "Semifinal P" instead of the bare Round name. The 3rd place game is
- * "3rd place game".
+ * from the final Round; with a `position`, "Round N Match P" or
+ * "Semifinal P" instead of the bare Round name. The 3rd place Match is
+ * "3rd place Match".
  */
-export function heatNameAt({
+export function matchNameAt({
   headToHead,
   finalRound,
   round,
@@ -57,7 +64,7 @@ export function heatNameAt({
   position?: number;
   thirdPlace?: boolean;
 }): string {
-  if (thirdPlace) return THIRD_PLACE_GAME;
+  if (thirdPlace) return THIRD_PLACE_MATCH;
   if (round === finalRound) return "Final";
   const isSemifinal = headToHead && round === finalRound - 1;
   if (isSemifinal) {
@@ -65,7 +72,7 @@ export function heatNameAt({
   }
   return position === undefined
     ? `Round ${round}`
-    : `Round ${round} Heat ${position}`;
+    : `Round ${round} Match ${position}`;
 }
 
 /**
@@ -73,7 +80,7 @@ export function heatNameAt({
  * from the final Round.
  */
 export function roundName(bracket: Bracket, round: number): string {
-  return heatNameAt({
+  return matchNameAt({
     headToHead: isHeadToHead(bracket.config),
     finalRound: finalRoundOf(bracket),
     round,
@@ -81,24 +88,24 @@ export function roundName(bracket: Bracket, round: number): string {
 }
 
 /**
- * "Final", "3rd place game", "Round 1 Heat 4", or (head-to-head only)
+ * "Final", "3rd place Match", "Round 1 Match 4", or (head-to-head only)
  * "Semifinal 2".
  */
-export function heatName(
+export function matchName(
   bracket: Bracket,
-  heat: Pick<Heat, "round" | "position"> & { thirdPlace?: boolean },
+  match: Pick<Match, "round" | "position"> & { thirdPlace?: boolean },
 ): string {
-  return heatNameAt({
+  return matchNameAt({
     headToHead: isHeadToHead(bracket.config),
     finalRound: finalRoundOf(bracket),
-    round: heat.round,
-    position: heat.position,
-    thirdPlace: heat.thirdPlace,
+    round: match.round,
+    position: match.position,
+    thirdPlace: match.thirdPlace,
   });
 }
 
 /**
- * When a Heat's Result was recorded, like "Recorded Sun 7:05 PM ET": the
+ * When a Match's Result was recorded, like "Recorded Sun 7:05 PM ET": the
  * ET wall clock, whatever the viewer's timezone.
  */
 export function formatRecordedAt(recordedAt: Date): string {
@@ -111,9 +118,9 @@ export function formatRecordedAt(recordedAt: Date): string {
   return `Recorded ${when} ET`;
 }
 
-export type BracketRound = { round: number; name: string; heats: Heat[] };
+export type BracketRound = { round: number; name: string; matches: Match[] };
 
-/** The Bracket's Rounds, first to final, each with its Heats top to bottom. */
+/** The Bracket's Rounds, first to final, each with its Matches top to bottom. */
 export function groupRounds(bracket: Bracket): BracketRound[] {
   const finalRound = finalRoundOf(bracket);
   const rounds: BracketRound[] = [];
@@ -121,7 +128,7 @@ export function groupRounds(bracket: Bracket): BracketRound[] {
     rounds.push({
       round,
       name: roundName(bracket, round),
-      heats: bracket.heats
+      matches: bracket.matches
         .filter((h) => h.round === round)
         .sort((a, b) => a.position - b.position),
     });
@@ -129,68 +136,93 @@ export function groupRounds(bracket: Bracket): BracketRound[] {
   return rounds;
 }
 
-export type NextHeat =
+export type NextMatch =
   | {
-      kind: "heat";
-      heat: Heat;
-      /** The other Entrants already in the Heat. */
+      kind: "match";
+      match: Match;
+      /** The other Entrants already in the Match. */
       opponentIds: string[];
       /**
-       * Single elimination: the Heat whose winner (or, for the 3rd place
-       * game, loser) fills the empty slot, while there is one.
+       * Single elimination: the Match whose Winner (or, for the 3rd place
+       * Match, loser) fills the empty slot, while there is one.
        */
-      waitingFor: Heat | null;
+      waitingFor: Match | null;
     }
   | {
-      /** Through to `round` of a Heats Bracket, which isn't filled yet. */
+      /** Through to `round` of a Matches Bracket, which isn't filled yet. */
       kind: "advanced";
       round: number;
     };
 
 /**
- * What's next for an Entrant: the unplayed Heat they're in, with their
- * opponents (or, in single elimination, the Heat still to decide one); or,
- * in a Heats Bracket, the Round they've advanced to while the rest of their
+ * What's next for an Entrant: the unplayed Match they're in, with their
+ * opponents (or, in single elimination, the Match still to decide one); or,
+ * in a Matches Bracket, the Round they've advanced to while the rest of their
  * Round finishes. Null when they're out, the Bracket is over, or they
  * aren't an Entrant.
  */
-export function nextHeatFor(
+export function nextMatchFor(
   bracket: Bracket,
   entrantId: string,
-): NextHeat | null {
-  const inHeat = (h: Heat) => h.slots.some((s) => s.entrantId === entrantId);
-  const heat = bracket.heats.find(
-    (h) => !isDecided(h) && !isBye(bracket, h) && inHeat(h),
+): NextMatch | null {
+  const inMatch = (h: Match) => h.slots.some((s) => s.entrantId === entrantId);
+  const match = bracket.matches.find(
+    (h) => !isDecided(h) && !isBye(bracket, h) && inMatch(h),
   );
-  if (heat) {
-    const emptySlot = heat.slots.findIndex((s) => s.entrantId === null);
+  if (match) {
+    const emptySlot = match.slots.findIndex((s) => s.entrantId === null);
     return {
-      kind: "heat",
-      heat,
-      opponentIds: heat.slots
+      kind: "match",
+      match,
+      opponentIds: match.slots
         .map((s) => s.entrantId)
         .filter((id): id is string => id !== null && id !== entrantId),
       waitingFor:
         emptySlot === -1
           ? null
-          : (bracket.heats.find(
+          : (bracket.matches.find(
               (h) =>
-                (h.winnerTo?.heatId === heat.id &&
+                (h.winnerTo?.matchId === match.id &&
                   h.winnerTo.slot === emptySlot) ||
-                (h.loserTo?.heatId === heat.id && h.loserTo.slot === emptySlot),
+                (h.loserTo?.matchId === match.id &&
+                  h.loserTo.slot === emptySlot),
             ) ?? null),
     };
   }
   if (isHeadToHead(bracket.config)) return null;
-  // Their latest Heat is decided: did they finish in an advancing place?
-  const last = bracket.heats
-    .filter(inHeat)
-    .reduce<Heat | null>((a, h) => (a && a.round > h.round ? a : h), null);
+  // Their latest Match is decided: did they finish in an advancing place?
+  const last = bracket.matches
+    .filter(inMatch)
+    .reduce<Match | null>((a, h) => (a && a.round > h.round ? a : h), null);
   if (!last || last.round >= finalRoundOf(bracket)) return null;
-  const { advancePerHeat } = bracket.config;
   const place = last.slots.find((s) => s.entrantId === entrantId)?.place;
-  if (place == null || place > advancePerHeat) return null;
+  if (place == null || place > matchAdvanceCount(bracket, last)) return null;
   return { kind: "advanced", round: last.round + 1 };
+}
+
+/**
+ * Their next unplayed Match; otherwise (out, waiting on a Round, or Closed)
+ * the latest Match they played, else their latest Match. Null when they have
+ * none.
+ */
+export function currentMatchFor(
+  bracket: Bracket,
+  entrantId: string,
+  closed: boolean,
+): Match | null {
+  if (!closed) {
+    const next = nextMatchFor(bracket, entrantId);
+    if (next?.kind === "match") return next.match;
+  }
+  const mine = bracket.matches.filter((h) =>
+    h.slots.some((s) => s.entrantId === entrantId),
+  );
+  const latest = (list: Match[]) =>
+    list.reduce<Match | null>((a, h) => (a && a.round > h.round ? a : h), null);
+  return (
+    latest(mine.filter((h) => isDecided(h) && !isBye(bracket, h))) ??
+    latest(mine)
+  );
 }
 
 /**

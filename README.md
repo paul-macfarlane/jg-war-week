@@ -89,7 +89,7 @@ with `pnpm start -p 3200`, and signs its own JG sessions (no Google). The flows:
 anonymous and non-JG visitors are sent to `/sign-in`; an Organizer's Discretionary
 points show on `/xi/leaderboard`; a head-to-head Bracket is built, recorded in its tree
 (each played Heat showing when it was recorded), advanced, finalized into
-Points Entries and played as a Bracket Finale (also under reduced motion); a
+Points Entries, with no Bracket Finale (its old URL is a 404); a
 Bracket with a 3rd place game places 1st to 4th; a Bracket of 4 per Heat is run to Points Entries,
 with the End War Week warning; a Host builds a Squad Bracket with self-report on,
 a Participant reports their Heat and their Squad advances, a second report on it is
@@ -110,7 +110,7 @@ The app exposes a read-only Model Context Protocol server over Streamable
 HTTP at `/api/mcp` (production: `https://jg-war-week.vercel.app/api/mcp`).
 Its tools are `get_current_war_week`, `get_leaderboard`, `get_schedule`,
 `get_announcements`, `get_awards`, `get_faq`, `list_history`,
-`get_history`, `get_bracket`, `get_games`, `get_participation`, `get_placements` and
+`get_history`, `get_bracket`, `get_league`, `get_games`, `get_participation`, `get_placements` and
 `get_discretionary_points`. Every tool is read-only and returns only what a signed-in
 Participant sees, and no tool returns an email
 or the Organizer list (Announcement authors come back as the handle
@@ -192,20 +192,22 @@ Production: **https://jg-war-week.vercel.app** (MCP at
   collecting page data; it is harmless there, but a deployment without the
   secret answers 500 on any page that checks the session.
 - **GitHub repo secrets:** `PROD_DATABASE_URL` and `STAGING_DATABASE_URL`,
-  used by the Migrate and Seed workflows below.
+  used by the Seed workflow below.
 
-Release flow: merge PRs into `staging` (staging database migrates, preview
-deploys) → merge `staging` into `main` (production database migrates,
-production deploys). Load or refresh seed data with the Seed workflow; check
+Release flow: merge PRs into `staging` (its Vercel build migrates the
+staging database, then deploys) → merge `staging` into `main` (its build
+migrates the production database, then deploys). Load or refresh seed data with the Seed workflow; check
 the deploy by confirming `/` redirects to `/xi`, `/xi` responds 200, and
 `/api/mcp` answers a `tools/call` of `get_current_war_week`.
 
 ## Deployed migrations
 
-`.github/workflows/migrate.yml` runs `pnpm db:migrate` on every push to
-`staging` (against the `STAGING_DATABASE_URL` repo secret) and `main`
-(against `PROD_DATABASE_URL`). A branch whose secret is unset logs a notice
-and skips. Generate migrations locally with `pnpm db:generate` and commit the
+Vercel's build runs `scripts/vercel-build.sh` (`vercel.json`
+`buildCommand`): `pnpm db:migrate` against the deployment's own
+`DATABASE_URL`, then `pnpm build`, for production (`main`) and the `staging`
+branch only. A migration that fails fails the build, so nothing deploys
+ahead of its migration. Other preview builds share staging's
+`DATABASE_URL` and never migrate. Generate migrations locally with `pnpm db:generate` and commit the
 `drizzle/` output; never run `db:migrate` by hand against a deployed database.
 
 Seeds are never loaded on deploy. To load them, run the **Seed** workflow from

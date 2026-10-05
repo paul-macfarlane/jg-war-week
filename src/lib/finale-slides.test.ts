@@ -11,7 +11,6 @@ import {
   type FinaleSlideRow,
   backFinalePosition,
   byTheNumbers,
-  championsList,
   completeFinaleSlide,
   finaleSlideData,
   finaleSlideSteps,
@@ -19,6 +18,7 @@ import {
   nextFinalePosition,
   resolveFinaleSlides,
   visibleFinaleSlides,
+  winnersList,
 } from "./finale-slides";
 
 const row = (
@@ -45,7 +45,7 @@ describe("resolveFinaleSlides", () => {
       "Title",
       "By the numbers",
       "Awards",
-      "Champions",
+      "Winners",
       "Standings countdown",
       "Winner",
     ]);
@@ -54,7 +54,7 @@ describe("resolveFinaleSlides", () => {
       "title",
       "numbers",
       "awards",
-      "champions",
+      "winners",
       "standings",
       "winner",
     ]);
@@ -67,14 +67,14 @@ describe("resolveFinaleSlides", () => {
       row("title", 1),
       row("numbers", 2),
       row("awards", 3),
-      row("champions", 4),
+      row("winners", 4),
     ]);
     expect(names(slides)).toEqual([
       "Standings countdown",
       "Title",
       "By the numbers",
       "Awards",
-      "Champions",
+      "Winners",
       "Winner",
     ]);
     expect(slides[0].id).toBe("id-standings-");
@@ -85,14 +85,14 @@ describe("resolveFinaleSlides", () => {
       row("title", 0),
       row("numbers", 1, { hidden: true }),
       row("awards", 2),
-      row("champions", 3, { hidden: true }),
+      row("winners", 3, { hidden: true }),
       row("standings", 4),
       row("winner", 5),
     ]);
     expect(slides).toHaveLength(6);
     expect(slides.filter((s) => s.hidden).map((s) => s.name)).toEqual([
       "By the numbers",
-      "Champions",
+      "Winners",
     ]);
     expect(names(visibleFinaleSlides(slides))).toEqual([
       "Title",
@@ -114,7 +114,7 @@ describe("resolveFinaleSlides", () => {
       "Winner",
       "By the numbers",
       "Awards",
-      "Champions",
+      "Winners",
     ]);
     expect(slides.slice(3).every((s) => s.id === null && !s.hidden)).toBe(true);
   });
@@ -125,7 +125,7 @@ describe("resolveFinaleSlides", () => {
       row("custom", 1, { heading: "Welcome" }),
       row("numbers", 2),
       row("awards", 3),
-      row("champions", 4),
+      row("winners", 4),
       row("standings", 5),
       row("winner", 6),
       row("custom", 7, { heading: "Thank you", backgroundColor: "#112233" }),
@@ -135,7 +135,7 @@ describe("resolveFinaleSlides", () => {
       "Welcome",
       "By the numbers",
       "Awards",
-      "Champions",
+      "Winners",
       "Standings countdown",
       "Winner",
       "Thank you",
@@ -237,15 +237,15 @@ const xii = JSON.parse(
 
 describe("byTheNumbers", () => {
   it("shows the XII demo's figures, leaving out the zeros", () => {
-    // What the XII demo loads: its roster and its two Finalized Placement
-    // Competitions, one generated Points Entry per Placement; no Game is
-    // logged and no Heat played. Points handed out is Mile Run's 3 + 2 + 1
+    // What the XII demo loads: its roster and its two Closed Placement
+    // Competitions, one generated Points Entry per Placement; no Match or Attempt is
+    // logged and no Match played. Points handed out is Mile Run's 3 + 2 + 1
     // plus Step Challenge's 7 + 6.5 + 5.5 + 4.5 + 3.5 + 3 + 2.5 + 2 + 1.5 +
     // 1 + 1 + 0.5, worked by hand.
     const figures = byTheNumbers({
       competitionsRun: new Set(xii.placements.map((p) => p.competition)).size,
-      gamesLogged: 0,
-      heatsPlayed: 0,
+      resultsLogged: 0,
+      matchesPlayed: 0,
       pointsEntries: xii.placements.length,
       pointsHandedOut: 44.5,
       participants: xii.participants.length,
@@ -262,16 +262,16 @@ describe("byTheNumbers", () => {
     expect(
       byTheNumbers({
         competitionsRun: 1,
-        gamesLogged: 1204,
-        heatsPlayed: 31,
+        resultsLogged: 1204,
+        matchesPlayed: 31,
         pointsEntries: 2,
         pointsHandedOut: 1234.567,
         participants: 1,
       }),
     ).toEqual([
       { label: "Competition run", value: "1" },
-      { label: "Games logged", value: "1,204" },
-      { label: "Heats played", value: "31" },
+      { label: "Matches and Attempts logged", value: "1,204" },
+      { label: "Matches played", value: "31" },
       { label: "Points Entries", value: "2" },
       { label: "Points handed out", value: "1,234.57" },
       { label: "Participant", value: "1" },
@@ -282,8 +282,8 @@ describe("byTheNumbers", () => {
     expect(
       byTheNumbers({
         competitionsRun: 0,
-        gamesLogged: 0,
-        heatsPlayed: 0,
+        resultsLogged: 0,
+        matchesPlayed: 0,
         pointsEntries: 0,
         pointsHandedOut: 0,
         participants: 0,
@@ -292,7 +292,7 @@ describe("byTheNumbers", () => {
   });
 });
 
-describe("championsList", () => {
+describe("winnersList", () => {
   const at = (minute: number) => new Date(Date.UTC(2027, 1, 26, 17, minute));
   const person = (id: string, name: string): ResultTarget => ({
     id,
@@ -320,51 +320,51 @@ describe("championsList", () => {
     competitionId,
     points,
     enteredAt: at(0),
-    generatedByBracket: true,
+    generated: true,
     target,
   });
 
-  it("lists each finalized Bracket's champion and each closed Competition's winner, ties together, by close time", () => {
-    const champions = championsList(
+  it("lists each closed Bracket's Winner and each closed Competition's winner, ties together, by close time", () => {
+    const winners = winnersList(
       [
         // Closed last: listed last.
         {
           id: "chess",
-          name: "Chess Heats",
+          name: "Chess Matches",
           format: "bracket",
-          finalizedAt: at(30),
+          closedAt: at(30),
         },
         {
           id: "pong",
           name: "Ping Pong",
           format: "head-to-head",
-          finalizedAt: at(10),
+          closedAt: at(10),
         },
         {
           id: "workout",
           name: "Daily Workout Check-in",
           format: "participation",
-          finalizedAt: at(20),
+          closedAt: at(20),
         },
         // An individual Participation Competition has no winner.
         {
           id: "steps",
           name: "Step Check-in",
           format: "participation",
-          finalizedAt: at(5),
+          closedAt: at(5),
         },
-        // Not closed, or a points Competition: never a champion.
+        // Not closed, or a points Competition: never a winner.
         {
           id: "open",
           name: "Open Bracket",
           format: "bracket",
-          finalizedAt: null,
+          closedAt: null,
         },
         {
           id: "mile",
           name: "Mile Run",
           format: "placement",
-          finalizedAt: at(1),
+          closedAt: at(1),
         },
       ],
       [
@@ -378,10 +378,10 @@ describe("championsList", () => {
         generated("steps", fay, 1),
         generated("steps", ada, 1),
         generated("open", fay, 9),
-        { ...generated("mile", jax, 3), generatedByBracket: false },
+        { ...generated("mile", jax, 3), generated: false },
       ],
     );
-    expect(champions).toEqual([
+    expect(winners).toEqual([
       {
         competitionId: "pong",
         competition: "Ping Pong",
@@ -400,24 +400,24 @@ describe("championsList", () => {
       },
       {
         competitionId: "chess",
-        competition: "Chess Heats",
+        competition: "Chess Matches",
         format: "bracket",
-        label: "Champion",
+        label: "Winner",
         title: "Ada Anvil",
         winners: [ada],
       },
     ]);
   });
 
-  it("lists a Finalized Placement's winner", () => {
+  it("lists a Closed Placement's winner", () => {
     expect(
-      championsList(
+      winnersList(
         [
           {
             id: "mile",
             name: "Mile Run",
             format: "placement",
-            finalizedAt: at(1),
+            closedAt: at(1),
           },
         ],
         [generated("mile", jax, 10), generated("mile", ada, 6)],
@@ -434,15 +434,15 @@ describe("championsList", () => {
     ]);
   });
 
-  it("is empty with nothing finalized", () => {
+  it("is empty with nothing closed", () => {
     expect(
-      championsList(
+      winnersList(
         [
           {
             id: "mile",
             name: "Mile Run",
             format: "placement",
-            finalizedAt: null,
+            closedAt: null,
           },
         ],
         [],
@@ -459,21 +459,15 @@ describe("finaleSlideData", () => {
     total,
     rank,
   });
-  const award = (
-    name: string,
-    category: { id: string; name: string } | null,
-  ): AwardView => ({
+  const award = (name: string): AwardView => ({
     id: `a-${name}`,
     name,
     description: null,
     team: null,
-    category: category && { ...category, archived: false },
     participants: [
       { id: "p-ada", displayName: "Ada Anvil", image: null, teamColor: null },
     ],
   });
-  const grind = { id: "c-grind", name: "Grind" };
-  const mvp = { id: "c-mvp", name: "War Week MVP" };
   const standings: Standings = {
     main: "team",
     team: [team("Red", 40, 1), team("Blue", 40, 1), team("Green", 12, 3)],
@@ -491,24 +485,23 @@ describe("finaleSlideData", () => {
       teamLabel: "Team",
       primaryColor: "#123456",
       foregroundColor: "#111111",
-      finaleAwardsLayout: "one-slide",
     },
     standings,
     counts: {
       competitionsRun: 2,
-      gamesLogged: 0,
-      heatsPlayed: 0,
+      resultsLogged: 0,
+      matchesPlayed: 0,
       pointsEntries: 3,
       pointsHandedOut: 92,
       participants: 12,
     },
     awards: [
-      award("Black Midnight", null),
-      award("Hardest Worker", grind),
-      award("MVP", mvp),
-      award("Most Steps", grind),
+      award("Black Midnight"),
+      award("Hardest Worker"),
+      award("MVP"),
+      award("Most Steps"),
     ],
-    champions: [
+    winners: [
       {
         competitionId: "pong",
         competition: "Ping Pong",
@@ -532,7 +525,7 @@ describe("finaleSlideData", () => {
       "title:Title",
       "numbers:By the numbers",
       "awards:Awards",
-      "champions:Champions",
+      "winners:Winners",
       "standings:Standings countdown",
       "winner:Winner",
     ]);
@@ -553,94 +546,41 @@ describe("finaleSlideData", () => {
     expect(slides[5]).toMatchObject({ title: "Tie: Red & Blue" });
   });
 
-  it("puts every Award on one slide, by Category, the uncategorized last, one Award per step", () => {
-    const [awards] = finaleSlideData(defaults, context()).filter(
-      (s) => s.kind === "awards",
-    );
-    expect(awards).toMatchObject({
-      kind: "awards",
-      heading: "Awards",
-      groups: [
-        {
-          name: "Grind",
-          awards: [{ name: "Hardest Worker" }, { name: "Most Steps" }],
-        },
-        { name: "War Week MVP", awards: [{ name: "MVP" }] },
-        { name: "Other Awards", awards: [{ name: "Black Midnight" }] },
-      ],
-    });
-    expect(finaleSlideSteps(awards)).toBe(4);
-  });
-
-  it("gives each Category its own Awards slide in the per-Category layout", () => {
-    const slides = finaleSlideData(
-      defaults,
-      context({
-        warWeek: { ...context().warWeek, finaleAwardsLayout: "per-category" },
-      }),
-    );
+  it("puts every Award on one slide, one Award per step, in the order given", () => {
+    const slides = finaleSlideData(defaults, context());
     const awards = slides.filter((s) => s.kind === "awards");
-    expect(kinds(awards)).toEqual([
-      "awards:Awards: Grind",
-      "awards:Awards: War Week MVP",
-      "awards:Other Awards",
-    ]);
-    expect(new Set(slides.map((s) => s.key)).size).toBe(slides.length);
-    expect(awards.map((s) => finaleSlideSteps(s))).toEqual([2, 1, 1]);
+    expect(awards).toHaveLength(1);
     expect(awards[0]).toMatchObject({
-      heading: "Grind",
-      groups: [
-        {
-          name: null,
-          awards: [{ name: "Hardest Worker" }, { name: "Most Steps" }],
-        },
-      ],
-    });
-  });
-
-  it("shows no Category headings when no Award has a Category", () => {
-    const [awards] = finaleSlideData(
-      defaults,
-      context({ awards: [award("Black Midnight", null)] }),
-    ).filter((s) => s.kind === "awards");
-    expect(awards).toMatchObject({
-      groups: [{ name: null, awards: [{ name: "Black Midnight" }] }],
-    });
-  });
-
-  it("falls back to one Awards slide in the per-Category layout when no Award has a Category", () => {
-    const awards = finaleSlideData(
-      defaults,
-      context({
-        warWeek: { ...context().warWeek, finaleAwardsLayout: "per-category" },
-        awards: [award("Black Midnight", null), award("Night Owl", null)],
-      }),
-    ).filter((s) => s.kind === "awards");
-    expect(kinds(awards)).toEqual(["awards:Awards"]);
-    expect(awards[0]).toMatchObject({
+      kind: "awards",
       key: "awards",
       heading: "Awards",
       groups: [
         {
           name: null,
-          awards: [{ name: "Black Midnight" }, { name: "Night Owl" }],
+          awards: [
+            { name: "Black Midnight" },
+            { name: "Hardest Worker" },
+            { name: "MVP" },
+            { name: "Most Steps" },
+          ],
         },
       ],
     });
+    expect(finaleSlideSteps(awards[0])).toBe(4);
   });
 
   it("skips the slides with nothing to show", () => {
     const empty = context({
       counts: {
         competitionsRun: 0,
-        gamesLogged: 0,
-        heatsPlayed: 0,
+        resultsLogged: 0,
+        matchesPlayed: 0,
         pointsEntries: 0,
         pointsHandedOut: 0,
         participants: 0,
       },
       awards: [],
-      champions: [],
+      winners: [],
       standings: { main: "individual", team: [], individual: [] },
     });
     expect(kinds(finaleSlideData(defaults, empty))).toEqual(["title:Title"]);

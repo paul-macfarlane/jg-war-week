@@ -35,17 +35,16 @@ const SOURCE: CompetitionSettingsSource = {
   format: "best-score",
   scoring: "individual",
   countsTowardTeam: false,
-  scoreDirection: "none",
-  gameConfig: { count: "best", betterIs: "higher", unit: "" },
-  entrantsOpen: true,
+  scoreDirection: "higher",
+  scoreUnit: null,
+  seriesConfig: null,
+  bestScoreConfig: { teamScore: "best-member" },
   bracketConfig: null,
   selfEnroll: false,
   entrantLimit: null,
-  enrollClosesAt: null,
-  loggingClosesAt: null,
   selfReport: false,
   selfCheckIn: false,
-  checkInClosesAt: null,
+  maxAttempts: null,
 };
 
 const actGlobal = globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean };
@@ -76,9 +75,10 @@ function show(over: Partial<CompetitionSettingsSource>) {
         facts={{
           format: "placement",
           hasResult: false,
-          hasGame: false,
-          hasHeatResult: false,
-          finalized: false,
+          hasPlay: false,
+          hasLogged: false,
+          hasMatchResult: false,
+          closed: false,
         }}
         mode="teams"
         teamLabel="Team"
@@ -112,31 +112,29 @@ function type(field: HTMLInputElement, value: string) {
   });
 }
 
-const unit = (value: string) => ({
-  gameConfig: { count: "best", betterIs: "higher", unit: value },
-});
+const unit = (value: string) => ({ scoreUnit: value || null });
 
 describe("CompetitionSettingsForm after a save (forms follow server data)", () => {
   it("shows the saved values when the page's props change (router.refresh)", () => {
     mount(unit(""));
-    expect(input("competition-unit").value).toBe("");
+    expect(input("competition-scoreUnit").value).toBe("");
     show({ ...unit("trips"), name: "Bouncier Pong" });
-    expect(input("competition-unit").value).toBe("trips");
+    expect(input("competition-scoreUnit").value).toBe("trips");
     expect(input("competition-name").value).toBe("Bouncier Pong");
   });
 
   it("keeps an edit when the page re-renders with the same saved props", () => {
     mount(unit("trips"));
-    type(input("competition-unit"), "laps");
+    type(input("competition-scoreUnit"), "laps");
     show(unit("trips"));
-    expect(input("competition-unit").value).toBe("laps");
+    expect(input("competition-scoreUnit").value).toBe("laps");
   });
 
   it("keeps an edit still waiting to save while another field follows the server", () => {
     mount(unit("trips"));
-    type(input("competition-unit"), "laps");
+    type(input("competition-scoreUnit"), "laps");
     show({ ...unit("trips"), name: "Bouncier Pong" });
-    expect(input("competition-unit").value).toBe("laps");
+    expect(input("competition-scoreUnit").value).toBe("laps");
     expect(input("competition-name").value).toBe("Bouncier Pong");
   });
 });

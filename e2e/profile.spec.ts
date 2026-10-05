@@ -1,22 +1,20 @@
 import { type Page, expect, test } from "@playwright/test";
 import path from "node:path";
 
-import { runQuery, xiCompetitionId, xiParticipantId } from "./db";
+import { runQuery, xiParticipantId } from "./db";
 import { E2E_BASE_URL } from "./env";
 import { asOrganizer, participantPageAs } from "./session";
 
 // Epic R10, ticket 60 (wave 3): the Profile name and picture on every
 // surface. A Participant's Google photo shows first; a Profile name and
-// picture URL replace it on Standings, the roster and a Games Competition;
-// the Organizer's roster form shows the name read-only; Use Google photo
-// puts the Google photo back.
+// picture URL replace it on Standings, the roster and a Best score
+// Competition; the Organizer's roster form shows the name read-only; Use
+// Google photo puts the Google photo back.
 
-// XI's live demo has a roster and Points Entries, but no logged Games, so
-// the flow logs one for Bouncy Pong (an open individual Head-to-head or Best score
-// Competition) and removes it after.
+// XI's live demo has a roster and Points Entries, but no logged Attempts,
+// so the flow makes its own individual Best score Competition with one
+// Attempt by the Participant, and deletes it after.
 const PARTICIPANT = "Anthony Conway";
-const OPPONENT = "Alec Haring";
-const COMPETITION = "Bouncy Pong";
 const PROFILE_NAME = "Tony Profile";
 const GOOGLE_URL = "https://lh3.googleusercontent.com/a/e2e-profile-test";
 const PICTURE_URL = "https://images.example.test/me.png";
@@ -41,14 +39,12 @@ const avatarOf = (page: Page, name: string, scope?: string) =>
     .locator("img");
 
 for (const viewport of VIEWPORTS) {
-  test(`60 the Profile name and picture show on the leaderboard, teams and a Games Competition, and the roster form reads the name read-only, at ${viewport.width}`, async ({
+  test(`60 the Profile name and picture show on the leaderboard, teams and a Best score Competition, and the roster form reads the name read-only, at ${viewport.width}`, async ({
     browser,
   }) => {
     const participantId = await xiParticipantId(PARTICIPANT);
     // The same email `participantPageAs` links the Participant with.
     const email = `e2e-p-${participantId}@jahnelgroup.com`;
-    const competitionId = await xiCompetitionId(COMPETITION);
-    const opponentId = await xiParticipantId(OPPONENT);
     const { page, close } = await participantPageAs(browser, PARTICIPANT);
     const orgContext = await browser.newContext({ baseURL: E2E_BASE_URL });
     const shot = (name: string, target: Page = page) =>
@@ -60,7 +56,7 @@ for (const viewport of VIEWPORTS) {
         ),
         animations: "disabled",
       });
-    let gameId: string | undefined;
+    let competitionId: string | undefined;
     try {
       for (const host of ["lh3.googleusercontent.com", "images.example.test"]) {
         await page.route(`https://${host}/**`, (route) =>
@@ -72,14 +68,17 @@ for (const viewport of VIEWPORTS) {
         GOOGLE_URL,
         email,
       ]);
-      // A logged Game, so the Participant appears on the Games page.
-      [{ id: gameId }] = await runQuery<{ id: string }>(
-        `insert into game (competition_id, logged_by_email) values ($1, $2) returning id`,
-        [competitionId, "e2e-organizer@jahnelgroup.com"],
+      // A logged Attempt, so the Participant appears on its page.
+      [{ id: competitionId }] = await runQuery<{ id: string }>(
+        `insert into competition (war_week_id, name, scoring, format, score_direction)
+         select id, $1, 'individual', 'best-score', 'higher'
+         from war_week where edition = 'xi' returning id`,
+        [`E2E R10 Profile ${viewport.width} ${Date.now()}`],
       );
       await runQuery(
-        `insert into game_player (game_id, participant_id, place) values ($1, $2, 1), ($1, $3, 2)`,
-        [gameId, participantId, opponentId],
+        `insert into attempt (competition_id, participant_id, score, logged_by_email)
+         values ($1, $2, 42, $3)`,
+        [competitionId, participantId, "e2e-organizer@jahnelgroup.com"],
       );
 
       // The Google photo shows before anything is set.
@@ -102,7 +101,7 @@ for (const viewport of VIEWPORTS) {
       await expect(page.getByText("Profile saved")).toBeVisible();
       await shot("profile");
 
-      // Leaderboard (Standings), teams roster, and the Games Competition.
+      // Leaderboard (Standings), teams roster, and the Best score Competition.
       await page.goto("/xi/leaderboard");
       await expect(page.getByText(PROFILE_NAME).first()).toBeVisible();
       await expect(avatarOf(page, PROFILE_NAME)).toHaveAttribute(
@@ -119,19 +118,15 @@ for (const viewport of VIEWPORTS) {
       await shot("teams");
 
       await page.goto(`/xi/competitions/${competitionId}`);
-      const gamesRow = page
-        .getByRole("region", { name: "Games" })
+      const resultsRow = page
+        .getByRole("table", { name: "Best score results" })
         .getByRole("row")
         .filter({ has: page.getByRole("rowheader", { name: PROFILE_NAME }) });
-      await expect(gamesRow.locator("img")).toHaveAttribute("src", PICTURE_URL);
-      // The logged Game's entry in the Game log names them by Profile name.
-      await expect(
-        page
-          .getByRole("region", { name: "Games" })
-          .getByRole("listitem")
-          .filter({ hasText: `${PROFILE_NAME} beat ${OPPONENT}` }),
-      ).toBeVisible();
-      await shot("games");
+      await expect(resultsRow.locator("img")).toHaveAttribute(
+        "src",
+        PICTURE_URL,
+      );
+      await shot("best-score");
 
       // The Organizer's roster form: the name read-only, set by the person.
       await asOrganizer(orgContext);
@@ -164,7 +159,11 @@ for (const viewport of VIEWPORTS) {
     } finally {
       await orgContext.close();
       await close();
-      if (gameId) await runQuery(`delete from game where id = $1`, [gameId]);
+      if (competitionId) {
+        await runQuery(`delete from competition where id = $1`, [
+          competitionId,
+        ]);
+      }
       await runQuery(`delete from profile where email = $1`, [email]);
       await runQuery(`delete from "user" where email = $1`, [email]);
     }

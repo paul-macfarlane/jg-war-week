@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 import { formatDefaults } from "@/lib/format-defaults";
 
 describe("formatDefaults", () => {
-  it("gives a Bracket the default heat settings, or the one given, and keeps at most 4 Placement Points", () => {
+  it("gives a Bracket the default match settings, or the one given, and keeps at most 4 Placement Points", () => {
     expect(
       formatDefaults("bracket", {
         scoring: "team",
@@ -11,19 +11,25 @@ describe("formatDefaults", () => {
       }),
     ).toEqual({
       bracketConfig: {
-        entrantsPerHeat: 2,
-        advancePerHeat: 1,
-        thirdPlaceGame: false,
+        kind: "head-to-head" as const,
+        entrantsPerMatch: 2,
+        advancePerMatch: 1,
+        thirdPlaceMatch: false,
+        rounds: {},
       },
-      gameConfig: null,
-      entrantsOpen: false,
+      seriesConfig: null,
+      bestScoreConfig: null,
+      leagueConfig: null,
+      scoreDirection: "none",
       participationPoints: null,
       placementPoints: [10, 7, 5, 3],
     });
     const fours = {
-      entrantsPerHeat: 4,
-      advancePerHeat: 2,
-      thirdPlaceGame: false,
+      kind: "group" as const,
+      entrantsPerMatch: 4,
+      advancePerMatch: 2,
+      thirdPlaceMatch: false,
+      rounds: {},
     };
     expect(
       formatDefaults(
@@ -34,7 +40,7 @@ describe("formatDefaults", () => {
     ).toMatchObject({ bracketConfig: fours, placementPoints: null });
   });
 
-  it("opens a Head-to-head or Best score Competition to everyone with its default settings", () => {
+  it("gives a Head-to-head Best of 3 and Best score a higher-is-better direction", () => {
     expect(
       formatDefaults("head-to-head", {
         scoring: "individual",
@@ -42,8 +48,10 @@ describe("formatDefaults", () => {
       }),
     ).toEqual({
       bracketConfig: null,
-      gameConfig: { drawsAllowed: false, bestOf: null },
-      entrantsOpen: true,
+      seriesConfig: { drawsAllowed: false, bestOf: 3 },
+      bestScoreConfig: null,
+      leagueConfig: null,
+      scoreDirection: "none",
       participationPoints: null,
       placementPoints: [3, 2, 1],
     });
@@ -53,8 +61,9 @@ describe("formatDefaults", () => {
         placementPoints: null,
       }),
     ).toMatchObject({
-      gameConfig: { count: "best", betterIs: "higher", unit: "" },
-      entrantsOpen: true,
+      seriesConfig: null,
+      bestScoreConfig: { teamScore: "best-member" },
+      scoreDirection: "higher",
     });
   });
 
@@ -79,6 +88,23 @@ describe("formatDefaults", () => {
     ).toMatchObject({ participationPoints: 1, placementPoints: null });
   });
 
+  it("gives a League a round robin with its rounds blank, keeping its Placement Points", () => {
+    expect(
+      formatDefaults("league", {
+        scoring: "individual",
+        placementPoints: [10, 7, 5, 3, 1],
+      }),
+    ).toEqual({
+      bracketConfig: null,
+      seriesConfig: null,
+      bestScoreConfig: null,
+      leagueConfig: { pairing: "round-robin", rounds: null },
+      scoreDirection: "none",
+      participationPoints: null,
+      placementPoints: [10, 7, 5, 3, 1],
+    });
+  });
+
   it("keeps a Placement Competition's Placement Points", () => {
     expect(
       formatDefaults("placement", {
@@ -87,8 +113,10 @@ describe("formatDefaults", () => {
       }),
     ).toEqual({
       bracketConfig: null,
-      gameConfig: null,
-      entrantsOpen: false,
+      seriesConfig: null,
+      bestScoreConfig: null,
+      leagueConfig: null,
+      scoreDirection: "none",
       participationPoints: null,
       placementPoints: [9, 8, 7, 6, 5],
     });

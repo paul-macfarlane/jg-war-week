@@ -1,13 +1,4 @@
-import {
-  type SQL,
-  and,
-  eq,
-  inArray,
-  isNull,
-  ne,
-  notInArray,
-  sql,
-} from "drizzle-orm";
+import { type SQL, and, eq, ne, notInArray, sql } from "drizzle-orm";
 import type {
   IndexColumn,
   PgColumn,
@@ -21,12 +12,14 @@ import {
   WarWeek,
   announcement,
   award,
-  awardCategory,
   awardParticipant,
   competition,
+  competitionHost,
   day,
+  entrant,
   faqItem,
   finaleSlide,
+  leagueMatch,
   organizer,
   participant,
   placement,
@@ -35,9 +28,13 @@ import {
   team,
   warWeek,
 } from "@/db/schema";
-import type { GamesConfig } from "@/lib/games/config";
+import { DEFAULT_LEAGUE_CONFIG, leagueConfigOf } from "@/lib/league/config";
 import { placementEntryValues } from "@/lib/placement/score";
+import { leaguePlacingsNow } from "@/lib/placings-now";
+import { generatedNote } from "@/lib/points-entry";
 import { descriptionContent } from "@/lib/rich-text/from-plain-text";
+import { DEFAULT_SERIES_CONFIG } from "@/lib/series/config";
+import { getLeagueClose } from "@/queries/league";
 import { getPlacementRows } from "@/queries/placements";
 import { WarWeekSeed } from "@/seed/schema";
 
@@ -52,9 +49,7 @@ import { WarWeekSeed } from "@/seed/schema";
  *   Items) is upserted by natural key and anything absent from the seed is
  *   deleted, so setup always matches the seed after a load.
  * - Organizer-owned data (Points Entries, Awards, Announcements) is inserted
- *   by seed key only when absent, and never updated or deleted. One
- *   exception: a seeded Award with no Category that was never edited in the
- *   app (`updated_at = created_at`) gets the seed's Category.
+ *   by seed key only when absent, and never updated or deleted.
  * - The seed's `organizers` are added to the global Organizer list when
  *   missing; a load never removes an Organizer, even with `reset`.
  *
@@ -79,6 +74,8 @@ export async function loadWarWeekSeed(
     const teamIds = await syncTeams(tx, warWeekId, seed);
     const participantIds = await syncParticipants(tx, warWeekId, seed, teamIds);
     const competitionIds = await syncCompetitions(tx, warWeekId, seed);
+    await insertEntrants(tx, seed, competitionIds, teamIds, participantIds);
+    await insertHosts(tx, seed, competitionIds, participantIds);
     await syncDays(tx, warWeekId, seed, competitionIds);
     await syncFaqItems(tx, warWeekId, seed);
     await syncFinaleSlides(tx, warWeekId, seed);
@@ -98,11 +95,70 @@ export async function loadWarWeekSeed(
       teamIds,
       participantIds,
     );
+    await insertLeagues(
+      tx,
+      warWeekId,
+      seed,
+      competitionIds,
+      teamIds,
+      participantIds,
+    );
     await insertAwards(tx, warWeekId, seed, teamIds, participantIds);
     await insertAnnouncements(tx, warWeekId, seed);
 
     return warWeekRow;
   });
+}
+
+/**
+ * A Head-to-head's two seeded Entrants, at Seed Positions 1 and 2. Each is
+ * added only when absent (by Competition and Team or Participant), and
+ * nothing is added where an Organizer already set other Entrants, so a
+ * reload changes no row.
+ */
+async function insertEntrants(
+  tx: DBTx,
+  seed: WarWeekSeed,
+  competitionIds: Map<string, string>,
+  teamIds: Map<string, string>,
+  participantIds: Map<string, string>,
+) {
+  // A League's Entrants load with its Matches (`insertLeagues`).
+  const rows = seed.competitions
+    .filter((c) => c.format !== "league")
+    .flatMap((c) =>
+      (c.entrants ?? []).map((name, i) => {
+        const isTeam = c.scoring === "team";
+        return {
+          competitionId: resolve(competitionIds, c.name),
+          teamId: isTeam ? resolve(teamIds, name) : null,
+          participantId: isTeam ? null : resolve(participantIds, name),
+          seedPosition: i + 1,
+        };
+      }),
+    );
+  if (rows.length) await tx.insert(entrant).values(rows).onConflictDoNothing();
+}
+
+/**
+ * Each seeded Host, a roster Participant of this War Week named by display
+ * name, added when absent. The loader refuses a name that isn't on the
+ * roster; it never removes a Host an Organizer added.
+ */
+async function insertHosts(
+  tx: DBTx,
+  seed: WarWeekSeed,
+  competitionIds: Map<string, string>,
+  participantIds: Map<string, string>,
+) {
+  const rows = seed.competitions.flatMap((c) =>
+    (c.hosts ?? []).map((name) => ({
+      competitionId: resolve(competitionIds, c.name),
+      participantId: resolve(participantIds, name),
+    })),
+  );
+  if (rows.length === 0) return;
+  await tx.insert(competitionHost).values(rows).onConflictDoNothing();
 }
 
 /** Resolves a seed reference that the seed schema has already checked. */
@@ -160,7 +216,6 @@ async function upsertWarWeek(tx: DBTx, seed: WarWeekSeed): Promise<WarWeek> {
       status: seed.status,
       winner: seed.winner ?? null,
       highlights: seed.highlights,
-      finaleAwardsLayout: seed.finaleAwardsLayout ?? "one-slide",
     })
     .onConflictDoUpdate({ target: warWeek.edition, set: values })
     .returning();
@@ -316,19 +371,27 @@ async function syncCompetitions(
       format: c.format,
       bracketConfig: c.bracketConfig ?? null,
       // Checked against the Format by `competitionSeedSchema`.
-      gameConfig: (c.gameConfig ?? null) as GamesConfig | null,
-      entrantsOpen: c.entrantsOpen ?? false,
-      // Placement only (the seed schema); like `format`, set on insert only.
-      scoreDirection: c.scoreDirection ?? "none",
-      finalizedAt: c.finalizedAt ? new Date(c.finalizedAt) : null,
+      seriesConfig:
+        c.format === "head-to-head"
+          ? (c.seriesConfig ?? DEFAULT_SERIES_CONFIG)
+          : null,
+      bestScoreConfig: c.bestScoreConfig ?? null,
+      // A League always has one (the CHECK `competition_league_config_league`).
+      leagueConfig:
+        c.format === "league"
+          ? (c.leagueConfig ?? DEFAULT_LEAGUE_CONFIG)
+          : null,
+      // Placement's, Best score's and League's (the seed schema; Best
+      // score never `none`); like `format`, set on insert only.
+      scoreDirection:
+        c.scoreDirection ?? (c.format === "best-score" ? "higher" : "none"),
+      scoreUnit: c.scoreUnit ?? null,
+      closedAt: c.closedAt ? new Date(c.closedAt) : null,
       ...(c.format === "participation"
         ? {
             participationPoints:
               c.scoring === "individual" ? (c.participationPoints ?? 1) : null,
             selfCheckIn: c.selfCheckIn ?? false,
-            checkInClosesAt: c.checkInClosesAt
-              ? new Date(c.checkInClosesAt)
-              : null,
           }
         : {}),
     })),
@@ -346,11 +409,13 @@ async function syncCompetitions(
       participationPoints: sql`case when excluded.participation_points is null
         then null
         else coalesce(${competition.participationPoints}, excluded.participation_points) end`,
-      // `format`, `bracketConfig`, `gameConfig`, `entrantsOpen`, the Score
-      // direction, a seeded Finalize and the other Participation settings
+      // `format`, `bracketConfig`, `seriesConfig`, `bestScoreConfig`,
+      // `leagueConfig`, the
+      // Score direction and unit, a seeded Close and the other Participation
+      // settings
       // are set on insert only: a reload must
       // never turn an Organizer's Bracket back into `placement` or undo its
-      // Heats, Games or Participation settings.
+      // Matches, Attempts or Participation settings.
       updatedAt: new Date(),
     },
     scope: eq(competition.warWeekId, warWeekId),
@@ -507,10 +572,10 @@ async function insertDiscretionaryPoints(
 /**
  * Inserts the seed's Placements, each only if absent (by any of the
  * sheet's unique keys, `seed_key` among them), never updating one. Then,
- * for a Competition seeded Finalized that is still Finalized and has no
- * generated Points Entries yet, writes them as Finalize does, at the seed's
+ * for a Competition seeded Closed that is still Closed and has no
+ * generated Points Entries yet, writes them as Close does, at the seed's
  * time and author, keyed `placement:<placement key>`: so a reload, or a
- * Host's Reopen or re-Finalize, is never doubled or undone.
+ * Host's Reopen or re-Close, is never doubled or undone.
  */
 async function insertPlacements(
   tx: DBTx,
@@ -536,31 +601,31 @@ async function insertPlacements(
       .onConflictDoNothing();
   }
   for (const c of seed.competitions) {
-    if (!c.finalized || !c.finalizedAt || !c.finalizedByEmail) continue;
+    if (!c.closed || !c.closedAt || !c.closedByEmail) continue;
     const competitionId = resolve(competitionIds, c.name);
     const [found] = await tx
       .select({
         id: competition.id,
         warWeekId: competition.warWeekId,
         placementPoints: competition.placementPoints,
-        finalizedAt: competition.finalizedAt,
+        closedAt: competition.closedAt,
       })
       .from(competition)
       .where(eq(competition.id, competitionId));
-    if (!found.finalizedAt) continue;
+    if (!found.closedAt) continue;
     const generated = await tx.$count(
       pointsEntry,
       and(
         eq(pointsEntry.competitionId, competitionId),
-        eq(pointsEntry.generatedByBracket, true),
+        eq(pointsEntry.generated, true),
       ),
     );
     if (generated > 0) continue;
     const rows = await getPlacementRows(found, tx);
     const seedKeys = new Map(rows.map((r) => [r.id, r.seedKey]));
     const values = placementEntryValues(rows, found, {
-      actorEmail: c.finalizedByEmail,
-      enteredAt: new Date(c.finalizedAt),
+      actorEmail: c.closedByEmail,
+      enteredAt: new Date(c.closedAt),
       seedKeyOf: (rowId) => {
         const key = seedKeys.get(rowId);
         return key ? `placement:${key}` : null;
@@ -577,27 +642,132 @@ async function insertPlacements(
   }
 }
 
-/** The seed's Award Category keys as ids; an unknown key fails naming it. */
-async function resolveAwardCategories(
+/**
+ * Each seeded League's Entrants (Seed Positions in the seed's order) and
+ * Matches, loaded together and only while the League has no Entrant and no
+ * Match, so an Organizer's own Entrants, pairings or a Clear pairings are
+ * never overwritten or resurrected. A result without `recordedAt` is
+ * recorded at the League's `closedAt`, else now (the CHECK
+ * `league_match_recorded`). Then, for a League seeded Closed that is still
+ * Closed and has no generated Points Entries yet, writes them as Close does,
+ * at the seed's time and author, keyed `league:<competition>:<entrant>`: so
+ * a reload, or a Host's Reopen or re-Close, is never doubled or undone.
+ */
+async function insertLeagues(
   tx: DBTx,
+  warWeekId: string,
   seed: WarWeekSeed,
-): Promise<Map<string, string>> {
-  const keys = [
-    ...new Set(seed.awards.flatMap((a) => (a.category ? [a.category] : []))),
-  ];
-  if (keys.length === 0) return new Map();
-  const rows = await tx
-    .select({ id: awardCategory.id, key: awardCategory.key })
-    .from(awardCategory)
-    .where(inArray(awardCategory.key, keys));
-  const ids = new Map(rows.map((r) => [r.key ?? "", r.id]));
-  const unknown = keys.filter((key) => !ids.has(key));
-  if (unknown.length > 0) {
-    throw new Error(
-      `Unknown Award Category key ${unknown.map((k) => `"${k}"`).join(", ")}`,
+  competitionIds: Map<string, string>,
+  teamIds: Map<string, string>,
+  participantIds: Map<string, string>,
+) {
+  for (const c of seed.competitions) {
+    if (c.format !== "league") continue;
+    const competitionId = resolve(competitionIds, c.name);
+    const isTeam = c.scoring === "team";
+    const idOf = (name: string) =>
+      resolve(isTeam ? teamIds : participantIds, name);
+    const names = c.entrants ?? [];
+
+    const existing =
+      (await tx.$count(entrant, eq(entrant.competitionId, competitionId))) +
+      (await tx.$count(
+        leagueMatch,
+        eq(leagueMatch.competitionId, competitionId),
+      ));
+    if (existing === 0 && names.length > 0) {
+      const inserted = await tx
+        .insert(entrant)
+        .values(
+          names.map((name, i) => ({
+            competitionId,
+            teamId: isTeam ? idOf(name) : null,
+            participantId: isTeam ? null : idOf(name),
+            seedPosition: i + 1,
+          })),
+        )
+        .onConflictDoNothing()
+        .returning({ id: entrant.id, seedPosition: entrant.seedPosition });
+      const entrantIds = new Map(
+        inserted.map((row) => [names[row.seedPosition - 1], row.id]),
+      );
+      const matches = seed.leagueMatches.filter(
+        (m) => m.competition === c.name,
+      );
+      if (matches.length > 0) {
+        const loadedAt = c.closedAt ? new Date(c.closedAt) : new Date();
+        await tx
+          .insert(leagueMatch)
+          .values(
+            matches.map((m) => ({
+              competitionId,
+              round: m.round,
+              position: m.position,
+              entrantAId: resolve(entrantIds, m.a),
+              entrantBId: m.b === null ? null : resolve(entrantIds, m.b),
+              result: m.result ?? null,
+              scoreA: m.scoreA ?? null,
+              scoreB: m.scoreB ?? null,
+              recordedAt: m.result
+                ? m.recordedAt
+                  ? new Date(m.recordedAt)
+                  : loadedAt
+                : null,
+              seedKey: m.key,
+            })),
+          )
+          .onConflictDoNothing();
+      }
+    }
+
+    if (!c.closed || !c.closedAt || !c.closedByEmail) continue;
+    const [found] = await tx
+      .select({
+        closedAt: competition.closedAt,
+        placementPoints: competition.placementPoints,
+        leagueConfig: competition.leagueConfig,
+      })
+      .from(competition)
+      .where(eq(competition.id, competitionId));
+    if (!found.closedAt) continue;
+    const generated = await tx.$count(
+      pointsEntry,
+      and(
+        eq(pointsEntry.competitionId, competitionId),
+        eq(pointsEntry.generated, true),
+      ),
     );
+    if (generated > 0) continue;
+    const now = leaguePlacingsNow(
+      {
+        config: leagueConfigOf(found),
+        ...(await getLeagueClose(competitionId, tx)),
+      },
+      found,
+    );
+    // A League an Organizer has since changed may not be complete: no points.
+    if (!now.ok) continue;
+    const seedKeys = new Map(names.map((name) => [idOf(name), name]));
+    await tx
+      .insert(pointsEntry)
+      .values(
+        now.points.map(({ teamId, participantId, points }) => ({
+          warWeekId,
+          competitionId,
+          teamId,
+          participantId,
+          points,
+          note: generatedNote("league"),
+          enteredByEmail: c.closedByEmail!,
+          enteredAt: new Date(c.closedAt!),
+          generated: true,
+          seedKey: `league:${c.name}:${seedKeys.get((teamId ?? participantId)!) ?? ""}`,
+        })),
+      )
+      .onConflictDoNothing({
+        target: [pointsEntry.warWeekId, pointsEntry.seedKey],
+      });
   }
-  return ids;
 }
 
 async function insertAwards(
@@ -608,7 +778,6 @@ async function insertAwards(
   participantIds: Map<string, string>,
 ) {
   if (!seed.awards.length) return;
-  const categoryIds = await resolveAwardCategories(tx, seed);
   // Only the Awards actually inserted get recipients; an Award that already
   // exists keeps whatever recipients organizers have given it.
   const inserted = await tx
@@ -619,7 +788,6 @@ async function insertAwards(
         name: a.name,
         description: a.description ?? null,
         teamId: resolveOptional(teamIds, a.team),
-        categoryId: resolveOptional(categoryIds, a.category),
         seedKey: a.key,
       })),
     )
@@ -627,22 +795,6 @@ async function insertAwards(
     .returning({ id: award.id, seedKey: award.seedKey });
 
   const insertedKeys = new Map(inserted.map((a) => [a.seedKey, a.id]));
-  // Fill if empty: an Award loaded before it had a Category, and never edited
-  // since, gets the seed's. An Organizer's choice, even "None", is kept.
-  for (const a of seed.awards) {
-    if (!a.category || insertedKeys.has(a.key)) continue;
-    await tx
-      .update(award)
-      .set({ categoryId: resolve(categoryIds, a.category) })
-      .where(
-        and(
-          eq(award.warWeekId, warWeekId),
-          eq(award.seedKey, a.key),
-          isNull(award.categoryId),
-          eq(award.updatedAt, award.createdAt),
-        ),
-      );
-  }
   const recipients = seed.awards.flatMap((a) => {
     const awardId = insertedKeys.get(a.key);
     return awardId

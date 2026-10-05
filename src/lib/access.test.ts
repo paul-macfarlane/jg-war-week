@@ -13,21 +13,15 @@ import {
   isPublicPath,
   safeCallbackPath,
 } from "@/lib/access";
+import { type AttemptLogFacet, NOT_YOURS } from "@/lib/best-score/log-rule";
 import {
   ENROLL_CLOSED_BUILT,
   ENROLL_OFF,
   type EnrollFacet,
-} from "@/lib/games/enroll-rule";
-import {
-  COMPETITION_CLOSED,
-  type GameLogFacet,
-  NOT_A_PLAYER,
-  NOT_LINKED,
-  NOT_THE_LOGGER,
-} from "@/lib/games/log-rule";
+} from "@/lib/bracket/enroll-rule";
+import { BYE_NO_RESULT, type LeagueRecordFacet } from "@/lib/league/rules";
 import {
   ALREADY_CHECKED_IN,
-  CHECK_IN_CLOSED,
   CHECK_IN_OFF,
   type CheckInFacet,
   MARKED_BY_HOST,
@@ -36,6 +30,14 @@ import {
   PARTICIPATION_CLOSED,
   notOnATeam,
 } from "@/lib/participation/check-in-rule";
+import {
+  COMPETITION_CLOSED,
+  NOT_AN_ENTRANT,
+  NOT_A_PLAYER,
+  NOT_LINKED,
+  SELF_REPORT_OFF,
+  type SeriesLogFacet,
+} from "@/lib/series/log-rule";
 
 describe("isJahnelGroupEmail", () => {
   it.each([
@@ -163,16 +165,6 @@ describe("can: the Organizer list", () => {
     ["organizers.view", "Only an Organizer can see the Organizer list."],
     ["organizers.add", "Only an Organizer can add an Organizer."],
     ["organizers.remove", "Only an Organizer can remove an Organizer."],
-    ["award-category.create", "Only an Organizer can add Award Categories."],
-    ["award-category.rename", "Only an Organizer can rename Award Categories."],
-    [
-      "award-category.archive",
-      "Only an Organizer can archive Award Categories.",
-    ],
-    [
-      "award-category.restore",
-      "Only an Organizer can restore Award Categories.",
-    ],
   ])("%s is Organizer-only", (action, message) => {
     const expected = organizerOnly(message);
     for (const name of Object.keys(ACTORS) as ActorName[]) {
@@ -247,7 +239,6 @@ describe("can: Organizer-only War Week families", () => {
           ["finale-slide.create", "add Custom Finale slides"],
           ["finale-slide.update", "change Custom Finale slides"],
           ["finale-slide.delete", "delete Custom Finale slides"],
-          ["finale.awards-layout", "change how the Finale shows Awards"],
           ["award.create", "give Awards"],
           ["award.edit", "change Awards"],
           ["award.delete", "delete Awards"],
@@ -276,9 +267,9 @@ describe("can: a Competition's setup and Bracket", () => {
           "competition.edit",
           "bracket.entrants",
           "bracket.generate",
-          "bracket.heat-result",
-          "bracket.finalize",
-          "bracket.unfinalize",
+          "bracket.match-result",
+          "bracket.close",
+          "bracket.reopen",
         ] as WarWeekAction[]
       ).map((action) => [
         action,
@@ -307,7 +298,7 @@ describe("can: Squads and the self-report toggle", () => {
         [
           "bracket.squads",
           "competition.self-report",
-          "bracket.heat-result",
+          "bracket.match-result",
         ] as WarWeekAction[]
       ).map((action) => [
         action,
@@ -320,7 +311,7 @@ describe("can: Squads and the self-report toggle", () => {
   });
 });
 
-describe("can: reporting a Heat's result (self-report)", () => {
+describe("can: reporting a Match's result (self-report)", () => {
   const RED = "team-red";
   const BLUE = "team-blue";
   const RED_ALPHA = "squad-red-alpha";
@@ -329,33 +320,33 @@ describe("can: reporting a Heat's result (self-report)", () => {
   const OFF = "Self-report is off for this Competition.";
   const NOT_LINKED =
     "Your sign-in doesn't match a Participant of this War Week.";
-  const NOT_IN_HEAT = "You're not in this Heat.";
+  const NOT_IN_MATCH = "You're not in this Match.";
   const ADMIN = "Organizers and Hosts only.";
 
   type Facet = NonNullable<
-    NonNullable<Parameters<typeof can>[2]>["heatReport"]
+    NonNullable<Parameters<typeof can>[2]>["matchReport"]
   >;
-  const teamHeat = [
+  const teamMatch = [
     { teamId: RED, participantId: null, squadId: null },
     { teamId: BLUE, participantId: null, squadId: null },
   ];
-  const sameTeamSquadHeat = [
+  const sameTeamSquadMatch = [
     { teamId: null, participantId: null, squadId: RED_ALPHA },
     { teamId: null, participantId: null, squadId: RED_BRAVO },
   ];
   const linkedRed = { participantId: ME, teamId: RED, squadId: null };
-  /** An open Red vs Blue Heat of Catan, self-report on, linked to Red. */
+  /** An open Red vs Blue Match of Catan, self-report on, linked to Red. */
   const facet = (over: Partial<Facet> = {}): Facet => ({
     selfReport: true,
-    heat: "open",
+    match: "open",
     linked: linkedRed,
-    entrants: teamHeat,
+    entrants: teamMatch,
     ...over,
   });
   const target = (over: Partial<Facet> = {}) => ({
     warWeekId: XI,
     competitionId: CATAN,
-    heatReport: facet(over),
+    matchReport: facet(over),
   });
 
   it.each<[string, Partial<Facet>, string | null]>([
@@ -364,7 +355,7 @@ describe("can: reporting a Heat's result (self-report)", () => {
     [
       "linked but on none of the Entrants",
       { linked: { participantId: ME, teamId: "team-gold", squadId: null } },
-      NOT_IN_HEAT,
+      NOT_IN_MATCH,
     ],
     [
       "linked as the Participant Entrant",
@@ -391,37 +382,42 @@ describe("can: reporting a Heat's result (self-report)", () => {
     ],
     [
       "on the Squads' Team but in neither Squad of Red Alpha vs Red Bravo",
-      { linked: linkedRed, entrants: sameTeamSquadHeat },
-      NOT_IN_HEAT,
+      { linked: linkedRed, entrants: sameTeamSquadMatch },
+      NOT_IN_MATCH,
     ],
     [
       "in the opposing same-Team Squad (Red Bravo) of Red Alpha vs Red Bravo",
       {
         linked: { participantId: ME, teamId: RED, squadId: RED_BRAVO },
-        entrants: sameTeamSquadHeat,
+        entrants: sameTeamSquadMatch,
       },
       null,
     ],
-    ["a decided Heat", { heat: "decided" }, "This Heat already has a result."],
+    ["a decided Match, to edit it (D1d)", { match: "decided" }, null],
     [
-      "an unfilled Heat",
-      { heat: "unfilled" },
-      "This Heat is still waiting for its Entrants.",
+      "a Match whose result a later Match used (D1c)",
+      { match: "used-later" },
+      "A later Match already used this result. Change that Match first.",
     ],
-    ["a bye", { heat: "bye" }, "A bye isn't played."],
     [
-      "a missing Heat",
-      { heat: "missing", entrants: [] },
-      "That Heat no longer exists.",
+      "an unfilled Match",
+      { match: "unfilled" },
+      "This Match is still waiting for its Entrants.",
+    ],
+    ["a bye", { match: "bye" }, "A bye isn't played."],
+    [
+      "a missing Match",
+      { match: "missing", entrants: [] },
+      "That Match no longer exists.",
     ],
   ])("a Participant: %s", (_, over, expected) => {
-    expect(can(ACTORS.participant, "bracket.heat-report", target(over))).toBe(
+    expect(can(ACTORS.participant, "bracket.match-report", target(over))).toBe(
       expected,
     );
   });
 
   it("refuses an anonymous visitor", () => {
-    expect(can(null, "bracket.heat-report", target())).toBe(SIGN_IN);
+    expect(can(null, "bracket.match-report", target())).toBe(SIGN_IN);
   });
 
   it("refuses a non-JG email even with a matching linked Participant", () => {
@@ -431,14 +427,16 @@ describe("can: reporting a Heat's result (self-report)", () => {
       hosts: [],
     };
     // The facet alone would allow it: the domain rule refuses, not linkage.
-    expect(can(ACTORS.participant, "bracket.heat-report", target())).toBeNull();
-    expect(can(outsider, "bracket.heat-report", target())).toBe(SIGN_IN);
+    expect(
+      can(ACTORS.participant, "bracket.match-report", target()),
+    ).toBeNull();
+    expect(can(outsider, "bracket.match-report", target())).toBe(SIGN_IN);
   });
 
-  it("refuses when the Heat facts weren't loaded, whoever asks", () => {
+  it("refuses when the Match facts weren't loaded, whoever asks", () => {
     for (const actor of [ACTORS.participant, ACTORS.organizer, ACTORS.host]) {
       expect(
-        can(actor, "bracket.heat-report", {
+        can(actor, "bracket.match-report", {
           warWeekId: XI,
           competitionId: CATAN,
         }),
@@ -446,25 +444,27 @@ describe("can: reporting a Heat's result (self-report)", () => {
     }
   });
 
-  it("binds an Organizer and the Host by the Heat facts too", () => {
+  it("binds an Organizer and the Host by the Match facts too", () => {
     for (const actor of [ACTORS.organizer, ACTORS.host]) {
-      expect(can(actor, "bracket.heat-report", target({ linked: null }))).toBe(
+      expect(can(actor, "bracket.match-report", target({ linked: null }))).toBe(
         NOT_LINKED,
       );
       expect(
-        can(actor, "bracket.heat-report", target({ heat: "decided" })),
-      ).toBe("This Heat already has a result.");
+        can(actor, "bracket.match-report", target({ match: "used-later" })),
+      ).toBe(
+        "A later Match already used this result. Change that Match first.",
+      );
       expect(
-        can(actor, "bracket.heat-report", target({ selfReport: false })),
+        can(actor, "bracket.match-report", target({ selfReport: false })),
       ).toBe(OFF);
-      expect(can(actor, "bracket.heat-report", target())).toBeNull();
+      expect(can(actor, "bracket.match-report", target())).toBeNull();
     }
   });
 
-  it("never lets a Participant in the Heat change a result or the toggle", () => {
-    // The facet says they're in this open Heat; the direct paths ignore it.
+  it("never lets a Participant in the Match change a result or the toggle", () => {
+    // The facet says they're in this open Match; the direct paths ignore it.
     for (const action of [
-      "bracket.heat-result",
+      "bracket.match-result",
       "competition.self-report",
       "bracket.squads",
     ] as WarWeekAction[]) {
@@ -481,10 +481,8 @@ describe("can: running a Head-to-head or Best score Competition and the enroll s
     cases(
       (
         [
-          "games.settings",
-          "games.entrants",
-          "games.close",
-          "games.reopen",
+          "results.close",
+          "results.reopen",
           "competition.self-enroll",
         ] as WarWeekAction[]
       ).map((action) => [
@@ -498,37 +496,38 @@ describe("can: running a Head-to-head or Best score Competition and the enroll s
   });
 });
 
-describe("can: logging, editing and deleting a Game (ADR 0006)", () => {
+describe("can: logging, editing and deleting a Head-to-head Match (ADR 0011)", () => {
   const ME = "participant-me";
   const RIVAL = "participant-rival";
   const THIRD = "participant-third";
   const ADMIN = "Organizers and Hosts only.";
   const player = (participantId: string) => ({ teamId: null, participantId });
 
-  type Facet = GameLogFacet;
-  /** Open, individual scoring; I'm linked, a player, and logged the Game. */
+  type Facet = SeriesLogFacet;
+  /** Open, individual scoring; I'm an Entrant, a player, and logged the Match. */
   const facet = (over: Partial<Facet> = {}): Facet => ({
     runs: false,
     closed: false,
-    loggingOpen: true,
-    bestOfDecided: false,
+    selfReport: true,
+    decided: false,
+    played: 0,
+    bestOf: 3,
     linked: { participantId: ME, teamId: null },
     scoring: "individual",
-    entrantsOpen: true,
-    entrants: [],
+    entrants: [player(ME), player(RIVAL)],
     players: [player(ME), player(RIVAL)],
-    game: { loggedByParticipantId: ME, players: [player(ME), player(RIVAL)] },
+    match: { players: [player(ME), player(RIVAL)] },
     ...over,
   });
   const target = (over: Partial<Facet> = {}) => ({
     warWeekId: XI,
     competitionId: CATAN,
-    gameLog: facet(over),
+    seriesLog: facet(over),
   });
-  const writes = ["games.log", "games.edit", "games.delete"] as const;
+  const writes = ["series.log", "series.edit", "series.delete"] as const;
 
-  it("lets a linked Participant who is a player log the Game", () => {
-    expect(can(ACTORS.participant, "games.log", target())).toBeNull();
+  it("lets a linked Participant who is a player log the Match", () => {
+    expect(can(ACTORS.participant, "series.log", target())).toBeNull();
   });
 
   it("no linked Participant grants nothing", () => {
@@ -540,22 +539,29 @@ describe("can: logging, editing and deleting a Game (ADR 0006)", () => {
     }
   });
 
-  it("refuses a Participant who isn't a player in the Game", () => {
+  it("refuses a Participant who isn't an Entrant, and a non-Entrant posted", () => {
     expect(
       can(
         ACTORS.participant,
-        "games.log",
-        target({ players: [player(RIVAL), player(THIRD)] }),
+        "series.log",
+        target({ linked: { participantId: THIRD, teamId: null } }),
       ),
     ).toBe(NOT_A_PLAYER);
+    expect(
+      can(
+        ACTORS.participant,
+        "series.log",
+        target({ players: [player(ME), player(THIRD)] }),
+      ),
+    ).toBe(NOT_AN_ENTRANT);
   });
 
-  it("lets the logger edit or delete their own Game until close", () => {
-    expect(can(ACTORS.participant, "games.edit", target())).toBeNull();
+  it("lets the logger edit or delete their own Match until close", () => {
+    expect(can(ACTORS.participant, "series.edit", target())).toBeNull();
     expect(
-      can(ACTORS.participant, "games.delete", target({ players: [] })),
+      can(ACTORS.participant, "series.delete", target({ players: [] })),
     ).toBeNull();
-    for (const action of ["games.edit", "games.delete"] as const) {
+    for (const action of ["series.edit", "series.delete"] as const) {
       expect(
         can(ACTORS.participant, action, target({ closed: true })),
         action,
@@ -563,40 +569,24 @@ describe("can: logging, editing and deleting a Game (ADR 0006)", () => {
     }
   });
 
-  it("refuses another player in the Game an edit or delete", () => {
-    const game = {
-      loggedByParticipantId: RIVAL,
-      players: [player(ME), player(RIVAL)],
-    };
-    for (const action of ["games.edit", "games.delete"] as const) {
-      expect(can(ACTORS.participant, action, target({ game })), action).toBe(
-        NOT_THE_LOGGER,
-      );
+  it("with self-report off, refuses a player every write", () => {
+    for (const action of writes) {
+      expect(
+        can(ACTORS.participant, action, target({ selfReport: false })),
+        action,
+      ).toBe(SELF_REPORT_OFF);
     }
   });
 
-  it("refuses an edit that moves the Game off its logger", () => {
-    expect(
-      can(
-        ACTORS.participant,
-        "games.edit",
-        target({ players: [player(RIVAL), player(THIRD)] }),
-      ),
-    ).toBe(NOT_A_PLAYER);
-  });
-
-  it("lets a Host or Organizer who runs it log, edit or delete any Game", () => {
-    const game = {
-      loggedByParticipantId: RIVAL,
-      players: [player(RIVAL), player(THIRD)],
-    };
+  it("lets a Host or Organizer who runs it log, edit or delete any Match, with self-report off", () => {
+    const match = { players: [player(RIVAL), player(THIRD)] };
     for (const actor of [ACTORS.organizer, ACTORS.host]) {
       for (const action of writes) {
         expect(
           can(
             actor,
             action,
-            target({ runs: true, linked: null, game, loggingOpen: false }),
+            target({ runs: true, linked: null, match, selfReport: false }),
           ),
           action,
         ).toBeNull();
@@ -617,11 +607,15 @@ describe("can: logging, editing and deleting a Game (ADR 0006)", () => {
 
   it("binds an Organizer by the facet: `runs` is the caller's to load", () => {
     expect(
-      can(ACTORS.organizer, "games.log", target({ linked: null, runs: false })),
+      can(
+        ACTORS.organizer,
+        "series.log",
+        target({ linked: null, runs: false }),
+      ),
     ).toBe(NOT_LINKED);
   });
 
-  it("refuses when the Game facts weren't loaded, whoever asks", () => {
+  it("refuses when the Match facts weren't loaded, whoever asks", () => {
     for (const actor of [ACTORS.participant, ACTORS.organizer, ACTORS.host]) {
       for (const action of writes) {
         expect(
@@ -644,14 +638,238 @@ describe("can: logging, editing and deleting a Game (ADR 0006)", () => {
     }
   });
 
-  it("never lets a player change the settings, the list or close it", () => {
+  it("never lets a player close or reopen it", () => {
     for (const action of [
-      "games.settings",
-      "games.entrants",
-      "games.close",
-      "games.reopen",
+      "results.close",
+      "results.reopen",
     ] as WarWeekAction[]) {
       expect(can(ACTORS.participant, action, target()), action).toBe(NOT_HOST);
+    }
+  });
+});
+
+describe("can: a League's pairings (spec R23)", () => {
+  it.each(
+    cases([
+      ["league.pair", { warWeekId: XI, competitionId: CATAN }, catanHostOr()],
+    ]),
+  )("%s", (_, action, target, actor, expected) => {
+    expect(can(ACTORS[actor], action, target)).toBe(expected);
+  });
+});
+
+describe("can: recording and clearing a League Match's result (spec R23, decision 8)", () => {
+  const ME = "participant-me";
+  const RIVAL = "participant-rival";
+  const THIRD = "participant-third";
+  const ADMIN = "Organizers and Hosts only.";
+  const player = (participantId: string) => ({ teamId: null, participantId });
+  const writes = ["league.record", "league.clear"] as const;
+
+  /** Open, individual, self-report on; I play Rival in this Match. */
+  const facet = (over: Partial<LeagueRecordFacet> = {}): LeagueRecordFacet => ({
+    runs: false,
+    closed: false,
+    selfReport: true,
+    linked: { participantId: ME, teamId: null },
+    scoring: "individual",
+    match: { a: player(ME), b: player(RIVAL) },
+    ...over,
+  });
+  const target = (over: Partial<LeagueRecordFacet> = {}) => ({
+    warWeekId: XI,
+    competitionId: CATAN,
+    leagueRecord: facet(over),
+  });
+
+  it("with self-report on, lets a player in the Match record and clear it", () => {
+    for (const action of writes) {
+      expect(can(ACTORS.participant, action, target()), action).toBeNull();
+    }
+  });
+
+  it("refuses a Participant who isn't in the Match, and an unlinked one", () => {
+    const others = { a: player(RIVAL), b: player(THIRD) };
+    for (const action of writes) {
+      expect(
+        can(ACTORS.participant, action, target({ match: others })),
+        action,
+      ).toBe(NOT_A_PLAYER);
+      expect(
+        can(ACTORS.participant, action, target({ linked: null })),
+        action,
+      ).toBe(NOT_LINKED);
+    }
+  });
+
+  it("in team scoring, lets anyone on a player Team record", () => {
+    const red = { teamId: "red", participantId: null };
+    const blue = { teamId: "blue", participantId: null };
+    const teamFacet = {
+      scoring: "team" as const,
+      match: { a: red, b: blue },
+    };
+    expect(
+      can(
+        ACTORS.participant,
+        "league.record",
+        target({ ...teamFacet, linked: { participantId: ME, teamId: "red" } }),
+      ),
+    ).toBeNull();
+    expect(
+      can(
+        ACTORS.participant,
+        "league.record",
+        target({ ...teamFacet, linked: { participantId: ME, teamId: "gold" } }),
+      ),
+    ).toBe(NOT_A_PLAYER);
+  });
+
+  it("with self-report off, refuses a player", () => {
+    for (const action of writes) {
+      expect(
+        can(ACTORS.participant, action, target({ selfReport: false })),
+        action,
+      ).toBe(SELF_REPORT_OFF);
+    }
+  });
+
+  it("lets a Host or Organizer who runs it record any Match, with self-report off", () => {
+    for (const actor of [ACTORS.organizer, ACTORS.host]) {
+      for (const action of writes) {
+        expect(
+          can(
+            actor,
+            action,
+            target({
+              runs: true,
+              linked: null,
+              selfReport: false,
+              match: { a: player(RIVAL), b: player(THIRD) },
+            }),
+          ),
+          action,
+        ).toBeNull();
+      }
+    }
+  });
+
+  it("binds everyone while Closed, for a Match that isn't there, and on a bye", () => {
+    for (const actor of [ACTORS.organizer, ACTORS.host, ACTORS.participant]) {
+      for (const action of writes) {
+        expect(can(actor, action, target({ runs: true, closed: true }))).toBe(
+          COMPETITION_CLOSED,
+        );
+        expect(can(actor, action, target({ runs: true, match: null }))).toBe(
+          "That Match no longer exists.",
+        );
+        expect(
+          can(
+            actor,
+            action,
+            target({ runs: true, match: { a: player(ME), b: null } }),
+          ),
+        ).toBe(BYE_NO_RESULT);
+      }
+    }
+  });
+
+  it("binds an Organizer by the facet: `runs` is the caller's to load", () => {
+    expect(
+      can(ACTORS.organizer, "league.record", target({ linked: null })),
+    ).toBe(NOT_LINKED);
+  });
+
+  it("refuses when the facts weren't loaded, and an anonymous visitor", () => {
+    for (const action of writes) {
+      expect(
+        can(ACTORS.organizer, action, { warWeekId: XI, competitionId: CATAN }),
+      ).toBe(ADMIN);
+      expect(can(null, action, target())).toBe(SIGN_IN);
+    }
+  });
+
+  it("never lets a player pair, close or reopen it", () => {
+    for (const action of [
+      "league.pair",
+      "results.close",
+      "results.reopen",
+    ] as WarWeekAction[]) {
+      expect(can(ACTORS.participant, action, target()), action).toBe(NOT_HOST);
+    }
+  });
+});
+
+describe("can: logging, editing and deleting a Best score Attempt (ADR 0011)", () => {
+  const ME = "participant-me";
+  const RIVAL = "participant-rival";
+  const ADMIN = "Organizers and Hosts only.";
+
+  /** Open, individual scoring; I'm linked, posting and owning my Attempt. */
+  const facet = (over: Partial<AttemptLogFacet> = {}): AttemptLogFacet => ({
+    runs: false,
+    closed: false,
+    selfReport: true,
+    linked: { participantId: ME, teamId: null },
+    scoring: "individual",
+    participantId: ME,
+    attempt: { participantId: ME },
+    maxAttempts: null,
+    attemptsSoFar: 0,
+    ...over,
+  });
+  const target = (over: Partial<AttemptLogFacet> = {}) => ({
+    warWeekId: XI,
+    competitionId: CATAN,
+    attemptLog: facet(over),
+  });
+  const writes = ["attempts.log", "attempts.edit", "attempts.delete"] as const;
+
+  it("lets a linked Participant log, edit and delete their own Attempt", () => {
+    for (const action of writes) {
+      expect(can(ACTORS.participant, action, target()), action).toBeNull();
+    }
+  });
+
+  it("refuses an Attempt for someone else, and someone else's Attempt", () => {
+    expect(
+      can(ACTORS.participant, "attempts.log", target({ participantId: RIVAL })),
+    ).toBe(NOT_YOURS);
+    expect(
+      can(
+        ACTORS.participant,
+        "attempts.edit",
+        target({ attempt: { participantId: RIVAL } }),
+      ),
+    ).toBe(NOT_YOURS);
+  });
+
+  it("lets a Host or Organizer who runs it log for anyone, until Closed", () => {
+    for (const actor of [ACTORS.organizer, ACTORS.host]) {
+      for (const action of writes) {
+        expect(
+          can(
+            actor,
+            action,
+            target({ runs: true, linked: null, participantId: RIVAL }),
+          ),
+          action,
+        ).toBeNull();
+        expect(
+          can(actor, action, target({ runs: true, closed: true })),
+          action,
+        ).toBe(COMPETITION_CLOSED);
+      }
+    }
+  });
+
+  it("refuses when the Attempt facts weren't loaded, and an anonymous visitor", () => {
+    for (const action of writes) {
+      expect(
+        can(ACTORS.organizer, action, { warWeekId: XI, competitionId: CATAN }),
+        action,
+      ).toBe(ADMIN);
+      expect(can(null, action, target()), action).toBe(SIGN_IN);
     }
   });
 });
@@ -660,19 +878,16 @@ describe("can: enrolling and withdrawing (ADR 0006)", () => {
   const ME = "participant-me";
   const RED = "team-red";
   const ADMIN = "Organizers and Hosts only.";
-  const NOW = new Date("2027-02-22T15:00:00Z");
 
   type Facet = EnrollFacet;
-  /** Individual scoring, switch on, open; I'm linked and not entered. */
+  /** An individual Bracket, switch on, open; I'm linked and not entered. */
   const facet = (over: Partial<Facet> = {}): Facet => ({
+    format: "bracket",
     selfEnroll: true,
     closed: false,
     built: false,
-    hasGames: false,
     entrantLimit: null,
     entrantCount: 0,
-    enrollClosesAt: null,
-    now: NOW,
     scoring: "individual",
     linked: { participantId: ME, teamId: RED, squadId: null },
     entrants: [],
@@ -779,7 +994,7 @@ describe("can: recording a Placement Competition's placements", () => {
       (
         [
           "placement.edit",
-          "placement.finalize",
+          "placement.close",
           "placement.reopen",
         ] as WarWeekAction[]
       ).map((action) => [
@@ -797,15 +1012,12 @@ describe("can: checking in and out (ADR 0009)", () => {
   const ME = "participant-me";
   const RED = "team-red";
   const ADMIN = "Organizers and Hosts only.";
-  const NOW = new Date("2027-02-22T15:00:00Z");
 
   /** Individual scoring, check-in on and open; I'm linked and not in. */
   const facet = (over: Partial<CheckInFacet> = {}): CheckInFacet => ({
     isParticipation: true,
     closed: false,
     selfCheckIn: true,
-    checkInClosesAt: null,
-    now: NOW,
     scoring: "individual",
     teamLabel: "House",
     linked: { participantId: ME, teamId: RED },
@@ -847,7 +1059,7 @@ describe("can: checking in and out (ADR 0009)", () => {
     ).toBe(MARKED_BY_HOST);
   });
 
-  it("refuses with check-in off, after the close time, and once closed", () => {
+  it("refuses with check-in off and once closed: nothing closes it by time", () => {
     for (const action of [
       "participation.check-in",
       "participation.check-out",
@@ -862,28 +1074,10 @@ describe("can: checking in and out (ADR 0009)", () => {
         action,
       ).toBe(CHECK_IN_OFF);
       expect(
-        can(
-          ACTORS.participant,
-          action,
-          target({ ...over, checkInClosesAt: NOW }),
-        ),
-        action,
-      ).toBe(CHECK_IN_CLOSED);
-      expect(
         can(ACTORS.participant, action, target({ ...over, closed: true })),
         action,
       ).toBe(PARTICIPATION_CLOSED);
     }
-  });
-
-  it("allows check-in before the close time", () => {
-    expect(
-      can(
-        ACTORS.participant,
-        "participation.check-in",
-        target({ checkInClosesAt: new Date(NOW.getTime() + 60_000) }),
-      ),
-    ).toBeNull();
   });
 
   it("refuses a Competition that isn't run as Participation", () => {
@@ -998,7 +1192,6 @@ describe("can: Discretionary points", () => {
         can(ACTORS.host, action, {
           warWeekId: XI,
           competitionId: CATAN,
-          postedCompetitionId: CATAN,
         }),
         action,
       ).toMatch(/^Only an Organizer can /);
@@ -1006,120 +1199,34 @@ describe("can: Discretionary points", () => {
   });
 });
 
-describe("can: Schedule Items", () => {
-  const LINK = "Link the Schedule Item to a Competition you host.";
-  const UNLINK =
-    "Only an Organizer can unlink a Schedule Item from its Competition.";
+describe("can: Schedule Items and Announcements are Organizer-only (ADR 0012)", () => {
+  const only = (what: string): Expected => {
+    const refusal = `Only an Organizer can ${what}.`;
+    return {
+      organizer: null,
+      host: refusal,
+      otherHost: refusal,
+      namesakeHost: refusal,
+      participant: refusal,
+      anonymous: SIGN_IN,
+    };
+  };
   it.each(
     cases([
-      [
-        "schedule-item.create",
-        { warWeekId: XI, postedCompetitionId: CATAN },
-        catanHostOr(),
-      ],
-      [
-        "schedule-item.create",
-        { warWeekId: XI, postedCompetitionId: null },
-        {
-          organizer: null,
-          host: LINK,
-          otherHost: LINK,
-          namesakeHost: LINK,
-          participant: LINK,
-          anonymous: SIGN_IN,
-        },
-      ],
+      ["schedule-item.create", { warWeekId: XI }, only("add Schedule Items")],
       [
         "schedule-item.edit",
-        { warWeekId: XI, competitionId: CATAN, postedCompetitionId: CATAN },
-        catanHostOr(),
-      ],
-      [
-        "schedule-item.edit",
-        { warWeekId: XI, competitionId: CATAN, postedCompetitionId: MTG },
-        { ...catanHostOr(), host: NOT_HOST },
-      ],
-      [
-        "schedule-item.edit",
-        { warWeekId: XI, competitionId: MTG, postedCompetitionId: CATAN },
-        { ...catanHostOr(), host: NOT_HOST },
-      ],
-      [
-        "schedule-item.edit",
-        { warWeekId: XI, competitionId: CATAN, postedCompetitionId: null },
-        { ...catanHostOr(), host: UNLINK },
-      ],
-      [
-        "schedule-item.edit",
-        { warWeekId: XI, competitionId: null, postedCompetitionId: CATAN },
-        { ...catanHostOr(), host: NOT_HOST },
+        { warWeekId: XI, competitionId: CATAN },
+        only("change Schedule Items"),
       ],
       [
         "schedule-item.delete",
         { warWeekId: XI, competitionId: CATAN },
-        catanHostOr(),
+        only("delete Schedule Items"),
       ],
-      [
-        "schedule-item.delete",
-        { warWeekId: XI, competitionId: null },
-        { ...catanHostOr(), host: NOT_HOST },
-      ],
-    ]),
-  )("%s", (_, action, target, actor, expected) => {
-    expect(can(ACTORS[actor], action, target)).toBe(expected);
-  });
-});
-
-describe("can: Announcements", () => {
-  const POST =
-    "Only an Organizer or a Host of this War Week can post Announcements.";
-  const OTHERS = "Only an Organizer can change someone else's Announcement.";
-  const NO_LONGER =
-    "Only an Organizer or a Host of this War Week can change Announcements.";
-  it.each(
-    cases([
-      [
-        "announcement.create",
-        { warWeekId: XI },
-        {
-          organizer: null,
-          host: null,
-          otherHost: null,
-          namesakeHost: POST,
-          participant: POST,
-          anonymous: SIGN_IN,
-        },
-      ],
-      ...(["announcement.edit", "announcement.delete"] as const).flatMap(
-        (action): [WarWeekAction, Parameters<typeof can>[2], Expected][] => [
-          // Written by the Host of Catan.
-          [
-            action,
-            { warWeekId: XI, authorEmail: "Tony@JahnelGroup.com" },
-            {
-              organizer: null,
-              host: null,
-              otherHost: OTHERS,
-              namesakeHost: OTHERS,
-              participant: OTHERS,
-              anonymous: SIGN_IN,
-            },
-          ],
-          // Written by the namesake Host, who hosts nothing in XI.
-          [
-            action,
-            { warWeekId: XI, authorEmail: "casey@jahnelgroup.com" },
-            {
-              organizer: null,
-              host: OTHERS,
-              otherHost: OTHERS,
-              namesakeHost: NO_LONGER,
-              participant: OTHERS,
-              anonymous: SIGN_IN,
-            },
-          ],
-        ],
-      ),
+      ["announcement.create", { warWeekId: XI }, only("post Announcements")],
+      ["announcement.edit", { warWeekId: XI }, only("change Announcements")],
+      ["announcement.delete", { warWeekId: XI }, only("delete Announcements")],
     ]),
   )("%s", (_, action, target, actor, expected) => {
     expect(can(ACTORS[actor], action, target)).toBe(expected);

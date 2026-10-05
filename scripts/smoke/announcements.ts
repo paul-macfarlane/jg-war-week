@@ -190,8 +190,7 @@ export async function assertAnnouncementActions(sessions: {
         );
         const rows = await smokeAnnouncements();
         return !result.ok &&
-          result.error ===
-            "Only an Organizer or a Host of this War Week can post Announcements." &&
+          result.error === "Only an Organizer can post Announcements." &&
           rows.length === 0
           ? null
           : `result=${JSON.stringify(result)} rows=${rows.length}`;
@@ -305,7 +304,7 @@ export async function assertAnnouncementActions(sessions: {
           const refused = [update, pin, unpin, remove].every(
             (result) =>
               !result.ok &&
-              /^Only an Organizer can (change someone else's Announcement|pin Announcements|unpin Announcements)\.$/.test(
+              /^Only an Organizer can (change Announcements|delete Announcements|pin Announcements|unpin Announcements)\.$/.test(
                 result.error,
               ),
           );

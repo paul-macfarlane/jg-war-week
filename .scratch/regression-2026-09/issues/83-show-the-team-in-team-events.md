@@ -4,7 +4,7 @@
 
 **Blocked by:** none
 
-**Status:** needs-triage
+**Status:** done
 
 **Source:** Paul, 2026-10-02 (during R10): "in a team event, in competition and scoring context, we show a person's team or indicate it somehow."
 
@@ -34,3 +34,8 @@
 - [ ] Every surface above shows the Participant's Team in a teams War Week, per the `CONTEXT.md` rule.
 - [ ] The regression checklist line "Teams show in team events" passes at both viewports.
 - [ ] `pnpm gate` passes.
+
+## Comments
+
+- 2026-10-04: absorbed into Epic R22 (`../../people-and-admin/spec.md`, Decision 4), with the Team name-or-color rule and a fixed surface list; closes when it ships.
+- 2026-10-04: Absorbed by Epic R22 (Decision 4).

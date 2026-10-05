@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 import { toPlacementsResult } from "@/mcp/placements";
 import type { PlacementsView } from "@/queries/placements";
 
-const FINALIZED = new Date("2027-02-24T21:30:00.000Z");
+const CLOSED = new Date("2027-02-24T21:30:00.000Z");
 
 function view(
   overrides: Partial<PlacementsView["competition"]> = {},
@@ -15,6 +15,7 @@ function view(
     seedKey: null,
   };
   return {
+    entryPoints: [],
     competition: {
       id: "c1",
       warWeekId: "w1",
@@ -23,7 +24,8 @@ function view(
       countsTowardTeam: true,
       placementPoints: [10, 6, 3],
       scoreDirection: "higher",
-      finalizedAt: FINALIZED,
+      scoreUnit: null,
+      closedAt: CLOSED,
       ...overrides,
     },
     rows: [
@@ -90,7 +92,7 @@ describe("toPlacementsResult", () => {
     });
   });
 
-  it("serializes each row's place, name, Team, Score and points, and whether it's Finalized", () => {
+  it("serializes each row's place, name, Team, Score and points, and whether it's Closed", () => {
     expect(
       toPlacementsResult(
         { name: "Darts", scoring: "individual", format: "placement" },
@@ -103,9 +105,10 @@ describe("toPlacementsResult", () => {
         name: "Darts",
         scoring: "individual",
         scoreDirection: "higher wins",
+        scoreUnit: null,
         placementPoints: [10, 6, 3],
-        finalized: true,
-        finalizedAt: "2027-02-24T21:30:00.000Z",
+        closed: true,
+        closedAt: "2027-02-24T21:30:00.000Z",
       },
       placements: [
         { place: 1, name: "Neo", team: "Red", score: 30, points: 10 },
@@ -115,18 +118,30 @@ describe("toPlacementsResult", () => {
     });
   });
 
+  it("names the Score unit", () => {
+    expect(
+      toPlacementsResult(
+        { name: "Darts", scoring: "individual", format: "placement" },
+        view({ scoreUnit: "sec", scoreDirection: "lower" }),
+        "Darts",
+      ),
+    ).toMatchObject({
+      competition: { scoreDirection: "lower wins", scoreUnit: "sec" },
+    });
+  });
+
   it("an open sheet without a Score direction reads as such", () => {
     expect(
       toPlacementsResult(
         { name: "Darts", scoring: "individual", format: "placement" },
-        view({ finalizedAt: null, scoreDirection: "none" }),
+        view({ closedAt: null, scoreDirection: "none" }),
         "Darts",
       ),
     ).toMatchObject({
       competition: {
         scoreDirection: "none",
-        finalized: false,
-        finalizedAt: null,
+        closed: false,
+        closedAt: null,
       },
     });
   });

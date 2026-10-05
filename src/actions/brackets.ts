@@ -4,9 +4,17 @@ import { guarded } from "@/actions/result";
 import { revalidateWarWeek } from "@/actions/revalidate";
 import { authorize } from "@/auth/authorize";
 import type { WarWeekAction } from "@/lib/access";
-import { parseHeatResultInput, parseSquadInput } from "@/lib/bracket/input";
+import {
+  parseMatchAdvanceInput,
+  parseMatchResultInput,
+  parseMoveEntrantInput,
+  parseRoundDefaultsInput,
+  parseSquadInput,
+} from "@/lib/bracket/input";
 import { isUuid } from "@/lib/uuid";
+import * as edits from "@/mutations/bracket-edits";
 import * as mutations from "@/mutations/brackets";
+import { closeCompetition, reopenCompetition } from "@/mutations/close";
 import type { MutationContext, MutationResult } from "@/mutations/types";
 
 export type BracketActionResult = MutationResult;
@@ -14,8 +22,7 @@ export type BracketActionResult = MutationResult;
 // Not imported from the mutations: a "use server" module's tests mock them.
 const SQUAD_NOT_FOUND = "That Squad no longer exists.";
 
-export type HeatResultActionResult =
-  { ok: true; resetHeatIds: string[] } | { ok: false; error: string };
+export type MatchResultActionResult = MutationResult;
 
 /**
  * Runs a Bracket write as an Organizer or a Host of the Competition, in the
@@ -37,39 +44,52 @@ async function bracketWrite<R extends { ok: boolean }>(
   });
 }
 
-export async function recordHeatResult(
+export async function recordMatchResult(
   competitionId: string,
-  heatId: string,
+  matchId: string,
   input: unknown,
-): Promise<HeatResultActionResult> {
-  return bracketWrite("bracket.heat-result", competitionId, async (id, ctx) => {
-    if (!isUuid(heatId)) {
-      return { ok: false, error: "That Heat no longer exists." };
-    }
-    const parsed = parseHeatResultInput(input);
-    if (!parsed.ok) return parsed;
-    return mutations.recordHeatResult(id, heatId, parsed.value, ctx);
-  });
-}
-
-export async function finalizeBracket(
-  competitionId: string,
-): Promise<BracketActionResult> {
+): Promise<MatchResultActionResult> {
   return bracketWrite(
-    "bracket.finalize",
+    "bracket.match-result",
     competitionId,
-    mutations.finalizeBracket,
+    async (id, ctx) => {
+      if (!isUuid(matchId)) {
+        return { ok: false, error: "That Match no longer exists." };
+      }
+      const parsed = parseMatchResultInput(input);
+      if (!parsed.ok) return parsed;
+      return mutations.recordMatchResult(id, matchId, parsed.value, ctx);
+    },
   );
 }
 
-export async function unfinalizeBracket(
+/** Clears a Match's result, as an Organizer or a Host of the Competition. */
+export async function clearMatchResult(
+  competitionId: string,
+  matchId: string,
+): Promise<MatchResultActionResult> {
+  return bracketWrite(
+    "bracket.match-result",
+    competitionId,
+    async (id, ctx) => {
+      if (!isUuid(matchId)) {
+        return { ok: false, error: "That Match no longer exists." };
+      }
+      return mutations.clearMatchResult(id, matchId, ctx);
+    },
+  );
+}
+
+export async function closeBracket(
   competitionId: string,
 ): Promise<BracketActionResult> {
-  return bracketWrite(
-    "bracket.unfinalize",
-    competitionId,
-    mutations.unfinalizeBracket,
-  );
+  return bracketWrite("bracket.close", competitionId, closeCompetition);
+}
+
+export async function reopenBracket(
+  competitionId: string,
+): Promise<BracketActionResult> {
+  return bracketWrite("bracket.reopen", competitionId, reopenCompetition);
 }
 
 /**
@@ -110,5 +130,49 @@ export async function deleteSquad(
   return bracketWrite("bracket.squads", competitionId, async (id, ctx) => {
     if (!isUuid(squadId)) return { ok: false, error: SQUAD_NOT_FOUND };
     return mutations.deleteSquad(id, squadId, ctx);
+  });
+}
+
+/**
+ * Group Bracket tree edits (spec R21, decision 11), by an Organizer or a Host
+ * of the Competition, as Generate is: how many of a Match advance, moving an
+ * Entrant within its Round, and a Round's defaults. The server refuses an
+ * edit to a Round with a result, with its reason.
+ */
+export async function setMatchAdvance(
+  competitionId: string,
+  matchId: string,
+  input: unknown,
+): Promise<BracketActionResult> {
+  return bracketWrite("bracket.generate", competitionId, async (id, ctx) => {
+    if (!isUuid(matchId)) {
+      return { ok: false, error: "That Match no longer exists." };
+    }
+    const parsed = parseMatchAdvanceInput(input);
+    if (!parsed.ok) return parsed;
+    return edits.setMatchAdvance(id, matchId, parsed.value, ctx);
+  });
+}
+
+export async function moveMatchEntrant(
+  competitionId: string,
+  input: unknown,
+): Promise<BracketActionResult> {
+  return bracketWrite("bracket.generate", competitionId, async (id, ctx) => {
+    const parsed = parseMoveEntrantInput(input);
+    if (!parsed.ok) return parsed;
+    return edits.moveMatchEntrant(id, parsed.value, ctx);
+  });
+}
+
+export async function setRoundDefaults(
+  competitionId: string,
+  input: unknown,
+): Promise<BracketActionResult> {
+  return bracketWrite("bracket.generate", competitionId, async (id, ctx) => {
+    const parsed = parseRoundDefaultsInput(input);
+    if (!parsed.ok) return parsed;
+    const { round, ...defaults } = parsed.value;
+    return edits.setRoundDefaults(id, round, defaults, ctx);
   });
 }

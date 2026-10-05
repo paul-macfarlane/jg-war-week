@@ -111,18 +111,18 @@ describe("the built-in Finale slides", () => {
     expect(all.text).toContain("Red");
   });
 
-  it("Champions: each Competition's champion or winners, a tie together", () => {
+  it("Winners: each Competition's Winner or winners, a tie together", () => {
     const { text } = render({
-      key: "champions",
-      kind: "champions",
-      name: "Champions",
+      key: "winners",
+      kind: "winners",
+      name: "Winners",
       primaryColor: "#123456",
-      champions: [
+      winners: [
         {
           competitionId: "c1",
-          competition: "Chess Heats",
+          competition: "Chess Matches",
           format: "bracket",
-          label: "Champion",
+          label: "Winner",
           title: "Ada Anvil",
           winners: [
             { id: "p1", name: "Ada Anvil", color: null, kind: "participant" },
@@ -141,7 +141,7 @@ describe("the built-in Finale slides", () => {
         },
       ],
     });
-    expect(text).toContain("Chess Heats");
+    expect(text).toContain("Chess Matches");
     expect(text).toContain("Ada Anvil");
     expect(text).toContain("Ping Pong");
     expect(text).toContain("Tie: Fay Falcon & Jax Jetpack");

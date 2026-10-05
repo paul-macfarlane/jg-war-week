@@ -6,28 +6,18 @@ import {
   competition,
   participant,
   placement,
-  pointsEntry,
   team,
 } from "@/db/schema";
 import {
   type PlacementTarget,
   type SavePlacementsValues,
 } from "@/lib/placement/input";
-import {
-  finalizePlacementError,
-  placementEntryValues,
-} from "@/lib/placement/score";
-import {
-  COMPETITION_NOT_FOUND,
-  deleteGenerated,
-  refuse,
-} from "@/mutations/brackets";
+import { COMPETITION_NOT_FOUND, refuse } from "@/mutations/brackets";
 import type { MutationContext, MutationResult } from "@/mutations/types";
-import { getPlacementRows } from "@/queries/placements";
 
 export const NOT_PLACEMENT = "This Competition isn't run as Placement.";
-/** Any row change (add, Add everyone, remove, save) while the sheet is Finalized. */
-export const PLACEMENT_FINALIZED = "Reopen the Competition first.";
+/** Any row change (add, remove, save) while the sheet is Closed. */
+export const PLACEMENT_CLOSED = "Reopen the Competition first.";
 export const PLACEMENT_MISSING = "That Placement no longer exists.";
 const PARTICIPANT_MISSING = "That Participant no longer exists.";
 const TEAM_MISSING = "That Team no longer exists.";
@@ -37,12 +27,12 @@ const INDIVIDUAL_TAKES_PARTICIPANTS =
 
 type LockedPlacement = Pick<
   Competition,
-  "id" | "warWeekId" | "scoring" | "placementPoints" | "finalizedAt"
+  "id" | "warWeekId" | "scoring" | "placementPoints" | "closedAt"
 >;
 
 /**
  * Locks a Placement Competition of this War Week (ADR 0003), so sheet
- * writes, Finalize and Reopen run one after the other. A string when
+ * writes, Close and Reopen run one after the other. A string when
  * there's no such Competition or it isn't run as Placement.
  */
 async function lockedPlacement(
@@ -57,7 +47,7 @@ async function lockedPlacement(
       format: competition.format,
       scoring: competition.scoring,
       placementPoints: competition.placementPoints,
-      finalizedAt: competition.finalizedAt,
+      closedAt: competition.closedAt,
     })
     .from(competition)
     .where(
@@ -74,7 +64,7 @@ async function lockedPlacement(
 
 /**
  * Runs a row change: the Competition locked, a Placement one, and not
- * Finalized (Reopen first).
+ * Closed (Reopen first).
  */
 function rowWrite(
   competitionId: string,
@@ -85,7 +75,7 @@ function rowWrite(
   return dbOrTx.transaction(async (tx): Promise<MutationResult> => {
     const found = await lockedPlacement(tx, competitionId, ctx);
     if (typeof found === "string") return refuse(found);
-    if (found.finalizedAt) return refuse(PLACEMENT_FINALIZED);
+    if (found.closedAt) return refuse(PLACEMENT_CLOSED);
     return write(tx, found);
   });
 }
@@ -134,37 +124,6 @@ export async function addPlacement(
   });
 }
 
-/**
- * Add everyone: every Team of the War Week (team scoring) or its whole
- * roster (individual) not on the sheet yet, unplaced.
- */
-export async function addEveryone(
-  competitionId: string,
-  ctx: MutationContext,
-  dbOrTx: DBOrTx = db,
-): Promise<MutationResult> {
-  return rowWrite(competitionId, ctx, dbOrTx, async (tx, found) => {
-    const values =
-      found.scoring === "team"
-        ? (
-            await tx
-              .select({ id: team.id })
-              .from(team)
-              .where(eq(team.warWeekId, ctx.warWeekId))
-          ).map(({ id }) => ({ competitionId, teamId: id }))
-        : (
-            await tx
-              .select({ id: participant.id })
-              .from(participant)
-              .where(eq(participant.warWeekId, ctx.warWeekId))
-          ).map(({ id }) => ({ competitionId, participantId: id }));
-    if (values.length) {
-      await tx.insert(placement).values(values).onConflictDoNothing();
-    }
-    return { ok: true };
-  });
-}
-
 /** Removes a row from the sheet. */
 export async function removePlacement(
   competitionId: string,
@@ -191,7 +150,7 @@ export async function removePlacement(
  * theirs). Never the Score direction: it saves as its own setting, locked
  * once the Competition has a result. A row of another Competition
  * refuses the whole save. A Score without a Place is allowed until
- * Finalize.
+ * Close.
  */
 export async function savePlacements(
   competitionId: string,
@@ -219,63 +178,6 @@ export async function savePlacements(
         .set({ place: row.place, score: row.score, updatedAt: sql`now()` })
         .where(eq(placement.id, row.id));
     }
-    return { ok: true };
-  });
-}
-
-/**
- * Finalizes the sheet: replaces its generated Points Entries with each
- * Place's Placement Points and marks it Finalized. Finalizing again
- * rewrites the generated Points Entries from the current rows and keeps
- * the first Finalize's `finalized_at`. Refused while a row has a Score and
- * no Place, or nobody is placed.
- */
-export async function finalizePlacements(
-  competitionId: string,
-  ctx: MutationContext,
-  dbOrTx: DBOrTx = db,
-): Promise<MutationResult> {
-  return dbOrTx.transaction(async (tx): Promise<MutationResult> => {
-    const found = await lockedPlacement(tx, competitionId, ctx);
-    if (typeof found === "string") return refuse(found);
-    const rows = await getPlacementRows(found, tx);
-    const refusal = finalizePlacementError(rows);
-    if (refusal) return refuse(refusal);
-
-    await deleteGenerated(tx, competitionId);
-    const values = placementEntryValues(rows, found, {
-      actorEmail: ctx.actorEmail,
-    });
-    if (values.length) await tx.insert(pointsEntry).values(values);
-    await tx
-      .update(competition)
-      .set({
-        finalizedAt: sql`coalesce(${competition.finalizedAt}, now())`,
-        updatedAt: sql`now()`,
-      })
-      .where(eq(competition.id, competitionId));
-    return { ok: true };
-  });
-}
-
-/**
- * Reopens the sheet: deletes its generated Points Entries and clears
- * `finalized_at`. Reopening an open sheet changes
- * nothing.
- */
-export async function reopenPlacements(
-  competitionId: string,
-  ctx: MutationContext,
-  dbOrTx: DBOrTx = db,
-): Promise<MutationResult> {
-  return dbOrTx.transaction(async (tx): Promise<MutationResult> => {
-    const found = await lockedPlacement(tx, competitionId, ctx);
-    if (typeof found === "string") return refuse(found);
-    await deleteGenerated(tx, competitionId);
-    await tx
-      .update(competition)
-      .set({ finalizedAt: null, updatedAt: sql`now()` })
-      .where(eq(competition.id, competitionId));
     return { ok: true };
   });
 }

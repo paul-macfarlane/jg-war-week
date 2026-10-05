@@ -8,15 +8,21 @@ import { type Page, expect } from "@playwright/test";
 
 /** The Format names the page's Format select offers. */
 export type FormatName =
-  "Placement" | "Bracket" | "Head-to-head" | "Best score" | "Participation";
+  | "Placement"
+  | "Bracket"
+  | "Head-to-head"
+  | "Best score"
+  | "Participation"
+  | "League";
 
 /** The run area's heading for each Format (`runAreaTitle`). */
 export const RUN_AREA_TITLE: Record<FormatName, string> = {
   Placement: "Record placements",
   Bracket: "Entrants and Bracket",
-  "Head-to-head": "Entrants and Games",
-  "Best score": "Entrants and Games",
+  "Head-to-head": "Entrants and Matches",
+  "Best score": "Attempts",
   Participation: "Who took part",
+  League: "Entrants and rounds",
 };
 
 /** Opens the Competition's page and waits for its Settings. */

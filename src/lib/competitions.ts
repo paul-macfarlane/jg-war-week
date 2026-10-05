@@ -1,6 +1,5 @@
-import type { Competition, PointsEntry, Team } from "@/db/schema";
+import type { Competition } from "@/db/schema";
 import type { Format } from "@/lib/bracket/view";
-import type { ProfilesByEmail } from "@/lib/profile";
 
 export type CompetitionListItem = Pick<
   Competition,
@@ -15,7 +14,7 @@ export type CompetitionListItem = Pick<
 
 /**
  * The most places a Bracket can preset Placement Points for: its places
- * come only from the final (and the 3rd place game), up to 4th.
+ * come only from the final (and the 3rd place Match), up to 4th.
  */
 export const BRACKET_PLACEMENTS = 4;
 
@@ -56,8 +55,8 @@ export function pointsForPlacement(
 }
 
 /**
- * Whether a Competition has Placement Points, so finalizing its Bracket or
- * closing its Games creates Points Entries.
+ * Whether a Competition has Placement Points, so closing its Bracket or
+ * closing its Matches or Attempts creates Points Entries.
  */
 export function hasPlacementPoints(placementPoints: number[] | null): boolean {
   return placementPoints !== null && placementPoints.length > 0;
@@ -114,66 +113,6 @@ export function describeScoring(
   return competition.countsTowardTeam
     ? `Individual · counts toward ${teamLabel}`
     : "Individual";
-}
-
-type LedgerTeam = Pick<Team, "name" | "color">;
-
-export type LedgerRow = Pick<
-  PointsEntry,
-  "id" | "points" | "note" | "enteredAt"
-> & {
-  team: LedgerTeam | null;
-  participant: { displayName: string; team: LedgerTeam | null } | null;
-};
-
-export type LedgerEntry = {
-  id: string;
-  /** `team` is the Participant's Team name; null for a Team target. */
-  target: { name: string; color: string | null; team: string | null };
-  points: number;
-  note: string | null;
-};
-
-export type CompetitionLedger = { entries: LedgerEntry[] };
-
-/** The Points Entries behind one Competition, oldest first. */
-export function buildCompetitionLedger({
-  rows,
-}: {
-  rows: LedgerRow[];
-}): CompetitionLedger {
-  const entries = [...rows]
-    .sort(
-      (a, b) =>
-        a.enteredAt.getTime() - b.enteredAt.getTime() ||
-        a.id.localeCompare(b.id),
-    )
-    .map(({ id, points, note, team, participant }) => ({
-      id,
-      target: participant
-        ? {
-            name: participant.displayName,
-            color: participant.team?.color ?? null,
-            team: participant.team?.name ?? null,
-          }
-        : {
-            name: team?.name ?? "Unknown",
-            color: team?.color ?? null,
-            team: null,
-          },
-      points,
-      note,
-    }));
-
-  return { entries };
-}
-
-/**
- * A Host as the admin Competitions row shows them: their Profile name, else
- * their email (Hosts are email-keyed and need not be Participants).
- */
-export function hostName(email: string, profiles: ProfilesByEmail): string {
-  return profiles.get(email.trim().toLowerCase())?.profileName || email;
 }
 
 /**

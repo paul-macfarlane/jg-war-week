@@ -2,14 +2,14 @@ import { describe, expect, it } from "vitest";
 
 import {
   applyResult,
-  champion,
+  bracketWinner,
   finalPlacings,
   generate,
   hasResults,
   isComplete,
-  resetByResult,
 } from "@/lib/bracket/engine";
-import type { Bracket, Entrant, Heat } from "@/lib/bracket/types";
+import { LATER_MATCH_USED } from "@/lib/bracket/match-report-rule";
+import type { Bracket, Entrant, Match } from "@/lib/bracket/types";
 
 /** Entrants s1…sN at Seed Positions 1…N. */
 function entrants(count: number): Entrant[] {
@@ -20,14 +20,14 @@ function entrants(count: number): Entrant[] {
   }));
 }
 
-function heat(bracket: Bracket, id: string): Heat {
-  const found = bracket.heats.find((h) => h.id === id);
-  if (!found) throw new Error(`no Heat ${id}`);
+function match(bracket: Bracket, id: string): Match {
+  const found = bracket.matches.find((h) => h.id === id);
+  if (!found) throw new Error(`no Match ${id}`);
   return found;
 }
 
-/** A Heat's slots as entrant ids ("-" for an empty slot). */
-function pairing(h: Heat): string {
+/** A Match's slots as entrant ids ("-" for an empty slot). */
+function pairing(h: Match): string {
   return h.slots.map((s) => s.entrantId ?? "-").join(" v ");
 }
 
@@ -35,25 +35,25 @@ describe("generate", () => {
   it("pairs 4 Entrants 1 v 4 and 2 v 3, with the final waiting", () => {
     const bracket = generate(entrants(4));
 
-    expect(bracket.heats.map((h) => [h.id, pairing(h), h.status])).toEqual([
+    expect(bracket.matches.map((h) => [h.id, pairing(h), h.status])).toEqual([
       ["r1h1", "s1 v s4", "ready"],
       ["r1h2", "s2 v s3", "ready"],
       ["r2h1", "- v -", "pending"],
     ]);
-    expect(heat(bracket, "r1h1").winnerTo).toEqual({
-      heatId: "r2h1",
+    expect(match(bracket, "r1h1").winnerTo).toEqual({
+      matchId: "r2h1",
       slot: 0,
     });
-    expect(heat(bracket, "r1h2").winnerTo).toEqual({
-      heatId: "r2h1",
+    expect(match(bracket, "r1h2").winnerTo).toEqual({
+      matchId: "r2h1",
       slot: 1,
     });
-    expect(heat(bracket, "r2h1").winnerTo).toBeNull();
+    expect(match(bracket, "r2h1").winnerTo).toBeNull();
   });
 
   it("uses standard seeding for 16 Entrants", () => {
     const firstRound = generate(entrants(16))
-      .heats.filter((h) => h.round === 1)
+      .matches.filter((h) => h.round === 1)
       .map(pairing);
 
     expect(firstRound).toEqual([
@@ -71,7 +71,7 @@ describe("generate", () => {
   it("gives byes to the top Seed Positions and advances them", () => {
     const bracket = generate(entrants(5));
 
-    expect(bracket.heats.map((h) => [h.id, pairing(h), h.status])).toEqual([
+    expect(bracket.matches.map((h) => [h.id, pairing(h), h.status])).toEqual([
       ["r1h1", "s1 v -", "played"],
       ["r1h2", "s4 v s5", "ready"],
       ["r1h3", "s2 v -", "played"],
@@ -80,19 +80,19 @@ describe("generate", () => {
       ["r2h2", "s2 v s3", "ready"],
       ["r3h1", "- v -", "pending"],
     ]);
-    expect(heat(bracket, "r1h1").slots[0].place).toBe(1);
+    expect(match(bracket, "r1h1").slots[0].place).toBe(1);
   });
 
-  it("puts the only first-Round game of 17 Entrants between 16 and 17", () => {
+  it("puts the only first-Round Match of 17 Entrants between 16 and 17", () => {
     const bracket = generate(entrants(17));
-    const ready = bracket.heats.filter(
+    const ready = bracket.matches.filter(
       (h) => h.round === 1 && h.status === "ready",
     );
 
     expect(ready.map(pairing)).toEqual(["s16 v s17"]);
     // Seed Positions 8 and 9 got byes, so they meet straight away in Round 2.
-    expect(pairing(heat(bracket, "r2h2"))).toBe("s8 v s9");
-    expect(heat(bracket, "r2h2").status).toBe("ready");
+    expect(pairing(match(bracket, "r2h2"))).toBe("s8 v s9");
+    expect(match(bracket, "r2h2").status).toBe("ready");
   });
 
   // Bracket size is the next power of two; byes fill the rest.
@@ -117,21 +117,21 @@ describe("generate", () => {
     "builds %i Entrants into a %i bracket with %i byes",
     (count, size, byes) => {
       const bracket = generate(entrants(count));
-      const firstRound = bracket.heats.filter((h) => h.round === 1);
-      const byeHeats = firstRound.filter((h) =>
+      const firstRound = bracket.matches.filter((h) => h.round === 1);
+      const byeMatches = firstRound.filter((h) =>
         h.slots.some((s) => s.entrantId === null),
       );
       const entered = firstRound.flatMap((h) =>
         h.slots.flatMap((s) => (s.entrantId ? [s.entrantId] : [])),
       );
 
-      expect(bracket.heats).toHaveLength(size - 1);
+      expect(bracket.matches).toHaveLength(size - 1);
       expect(firstRound).toHaveLength(size / 2);
-      expect(byeHeats).toHaveLength(byes);
+      expect(byeMatches).toHaveLength(byes);
       expect(new Set(entered).size).toBe(count);
       // Each bye goes to one of the top `byes` Seed Positions.
       expect(
-        byeHeats.map((h) => Number(h.slots[0].entrantId!.slice(1))).sort(),
+        byeMatches.map((h) => Number(h.slots[0].entrantId!.slice(1))).sort(),
       ).toEqual(Array.from({ length: byes }, (_, i) => i + 1).sort());
     },
   );
@@ -140,7 +140,7 @@ describe("generate", () => {
     const [a, b, c, d] = entrants(4);
     const bracket = generate([c, a, d, b]);
 
-    expect(bracket.heats.filter((h) => h.round === 1).map(pairing)).toEqual([
+    expect(bracket.matches.filter((h) => h.round === 1).map(pairing)).toEqual([
       "s1 v s4",
       "s2 v s3",
     ]);
@@ -152,21 +152,21 @@ describe("generate", () => {
     );
   });
 
-  it("takes heat ids from the given function", () => {
+  it("takes match ids from the given function", () => {
     const bracket = generate(
       entrants(2),
       (round, position) => `x${round}${position}`,
     );
-    expect(bracket.heats.map((h) => h.id)).toEqual(["x11"]);
+    expect(bracket.matches.map((h) => h.id)).toEqual(["x11"]);
   });
 });
 
-/** Plays `heatId` with `winner` first. */
-function win(bracket: Bracket, heatId: string, winner: string): Bracket {
-  const others = heat(bracket, heatId)
+/** Plays `matchId` with `winner` first. */
+function win(bracket: Bracket, matchId: string, winner: string): Bracket {
+  const others = match(bracket, matchId)
     .slots.map((s) => s.entrantId!)
     .filter((id) => id !== winner);
-  return applyResult(bracket, heatId, { order: [winner, ...others] });
+  return applyResult(bracket, matchId, { order: [winner, ...others] });
 }
 
 describe("applyResult", () => {
@@ -177,21 +177,21 @@ describe("applyResult", () => {
       scores: { s4: "21", s1: "17" },
     });
 
-    expect(heat(bracket, "r1h1")).toMatchObject({
+    expect(match(bracket, "r1h1")).toMatchObject({
       status: "played",
       slots: [
         { entrantId: "s1", place: 2, score: "17" },
         { entrantId: "s4", place: 1, score: "21" },
       ],
     });
-    expect(pairing(heat(bracket, "r2h1"))).toBe("s4 v -");
-    expect(heat(bracket, "r2h1").status).toBe("pending");
+    expect(pairing(match(bracket, "r2h1"))).toBe("s4 v -");
+    expect(match(bracket, "r2h1").status).toBe("pending");
     // The input Bracket is untouched.
-    expect(heat(start, "r1h1").status).toBe("ready");
+    expect(match(start, "r1h1").status).toBe("ready");
 
     const both = win(bracket, "r1h2", "s2");
-    expect(pairing(heat(both, "r2h1"))).toBe("s4 v s2");
-    expect(heat(both, "r2h1").status).toBe("ready");
+    expect(pairing(match(both, "r2h1"))).toBe("s4 v s2");
+    expect(match(both, "r2h1").status).toBe("ready");
   });
 
   it("makes the Entrant listed last lose: a no-show just loses", () => {
@@ -199,14 +199,14 @@ describe("applyResult", () => {
       order: ["s2", "s1"],
     });
 
-    expect(heat(bracket, "r1h1")).toMatchObject({
+    expect(match(bracket, "r1h1")).toMatchObject({
       status: "played",
       slots: [
         { entrantId: "s1", place: 2 },
         { entrantId: "s2", place: 1 },
       ],
     });
-    expect(champion(bracket)).toBe("s2");
+    expect(bracketWinner(bracket)).toBe("s2");
   });
 
   it.each([
@@ -218,44 +218,43 @@ describe("applyResult", () => {
       { order: ["s1", "s4"], scores: { s2: "3" } },
       "Scores can only be given",
     ],
-  ])("refuses a Heat Result with %s", (_, result, message) => {
+  ])("refuses a Match Result with %s", (_, result, message) => {
     expect(() => applyResult(generate(entrants(4)), "r1h1", result)).toThrow(
       message,
     );
   });
 
-  it("refuses a Heat still waiting for its Entrants", () => {
+  it("refuses a Match still waiting for its Entrants", () => {
     expect(() =>
       applyResult(generate(entrants(4)), "r2h1", { order: [] }),
-    ).toThrow("This Heat is still waiting for its Entrants.");
+    ).toThrow("This Match is still waiting for its Entrants.");
   });
 
   it("refuses a bye", () => {
     expect(() =>
       applyResult(generate(entrants(3)), "r1h1", { order: ["s1"] }),
-    ).toThrow("A bye has no Heat Result.");
+    ).toThrow("A bye has no Match Result.");
   });
 
-  it("refuses an unknown Heat", () => {
+  it("refuses an unknown Match", () => {
     expect(() =>
       applyResult(generate(entrants(2)), "nope", { order: [] }),
-    ).toThrow("That Heat isn't in this Bracket.");
+    ).toThrow("That Match isn't in this Bracket.");
   });
 
-  it("re-recording a played Heat replaces the advanced Entrant downstream", () => {
+  it("re-recording a played Match replaces the advanced Entrant in the unplayed Match it went to", () => {
     let bracket = generate(entrants(4));
     bracket = win(bracket, "r1h1", "s1");
     bracket = win(bracket, "r1h2", "s2");
-    bracket = win(bracket, "r2h1", "s1");
 
     bracket = win(bracket, "r1h1", "s4");
 
-    expect(pairing(heat(bracket, "r2h1"))).toBe("s4 v s2");
-    expect(heat(bracket, "r2h1")).toMatchObject({
+    expect(pairing(match(bracket, "r2h1"))).toBe("s4 v s2");
+    expect(match(bracket, "r2h1")).toMatchObject({
       status: "ready",
       slots: [{ place: null }, { place: null }],
     });
-    expect(champion(bracket)).toBeNull();
+    expect(bracketWinner(bracket)).toBeNull();
   });
 });
 
@@ -276,85 +275,55 @@ function played8(): Bracket {
   return bracket;
 }
 
-describe("a score-only edit of a decided Heat", () => {
-  it("updates the Heat's scores and keeps every later Heat", () => {
+describe("a score-only edit of a decided Match", () => {
+  it("updates the Match's scores and keeps every later Match", () => {
     const bracket = played8();
 
-    expect(resetByResult(bracket, "r1h2", "s4")).toEqual([]);
     const edited = applyResult(bracket, "r1h2", {
       order: ["s4", "s5"],
       scores: { s4: "30", s5: "12" },
     });
 
-    expect(heat(edited, "r1h2")).toMatchObject({
+    expect(match(edited, "r1h2")).toMatchObject({
       status: "played",
       slots: [
         { entrantId: "s4", place: 1, score: "30" },
         { entrantId: "s5", place: 2, score: "12" },
       ],
     });
-    expect(heat(edited, "r2h1")).toEqual(heat(bracket, "r2h1"));
-    expect(heat(edited, "r3h1")).toEqual(heat(bracket, "r3h1"));
-    expect(champion(edited)).toBe("s1");
+    expect(match(edited, "r2h1")).toEqual(match(bracket, "r2h1"));
+    expect(match(edited, "r3h1")).toEqual(match(bracket, "r3h1"));
+    expect(bracketWinner(edited)).toBe("s1");
   });
 });
 
-describe("resetByResult", () => {
-  it("names every decided later Heat that followed from it when the winner changes", () => {
+describe("a changed winner once a later Match used the result (D1c)", () => {
+  it("is refused: the later Match keeps its result and nothing resets", () => {
     const bracket = played8();
 
-    expect(resetByResult(bracket, "r1h2", "s5")).toEqual(["r2h1", "r3h1"]);
-    const edited = win(bracket, "r1h2", "s5");
-    expect(heat(edited, "r2h1")).toMatchObject({
-      status: "ready",
-      slots: [
-        { entrantId: "s1", place: null, score: null },
-        { entrantId: "s5", place: null },
-      ],
-    });
-    expect(heat(edited, "r3h1")).toMatchObject({
-      status: "pending",
-      slots: [{ entrantId: null }, { entrantId: "s2", place: null }],
-    });
-    // The other side stays as it was.
-    expect(heat(edited, "r2h2").status).toBe("played");
-    expect(isComplete(edited)).toBe(false);
+    expect(() => win(bracket, "r1h2", "s5")).toThrow(LATER_MATCH_USED);
+    expect(() => win(bracket, "r2h1", "s4")).toThrow(LATER_MATCH_USED);
+    // The latest result along the path, the final, still changes.
+    expect(bracketWinner(win(bracket, "r3h1", "s2"))).toBe("s2");
   });
 
-  it("counts only later Heats that had a Heat Result", () => {
+  it("takes the old winner out of an unplayed later Match, and refuses once that Match is played", () => {
     let bracket = generate(entrants(8));
-    for (const [id, winner] of [
-      ["r1h1", "s1"],
-      ["r1h2", "s4"],
-      ["r2h1", "s1"],
-    ]) {
-      bracket = win(bracket, id, winner);
-    }
-    // s1 sits in the still-pending final, which has no Heat Result.
-    expect(pairing(heat(bracket, "r3h1"))).toBe("s1 v -");
+    bracket = win(bracket, "r1h1", "s1");
+    expect(pairing(match(bracket, "r2h1"))).toBe("s1 v -");
 
-    expect(resetByResult(bracket, "r1h1", "s8")).toEqual(["r2h1"]);
     const edited = win(bracket, "r1h1", "s8");
-    expect(pairing(heat(edited, "r2h1"))).toBe("s8 v s4");
-    // Cleared of the old winner, but not counted as reset.
-    expect(pairing(heat(edited, "r3h1"))).toBe("- v -");
-  });
+    expect(pairing(match(edited, "r2h1"))).toBe("s8 v -");
+    expect(match(edited, "r2h1").status).toBe("pending");
 
-  it("names nothing when the winner has reached no decided Heat", () => {
-    const bracket = win(generate(entrants(4)), "r1h1", "s1");
-    expect(resetByResult(bracket, "r1h1", "s4")).toEqual([]);
-  });
-
-  it("names nothing for an undecided Heat, a bye or no winner", () => {
-    const bracket = win(generate(entrants(3)), "r1h2", "s2");
-    expect(resetByResult(bracket, "r2h1", "s1")).toEqual([]);
-    expect(resetByResult(bracket, "r1h1", "s1")).toEqual([]);
-    expect(resetByResult(bracket, "r1h2", null)).toEqual([]);
+    bracket = win(bracket, "r1h2", "s4");
+    bracket = win(bracket, "r2h1", "s1");
+    expect(() => win(bracket, "r1h1", "s8")).toThrow(LATER_MATCH_USED);
   });
 });
 
 describe("finalPlacings", () => {
-  it("places 8 Entrants 1st, 2nd and tied 3rd, nobody else", () => {
+  it("places 8 Entrants 1st and 2nd only: semifinal losers aren't placed", () => {
     const list = entrants(8);
     let bracket = generate(list);
     for (const [id, winner] of [
@@ -370,16 +339,14 @@ describe("finalPlacings", () => {
     }
 
     expect(isComplete(bracket)).toBe(true);
-    expect(champion(bracket)).toBe("s2");
+    expect(bracketWinner(bracket)).toBe("s2");
     expect(finalPlacings(bracket, list)).toEqual([
       { entrantId: "s2", place: 1 },
       { entrantId: "s5", place: 2 },
-      { entrantId: "s1", place: 3 },
-      { entrantId: "s3", place: 3 },
     ]);
   });
 
-  it("doesn't count a bye as a played Heat", () => {
+  it("places 3 Entrants 1st and 2nd: the semifinal loser isn't placed", () => {
     // 3 Entrants: 1 has a bye, then loses the final.
     const list = entrants(3);
     let bracket = generate(list);
@@ -389,11 +356,10 @@ describe("finalPlacings", () => {
     expect(finalPlacings(bracket, list)).toEqual([
       { entrantId: "s3", place: 1 },
       { entrantId: "s1", place: 2 },
-      { entrantId: "s2", place: 3 },
     ]);
   });
 
-  it("places 5 Entrants 1st, 2nd, 3rd, 3rd: the first-Round loser isn't placed", () => {
+  it("places 5 Entrants 1st and 2nd: no semifinal or first-Round loser is placed", () => {
     const list = entrants(5);
     let bracket = generate(list);
     bracket = win(bracket, "r1h2", "s4");
@@ -404,8 +370,6 @@ describe("finalPlacings", () => {
     expect(finalPlacings(bracket, list)).toEqual([
       { entrantId: "s1", place: 1 },
       { entrantId: "s3", place: 2 },
-      { entrantId: "s2", place: 3 },
-      { entrantId: "s4", place: 3 },
     ]);
   });
 
@@ -417,7 +381,7 @@ describe("finalPlacings", () => {
 });
 
 describe("hasResults", () => {
-  it("ignores byes and counts recorded Heat Results", () => {
+  it("ignores byes and counts recorded Match Results", () => {
     const bracket = generate(entrants(3));
     expect(hasResults(bracket)).toBe(false);
     expect(hasResults(win(bracket, "r1h2", "s2"))).toBe(true);

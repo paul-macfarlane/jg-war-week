@@ -11,7 +11,7 @@ export const metadata: Metadata = { title: "New Announcement · JG War Week" };
 
 export default async function NewAnnouncementPage() {
   const { warWeek, email, allowed, isOrganizer, editions } =
-    await loadAdminPage("/admin/announcements/new");
+    await loadAdminPage("/admin/announcements/new", "organizers");
   if (!allowed) return <AdminRefused warWeek={warWeek} email={email} />;
 
   return (

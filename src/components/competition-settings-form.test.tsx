@@ -2,12 +2,12 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it, vi } from "vitest";
 
 import {
-  APPLIES_AT_NEXT_FINALIZE,
+  APPLIES_AT_NEXT_CLOSE,
   type CompetitionLockFacts,
-  LOCKED_BY_GAME,
-  LOCKED_BY_HEAT_RESULT,
+  LOCKED_BY_MATCH,
+  LOCKED_BY_MATCH_RESULT,
   LOCKED_BY_RESULT,
-  LOCKED_WHILE_FINALIZED,
+  LOCKED_WHILE_CLOSED,
 } from "@/lib/competition-locks";
 import {
   type CompetitionSettingsSource,
@@ -25,31 +25,31 @@ const SOURCE: CompetitionSettingsSource = {
   name: "Darts",
   description: null,
   competitionGroup: null,
-  hosts: ["ana@jahnelgroup.com"],
+  hosts: ["11111111-1111-4111-8111-111111111111"],
   placementPoints: [10, 7, 5],
   participationPoints: null,
   format: "placement",
   scoring: "individual",
   countsTowardTeam: false,
   scoreDirection: "none",
-  gameConfig: null,
-  entrantsOpen: false,
+  scoreUnit: null,
+  seriesConfig: null,
+  bestScoreConfig: null,
   bracketConfig: null,
   selfEnroll: false,
   entrantLimit: null,
-  enrollClosesAt: null,
-  loggingClosesAt: null,
   selfReport: false,
   selfCheckIn: false,
-  checkInClosesAt: null,
+  maxAttempts: null,
 };
 
 const OPEN: CompetitionLockFacts = {
   format: "placement",
   hasResult: false,
-  hasGame: false,
-  hasHeatResult: false,
-  finalized: false,
+  hasPlay: false,
+  hasLogged: false,
+  hasMatchResult: false,
+  closed: false,
 };
 
 function render(
@@ -93,51 +93,57 @@ describe("CompetitionSettingsForm", () => {
     expect(html).not.toContain(LOCKED_BY_RESULT);
   });
 
-  it("locks the Format, scoring and Score direction with the reason once a result exists, but never the name", () => {
-    const html = render({}, { facts: { ...OPEN, hasResult: true } });
+  it("locks the Format and scoring once a result exists, and the Score direction once play has started, with the reason as visible text, but never the name or the unit", () => {
+    const html = render(
+      {},
+      { facts: { ...OPEN, hasResult: true, hasPlay: true } },
+    );
     expect(control(html, "competition-format")).toMatch(DISABLED);
     expect(control(html, "competition-scoring")).toMatch(DISABLED);
     expect(control(html, "competition-scoreDirection")).toMatch(DISABLED);
+    expect(control(html, "competition-scoreUnit")).not.toMatch(DISABLED);
+    expect(html).toContain('data-slot="lock-reason"');
     expect(html).toContain(LOCKED_BY_RESULT);
     expect(control(html, "competition-name")).not.toMatch(DISABLED);
   });
 
-  it("says a Placement Points change while Finalized applies at the next Finalize, and locks the rest", () => {
+  it("says a Placement Points change while Closed applies at the next Close, and locks the rest", () => {
     const html = render(
       {},
-      { facts: { ...OPEN, hasResult: true, finalized: true } },
+      { facts: { ...OPEN, hasResult: true, closed: true } },
     );
-    expect(html).toContain(APPLIES_AT_NEXT_FINALIZE);
+    expect(html).toContain(APPLIES_AT_NEXT_CLOSE);
     expect(html).toContain(LOCKED_BY_RESULT);
   });
 
-  it("locks an enrollment setting only while Finalized, with the Reopen reason", () => {
+  it("locks an enrollment setting only while Closed, with the Reopen reason", () => {
     const bracket = { format: "bracket" as const, selfEnroll: true };
     const open = render(bracket, { facts: { ...OPEN, hasResult: true } });
     expect(control(open, "competition-selfEnroll")).not.toMatch(DISABLED);
-    const finalized = render(bracket, {
-      facts: { ...OPEN, hasResult: true, hasHeatResult: true, finalized: true },
+    const closed = render(bracket, {
+      facts: { ...OPEN, hasResult: true, hasMatchResult: true, closed: true },
     });
-    expect(control(finalized, "competition-selfEnroll")).toMatch(DISABLED);
-    expect(finalized).toContain(LOCKED_WHILE_FINALIZED);
+    expect(control(closed, "competition-selfEnroll")).toMatch(DISABLED);
+    expect(closed).toContain(LOCKED_WHILE_CLOSED);
   });
 
-  it("leaves a Head-to-head Competition's Best of open with Entrants, and locks it with the Game reason once it has a Game", () => {
+  it("leaves a Head-to-head's Best of open with Entrants, and locks it with the Match reason once it has a Match", () => {
     const headToHead = {
       format: "head-to-head" as const,
-      gameConfig: { drawsAllowed: false, bestOf: null },
-      entrantsOpen: false,
+      seriesConfig: { drawsAllowed: false, bestOf: 3 },
     };
     const facts = { ...OPEN, format: "head-to-head" as const, hasResult: true };
     const withEntrants = render(headToHead, { facts });
     expect(control(withEntrants, "competition-best-of")).not.toMatch(DISABLED);
     expect(control(withEntrants, "competition-format")).toMatch(DISABLED);
-    expect(withEntrants).not.toContain(LOCKED_BY_GAME);
+    expect(withEntrants).not.toContain(LOCKED_BY_MATCH);
 
-    const played = render(headToHead, { facts: { ...facts, hasGame: true } });
+    const played = render(headToHead, { facts: { ...facts, hasLogged: true } });
     expect(control(played, "competition-best-of")).toMatch(DISABLED);
     expect(control(played, "competition-draws-allowed")).toMatch(DISABLED);
-    expect(played).toContain("Locked once the Competition has a Game.");
+    expect(played).toContain(
+      "Locked once the Competition has a Match or Attempt.",
+    );
   });
 
   it("shows a Host the Hosts as names only, never an email", () => {
@@ -150,53 +156,75 @@ describe("CompetitionSettingsForm", () => {
     expect(html).not.toMatch(/[\w.+-]+@[\w-]+\.[a-z]+/i);
   });
 
-  it("lets an Organizer pick Hosts, a current Host off the roster shown warned", () => {
-    const html = render();
-    expect(html).toContain("ana@jahnelgroup.com (not on the roster)");
-    expect(html).not.toContain("Only an Organizer assigns Hosts.");
-  });
-
-  it("shows an Organizer a current Host by their roster name", () => {
+  it("lets an Organizer pick Hosts by name, with a Participant who has no email and one who can't sign in, and no email in the markup", () => {
     const html = render(
-      {},
+      { hosts: ["p2"] },
       {
         hostCandidates: [
-          { id: "p1", name: "Ana P", email: "ana@jahnelgroup.com" },
+          { id: "p1", name: "Ana P", cantSignIn: false },
+          { id: "p2", name: "Bo K", cantSignIn: false },
+          { id: "p3", name: "Cy Q", cantSignIn: true },
         ],
       },
     );
-    expect(html).toContain("Ana P");
-    expect(html).not.toContain("not on the roster");
+    expect(html).toContain("Bo K");
+    expect(html).not.toContain("Only an Organizer assigns Hosts.");
+    expect(html).not.toContain("Add an email in Roster");
+    expect(html).not.toMatch(/[\w.+-]+@[\w-]+\.[a-z]+/i);
   });
 
-  describe("a Bracket's heat settings", () => {
+  describe("a Bracket's match settings", () => {
     const bracket = { format: "bracket" as const };
 
-    it("offers the head-to-head preset, Heat size and how many advance", () => {
+    it("toggles Head-to-head / Group: Head-to-head shows the 3rd place Match and no sizes", () => {
       const html = render(bracket);
-      expect(html).toContain("Head-to-head (single elimination)");
-      expect(html).toContain("Entrants per Heat");
-      expect(html).toContain("How many advance");
-      expect(html).toContain("Self-report");
-      expect(html).not.toContain("Score direction");
+      const kind =
+        html.match(
+          /<div[^>]*aria-label="Bracket kind"[^>]*>[\s\S]*?<\/div>/,
+        )?.[0] ?? "";
+      expect(kind).toMatch(/aria-pressed="true"[^>]*>Head-to-head</);
+      expect(kind).toMatch(/aria-pressed="false"[^>]*>Group</);
+      expect(html).not.toContain("Entrants per Match");
+      expect(html).not.toContain("How many advance");
+      expect(html).toContain("3rd place Match");
+      expect(html).toContain("Participants can log their own results");
+      expect(html).toContain("Score direction");
     });
 
-    it("shows the 3rd place game off and disabled with its reason under 4 Entrants", () => {
+    it("shows a Group's entrants per Match (3 to 8) and how many advance", () => {
+      const html = render({
+        ...bracket,
+        bracketConfig: {
+          kind: "group" as const,
+          entrantsPerMatch: 4,
+          advancePerMatch: 2,
+          thirdPlaceMatch: false,
+          rounds: {},
+        },
+      });
+      expect(html).toMatch(/aria-pressed="true"[^>]*>Group</);
+      expect(html).toContain("Entrants per Match");
+      expect(html).toContain("How many advance");
+    });
+
+    it("shows the 3rd place Match off and disabled with its reason under 4 Entrants", () => {
       const html = render(bracket);
-      expect(html).toContain("A 3rd place game needs at least 4 Entrants.");
+      expect(html).toContain("A 3rd place Match needs at least 4 Entrants.");
       const third = control(html, "bracket-third-place");
       expect(third).toMatch(DISABLED);
       expect(third).not.toMatch(CHECKED);
     });
 
-    it("shows a saved 3rd place game as on under 4 Entrants, and lets it be turned off", () => {
+    it("shows a saved 3rd place Match as on under 4 Entrants, and lets it be turned off", () => {
       const html = render(
         {
           ...bracket,
           bracketConfig: {
-            entrantsPerHeat: 2,
-            advancePerHeat: 1,
-            thirdPlaceGame: true,
+            kind: "head-to-head" as const,
+            entrantsPerMatch: 2,
+            advancePerMatch: 1,
+            thirdPlaceMatch: true,
+            rounds: {},
           },
         },
         { entrantCount: 3 },
@@ -205,18 +233,20 @@ describe("CompetitionSettingsForm", () => {
       expect(third).toMatch(CHECKED);
       expect(third).not.toMatch(DISABLED);
       expect(html).toContain(
-        "A 3rd place game needs at least 4 Entrants. Turn it off, or enter 4, to generate.",
+        "A 3rd place Match needs at least 4 Entrants. Turn it off, or enter 4, to generate.",
       );
     });
 
-    it("locks the heat settings once a Heat has a result", () => {
+    it("locks the match settings once a Match has a result", () => {
       const html = render(
         {
           ...bracket,
           bracketConfig: {
-            entrantsPerHeat: 2,
-            advancePerHeat: 1,
-            thirdPlaceGame: true,
+            kind: "head-to-head" as const,
+            entrantsPerMatch: 2,
+            advancePerMatch: 1,
+            thirdPlaceMatch: true,
+            rounds: {},
           },
         },
         {
@@ -225,58 +255,73 @@ describe("CompetitionSettingsForm", () => {
             ...OPEN,
             format: "bracket",
             hasResult: true,
-            hasHeatResult: true,
+            hasMatchResult: true,
           },
         },
       );
       expect(control(html, "bracket-third-place")).toMatch(DISABLED);
-      expect(html).toContain(LOCKED_BY_HEAT_RESULT);
+      expect(html).toContain(LOCKED_BY_MATCH_RESULT);
     });
 
-    it("offers no 3rd place game at another Heat size", () => {
+    it("offers no 3rd place Match at another Match size", () => {
       const html = render({
         ...bracket,
         bracketConfig: {
-          entrantsPerHeat: 4,
-          advancePerHeat: 2,
-          thirdPlaceGame: false,
+          kind: "group" as const,
+          entrantsPerMatch: 4,
+          advancePerMatch: 2,
+          thirdPlaceMatch: false,
+          rounds: {},
         },
       });
-      expect(html).not.toContain("3rd place game");
+      expect(html).not.toContain("3rd place Match");
     });
   });
 
-  describe("a Games Format's settings", () => {
-    it("shows Draws allowed and Best of for Head-to-head, not Best score's", () => {
+  describe("a Head-to-head or Best score Competition's settings", () => {
+    it("shows Draws allowed and a required Best of for Head-to-head, not Best score's", () => {
       const html = render({ format: "head-to-head" });
       expect(html).toContain("Draws allowed");
       expect(html).toContain("Best of");
-      expect(html).not.toContain("Better is");
-      expect(html).toContain("Logging closes");
+      expect(html).not.toContain("Team score");
+      expect(html).not.toContain(">Off<");
+      expect(html).not.toContain("Participants can enroll");
     });
 
-    it("shows count, direction and unit for Best score, not Best of", () => {
-      const html = render({ format: "best-score" });
-      expect(html).toContain("Better is");
+    it("shows direction and unit for Best score, Team score only in team scoring, and no Best / Total", () => {
+      const html = render({ format: "best-score", scoreDirection: "higher" });
+      expect(html).toContain("Score direction");
       expect(html).toContain("Unit");
       expect(html).not.toContain("Best of");
-    });
-
-    it("hides the enroll switch once a fixed list has a Best of set", () => {
-      const html = render({
-        format: "head-to-head",
-        entrantsOpen: false,
-        gameConfig: { drawsAllowed: false, bestOf: 3 },
-      });
+      expect(html).not.toContain("Team score");
+      expect(html).not.toContain(">Count<");
       expect(html).not.toContain("Participants can enroll");
-      expect(html).toContain(
-        "Best of needs a fixed list of exactly two Entrants.",
-      );
+      expect(
+        render({
+          format: "best-score",
+          scoring: "team",
+          scoreDirection: "higher",
+        }),
+      ).toContain("Team score");
     });
 
-    it("shows the enroll switch on a fixed list with Best of off", () => {
-      const html = render({ format: "head-to-head", entrantsOpen: false });
-      expect(html).toContain("Participants can enroll");
+    it("has no close time on any Format", () => {
+      for (const format of [
+        "placement",
+        "bracket",
+        "head-to-head",
+        "best-score",
+        "participation",
+      ] as const) {
+        const html = render({
+          format,
+          selfEnroll: true,
+          selfCheckIn: true,
+          scoreDirection: format === "best-score" ? "higher" : "none",
+        });
+        expect(html, format).not.toMatch(/closes/i);
+        expect(html, format).not.toContain("Time (ET)");
+      }
     });
 
     it("has no Finish Points field", () => {

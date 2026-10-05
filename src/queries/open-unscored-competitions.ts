@@ -1,20 +1,29 @@
-import { and, eq, exists, inArray, isNull, or } from "drizzle-orm";
+import { and, eq, exists, inArray, isNotNull, isNull, or } from "drizzle-orm";
 
 import { DBOrTx, db } from "@/db";
-import { type WarWeek, competition, game, participation } from "@/db/schema";
-import { GAME_FORMATS, type GameFormat } from "@/lib/enums";
+import {
+  type WarWeek,
+  attempt,
+  competition,
+  leagueMatch,
+  participation,
+  seriesMatch,
+} from "@/db/schema";
+import { LOGGED_FORMATS, type LoggedFormat } from "@/lib/enums";
 
-/** An open Head-to-head, Best score or `participation` Competition, named in the End War Week warning. */
+/** An open Head-to-head, Best score, `participation` or League Competition, named in the End War Week warning. */
 export type OpenUnscoredCompetition = {
   id: string;
   name: string;
-  format: GameFormat | "participation";
+  format: LoggedFormat | "participation" | "league";
 };
 
 /**
- * A War Week's open Head-to-head or Best score Competitions with at least one Game, and open
- * `participation` Competitions with anyone marked (not closed:
- * `finalized_at` is null until Close sets it), by name. Used to warn when
+ * A War Week's open Head-to-head or Best score Competitions with at least
+ * one Match or Attempt, open
+ * `participation` Competitions with anyone marked, and open Leagues with a
+ * Match result (not closed:
+ * `closed_at` is null until Close sets it), by name. Used to warn when
  * ending a War Week with Competitions whose points aren't yet in the
  * Standings: they land only on Close.
  */
@@ -32,15 +41,37 @@ export async function getOpenUnscoredCompetitions(
     .where(
       and(
         eq(competition.warWeekId, warWeek.id),
-        isNull(competition.finalizedAt),
+        isNull(competition.closedAt),
         or(
           and(
-            inArray(competition.format, [...GAME_FORMATS]),
+            inArray(competition.format, [...LOGGED_FORMATS]),
+            or(
+              exists(
+                dbOrTx
+                  .select()
+                  .from(seriesMatch)
+                  .where(eq(seriesMatch.competitionId, competition.id)),
+              ),
+              exists(
+                dbOrTx
+                  .select()
+                  .from(attempt)
+                  .where(eq(attempt.competitionId, competition.id)),
+              ),
+            ),
+          ),
+          and(
+            eq(competition.format, "league"),
             exists(
               dbOrTx
                 .select()
-                .from(game)
-                .where(eq(game.competitionId, competition.id)),
+                .from(leagueMatch)
+                .where(
+                  and(
+                    eq(leagueMatch.competitionId, competition.id),
+                    isNotNull(leagueMatch.result),
+                  ),
+                ),
             ),
           ),
           and(

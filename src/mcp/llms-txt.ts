@@ -10,11 +10,7 @@ const PAGES: [path: string, purpose: string][] = [
   ["/<edition>/leaderboard", "Team and individual Standings."],
   [
     "/<edition>/finale",
-    "The closing-ceremony slideshow (Title, By the numbers, Awards, Champions, the Standings countdown from last place to first, Winner, plus Custom slides), stepped through by the presenter.",
-  ],
-  [
-    "/<edition>/finale/<competitionId>",
-    "A finalized Bracket's Finale: its final placings, last place to the champion.",
+    "The closing-ceremony slideshow (Title, By the numbers, Awards, Winners, the Standings countdown from last place to first, Winner, plus Custom slides), stepped through by the presenter.",
   ],
   ["/<edition>/schedule", "The schedule, grouped by Day with each Day Theme."],
   [
@@ -30,7 +26,7 @@ const PAGES: [path: string, purpose: string][] = [
   ["/install", "How to install JG War Week as an app."],
   [
     "/admin",
-    "For Organizers and Hosts; opens Competitions. Competitions (Bracket builder and results, Head-to-head and Best score settings and Game log), Discretionary points (Organizers only), Schedule (Days and Schedule Items), Roster, Announcements, Awards, FAQ, Finale, Settings (War Week settings, Appearance Theme, Lifecycle), Organizers and the Guide.",
+    "For Organizers and Hosts; opens Competitions. Competitions (Bracket builder and results, Head-to-head and Best score settings, Matches and Attempts), Discretionary points (Organizers only), Schedule (Days and Schedule Items), Roster, Announcements, Awards, FAQ, Finale, Settings (War Week settings, Appearance Theme, Lifecycle), Organizers and the Guide.",
   ],
   ["/sign-in", "Google sign-in with a @jahnelgroup.com account."],
 ];
@@ -49,7 +45,7 @@ export function llmsTxt(origin: string): string {
 
   return `# JG War Week
 
-> The JG War Week app is where Jahnel Group organizers run War Week, the company's annual week of team competitions, and where participants follow it: themes, schedule, teams, competitions (a Placement sheet, Head-to-head or Best score Games, Participation, or Brackets, with a heat size and how many advance), points, awards and announcements, the Finale, plus a history of past War Weeks.
+> The JG War Week app is where Jahnel Group organizers run War Week, the company's annual week of team competitions, and where participants follow it: themes, schedule, teams, competitions (a Placement sheet, Head-to-head Matches or Best score Attempts, Participation, Brackets with a Match size and how many advance, or a League of round robin or Swiss Matches), points, awards and announcements, the Finale, plus a history of past War Weeks.
 
 Every page and API route except sign-in needs a signed-in Jahnel Group account.
 
@@ -59,9 +55,11 @@ editions stay in the Archive at \`/history\`. Standings are never hidden: they
 are always the current Standings, live or complete. The Finale
 (\`/<edition>/finale\`) is a closing-ceremony slideshow whose countdown plays those
 Standings, not a separate result — it changes nothing. Some Competitions run as a Bracket
-(a heat size and how many advance; two per Heat with one advancing is
+(a Match size and how many advance; two per Match with one advancing is
 head-to-head) instead of a Placement sheet; \`get_bracket\` reads
-one by Competition name, with its Squads by name.
+one by Competition name, with its Squads by name. A League (round robin or
+Swiss, for match points) is not a Bracket; \`get_league\` reads one by
+Competition name, with its standings and tiebreaks and each round's Matches.
 
 ## Pages
 

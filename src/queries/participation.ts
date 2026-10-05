@@ -12,8 +12,10 @@ import {
 } from "@/db/schema";
 import type { CheckInFacet } from "@/lib/participation/check-in-rule";
 import { type TeamHeadcount, teamHeadcounts } from "@/lib/participation/score";
+import type { EntryPoints } from "@/lib/results-table";
 import { isUuid } from "@/lib/uuid";
 import type { BracketCompetitionLink } from "@/queries/brackets";
+import { getCompetitionEntryPoints } from "@/queries/entry-points";
 import {
   participantImageSql,
   participantNameSql,
@@ -30,7 +32,6 @@ export type ParticipationCompetition = Pick<
   | "placementPoints"
   | "participationPoints"
   | "selfCheckIn"
-  | "checkInClosesAt"
 > & { closed: boolean };
 
 /** Someone who took part, by name: never an email or who marked them. */
@@ -54,6 +55,8 @@ export type ParticipationView = {
   tookPart: TookPartRow[];
   /** Team scoring only (empty otherwise): most first, ties sharing a place. */
   teamCounts: TeamCountRow[];
+  /** Once Closed, its generated Points Entries; else empty. */
+  entryPoints: EntryPoints[];
 };
 
 /**
@@ -76,8 +79,7 @@ export async function getParticipationView(
       placementPoints: competition.placementPoints,
       participationPoints: competition.participationPoints,
       selfCheckIn: competition.selfCheckIn,
-      checkInClosesAt: competition.checkInClosesAt,
-      finalizedAt: competition.finalizedAt,
+      closedAt: competition.closedAt,
     })
     .from(competition)
     .where(eq(competition.id, competitionId))
@@ -117,13 +119,16 @@ export async function getParticipationView(
       placementPoints: found.placementPoints,
       participationPoints: found.participationPoints,
       selfCheckIn: found.selfCheckIn,
-      checkInClosesAt: found.checkInClosesAt,
-      closed: found.finalizedAt !== null,
+      closed: found.closedAt !== null,
     },
     tookPart: rows,
     teamCounts:
       found.scoring === "team"
         ? teamHeadcounts(rows).map((h) => ({ ...h, ...teams.get(h.teamId)! }))
+        : [],
+    entryPoints:
+      found.closedAt !== null
+        ? await getCompetitionEntryPoints(found.id, dbOrTx)
         : [],
   };
 }
@@ -141,8 +146,6 @@ function refusingFacet(): CheckInFacet {
     isParticipation: false,
     closed: false,
     selfCheckIn: false,
-    checkInClosesAt: null,
-    now: new Date(),
     scoring: "individual",
     teamLabel: "Team",
     linked: null,
@@ -152,7 +155,7 @@ function refusingFacet(): CheckInFacet {
 
 /**
  * The facts Check in is checked against (ADR 0009): the Competition's
- * Format, close, switch and close time, the War Week's Team Label, and the
+ * Format, close and switch, the War Week's Team Label, and the
  * Participant of the Competition's War Week whose email is `email`,
  * ignoring case (account linking; more than one match counts as none),
  * with their Team and their took-part row. Matches on the email without
@@ -170,9 +173,8 @@ export async function getCheckInFacts(
           warWeekId: competition.warWeekId,
           format: competition.format,
           scoring: competition.scoring,
-          finalizedAt: competition.finalizedAt,
+          closedAt: competition.closedAt,
           selfCheckIn: competition.selfCheckIn,
-          checkInClosesAt: competition.checkInClosesAt,
           teamLabel: warWeek.teamLabel,
         })
         .from(competition)
@@ -197,10 +199,8 @@ export async function getCheckInFacts(
     : [];
   const checkIn: CheckInFacet = {
     isParticipation: found.format === "participation",
-    closed: found.finalizedAt !== null,
+    closed: found.closedAt !== null,
     selfCheckIn: found.selfCheckIn,
-    checkInClosesAt: found.checkInClosesAt,
-    now: new Date(),
     scoring: found.scoring,
     teamLabel: found.teamLabel,
     linked,
@@ -240,7 +240,7 @@ export async function getParticipationCompetitions(
       id: competition.id,
       name: competition.name,
       format: competition.format,
-      finalizedAt: competition.finalizedAt,
+      closedAt: competition.closedAt,
     })
     .from(competition)
     .where(

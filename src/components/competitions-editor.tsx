@@ -53,9 +53,10 @@ function competitionUsage(competition: SetupCompetition): string {
 
 /**
  * A new Competition, in a Sheet: its name, Format and scoring. Once added,
- * it opens the Competition's page for everything else.
+ * it opens the Competition's page for everything else. A free-for-all War
+ * Week has no Scoring choice: its Competitions are Individual.
  */
-function NewCompetitionForm({
+export function NewCompetitionForm({
   warWeekId,
   mode,
   teamLabel,
@@ -79,7 +80,7 @@ function NewCompetitionForm({
     onSaved,
   );
   const scoringOptions = [
-    ...(mode === "teams" ? [{ value: "team", label: teamLabel }] : []),
+    { value: "team", label: teamLabel },
     { value: "individual", label: "Individual" },
   ];
   const format = (values.format ?? "placement") as Format;
@@ -123,18 +124,20 @@ function NewCompetitionForm({
           <FieldDescription>{FORMAT_DESCRIPTIONS[format]}</FieldDescription>
           <FieldError>{fieldErrors.format}</FieldError>
         </Field>
-        <Field data-invalid={!!fieldErrors.scoring}>
-          <FieldLabel htmlFor={`${id}-scoring`}>Scoring</FieldLabel>
-          <OptionSelect
-            id={`${id}-scoring`}
-            name="scoring"
-            aria-invalid={!!fieldErrors.scoring}
-            options={scoringOptions}
-            value={values.scoring}
-            onValueChange={(scoring) => setValues((v) => ({ ...v, scoring }))}
-          />
-          <FieldError>{fieldErrors.scoring}</FieldError>
-        </Field>
+        {mode === "teams" ? (
+          <Field data-invalid={!!fieldErrors.scoring}>
+            <FieldLabel htmlFor={`${id}-scoring`}>Scoring</FieldLabel>
+            <OptionSelect
+              id={`${id}-scoring`}
+              name="scoring"
+              aria-invalid={!!fieldErrors.scoring}
+              options={scoringOptions}
+              value={values.scoring}
+              onValueChange={(scoring) => setValues((v) => ({ ...v, scoring }))}
+            />
+            <FieldError>{fieldErrors.scoring}</FieldError>
+          </Field>
+        ) : null}
       </FieldGroup>
       <SetupSheetFooter>
         <SetupSaveButton pending={pending} label="Add Competition" />
@@ -152,7 +155,6 @@ export function CompetitionsEditor({
   warWeekId,
   isOrganizer,
   hosts,
-  hostNames,
   competitions,
   mode,
   teamLabel,
@@ -161,10 +163,8 @@ export function CompetitionsEditor({
   warWeekId: string;
   /** Organizers add and delete; a Host only opens their Competitions. */
   isOrganizer: boolean;
-  /** Each Competition's Hosts by Competition id (Organizers only). */
+  /** Each Competition's Host names by Competition id (Organizers only). */
   hosts?: Record<string, string[]>;
-  /** Each Host email's shown name (Profile name, else the email). */
-  hostNames?: Record<string, string>;
   competitions: SetupCompetition[];
   mode: WarWeek["mode"];
   teamLabel: string;
@@ -186,10 +186,14 @@ export function CompetitionsEditor({
                 name={c.name}
                 details={[
                   c.competitionGroup,
-                  c.scoring === "team" ? teamLabel : "Individual",
+                  // A free-for-all War Week's Competitions are Individual
+                  // unless they say Team.
+                  c.scoring === "team"
+                    ? teamLabel
+                    : mode === "teams" && "Individual",
                   formatLabel(c.format),
                   competitionHosts?.length &&
-                    `Hosts: ${competitionHosts.map((h) => hostNames?.[h] ?? h).join(", ")}`,
+                    `Hosts: ${competitionHosts.join(", ")}`,
                   competitionUsage(c),
                 ]
                   .filter(Boolean)

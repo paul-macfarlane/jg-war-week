@@ -1,9 +1,15 @@
-import { eq } from "drizzle-orm";
+import { and, eq, sql } from "drizzle-orm";
 
 import { DBOrTx, db } from "@/db";
-import { competition, competitionHost, organizer } from "@/db/schema";
-import { hostName } from "@/lib/competitions";
-import { getProfilesByEmail } from "@/queries/profile-join";
+import {
+  competition,
+  competitionHost,
+  organizer,
+  participant,
+  profile,
+} from "@/db/schema";
+import { isJahnelGroupEmail } from "@/lib/access";
+import { participantNameSql, profileOn } from "@/queries/profile-join";
 
 /** Emails compare trimmed and lowercased; both tables store them lowercased. */
 const normalized = (email: string) => email.trim().toLowerCase();
@@ -35,11 +41,18 @@ export async function isOrganizerEmail(
   return row !== undefined;
 }
 
-/** The Competitions `email` hosts, each with its War Week. */
-export function getHostedCompetitions(
+/**
+ * The Competitions `email` hosts, each with its War Week. Worked out at
+ * request time (ADR 0012): the roster Participant whose email is `email`,
+ * ignoring case, in the Competition's own War Week, that hosts it. A
+ * non-@jahnelgroup.com roster email can never sign in, so it hosts nothing.
+ */
+export async function getHostedCompetitions(
   email: string,
   dbOrTx: DBOrTx = db,
 ): Promise<{ competitionId: string; warWeekId: string }[]> {
+  // Sign-in rejects every other domain; a roster email off it hosts nothing.
+  if (!isJahnelGroupEmail(email)) return [];
   return dbOrTx
     .select({
       competitionId: competitionHost.competitionId,
@@ -47,39 +60,36 @@ export function getHostedCompetitions(
     })
     .from(competitionHost)
     .innerJoin(competition, eq(competition.id, competitionHost.competitionId))
-    .where(eq(competitionHost.email, normalized(email)));
+    .innerJoin(
+      participant,
+      and(
+        eq(participant.id, competitionHost.participantId),
+        eq(participant.warWeekId, competition.warWeekId),
+      ),
+    )
+    .where(eq(sql`lower(${participant.email})`, normalized(email)));
 }
 
 /**
- * Each Host email's shown name (`hostName`: Profile name, else the email),
- * for the Organizers' Competitions rows.
+ * Every Competition's Host names in a War Week, by Competition id (the
+ * Profile name, else the roster name; never an email).
  */
-export async function getHostNames(
-  hosts: Record<string, string[]>,
-  dbOrTx: DBOrTx = db,
-): Promise<Record<string, string>> {
-  const emails = [...new Set(Object.values(hosts).flat())];
-  const profiles = await getProfilesByEmail(emails, dbOrTx);
-  return Object.fromEntries(emails.map((e) => [e, hostName(e, profiles)]));
-}
-
-/** Every Competition's Host emails in a War Week, by Competition id. */
 export async function getWarWeekCompetitionHosts(
   warWeekId: string,
   dbOrTx: DBOrTx = db,
 ): Promise<Record<string, string[]>> {
+  const name = participantNameSql();
   const rows = await dbOrTx
-    .select({
-      competitionId: competitionHost.competitionId,
-      email: competitionHost.email,
-    })
+    .select({ competitionId: competitionHost.competitionId, name })
     .from(competitionHost)
     .innerJoin(competition, eq(competition.id, competitionHost.competitionId))
+    .innerJoin(participant, eq(participant.id, competitionHost.participantId))
+    .leftJoin(profile, profileOn())
     .where(eq(competition.warWeekId, warWeekId))
-    .orderBy(competitionHost.email);
+    .orderBy(name);
   const hosts: Record<string, string[]> = {};
   for (const row of rows) {
-    (hosts[row.competitionId] ??= []).push(row.email);
+    (hosts[row.competitionId] ??= []).push(row.name);
   }
   return hosts;
 }

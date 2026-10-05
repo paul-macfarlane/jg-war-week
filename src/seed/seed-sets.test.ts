@@ -157,19 +157,21 @@ describe.skipIf(!isLocalDatabase)("every seed loads twice", () => {
     });
   }, 120_000);
 
-  it("loads the seed:demo:xii set twice with no row count changing, and its Step Challenge is a finalized sheet of Scores", async () => {
+  it("loads the seed:demo:xii set twice with no row count changing, and its Step Challenge is a closed sheet of Scores", async () => {
     await loadTwice(demoXiiFiles(), async (client, { first, second }) => {
       expect(second).toEqual(first);
       expect(first.war_week).toBe(12);
+      // Chess Round Robin's 15 Matches and sit-outs, Chess Swiss's 3 rounds of 4.
+      expect(first.league_match).toBe(27);
       const sheet = await client.query<{
         rows: number;
         scored: number;
-        finalized: boolean;
+        closed: boolean;
         direction: string;
       }>(
         `select count(p.id)::int as rows,
            count(p.score)::int as scored,
-           bool_and(c.finalized_at is not null) as finalized,
+           bool_and(c.closed_at is not null) as closed,
            min(c.score_direction::text) as direction
          from competition c
          join placement p on p.competition_id = c.id
@@ -179,7 +181,7 @@ describe.skipIf(!isLocalDatabase)("every seed loads twice", () => {
       expect(sheet.rows[0]).toEqual({
         rows: 12,
         scored: 12,
-        finalized: true,
+        closed: true,
         direction: "higher",
       });
     });
@@ -198,32 +200,68 @@ describe.skipIf(!isLocalDatabase)("every seed loads twice", () => {
           await client.query<{
             participants: number;
             entrants: number;
-            heats: number;
+            matches: number;
             played: number;
             ticks: number;
+            cornhole: unknown;
+            matches_logged: number;
+            attempts: number;
+            attempters: number;
+            blitz_entrants: number;
+            blitz_matches: number;
+            blitz_round_one: number;
           }>(
             `select
                (select count(*)::int from participant p join war_week w
                  on w.id = p.war_week_id where w.edition = 'xii') as participants,
                (select count(*)::int from entrant e join competition c
                  on c.id = e.competition_id where c.name = 'Ping Pong Bracket') as entrants,
-               (select count(*)::int from heat h join competition c
-                 on c.id = h.competition_id where c.name = 'Ping Pong Bracket') as heats,
-               (select count(*)::int from heat h join competition c
+               (select count(*)::int from bracket_match h join competition c
+                 on c.id = h.competition_id where c.name = 'Ping Pong Bracket') as matches,
+               (select count(*)::int from bracket_match h join competition c
                  on c.id = h.competition_id where c.name = 'Ping Pong Bracket'
                  and h.recorded_at is not null) as played,
                (select count(*)::int from participation x join competition c
-                 on c.id = x.competition_id where c.name = 'Morning Stretch') as ticks`,
+                 on c.id = x.competition_id where c.name = 'Morning Stretch') as ticks,
+               (select json_build_object('entrants', count(e.id),
+                   'bestOf', c.series_config->'bestOf')
+                 from competition c left join entrant e on e.competition_id = c.id
+                 where c.name = 'Cornhole' group by c.id) as cornhole,
+               (select count(*)::int from series_match m join competition c
+                 on c.id = m.competition_id where c.name = 'Cornhole') as matches_logged,
+               (select count(*)::int from attempt a join competition c
+                 on c.id = a.competition_id where c.name = 'Darts') as attempts,
+               (select count(distinct a.participant_id)::int from attempt a
+                 join competition c on c.id = a.competition_id
+                 where c.name = 'Darts') as attempters,
+               (select count(*)::int from entrant e join competition c
+                 on c.id = e.competition_id where c.name = 'Blitz Chess') as blitz_entrants,
+               (select count(*)::int from league_match m join competition c
+                 on c.id = m.competition_id where c.name = 'Blitz Chess') as blitz_matches,
+               (select count(*)::int from league_match m join competition c
+                 on c.id = m.competition_id where c.name = 'Blitz Chess'
+                 and m.round = 1 and m.result is null) as blitz_round_one`,
           )
         ).rows;
-        // 32 + 16 + 8 + 4 + 2 Heats, the final and the 3rd place game.
+        // 32 + 16 + 8 + 4 + 2 Matches, the final and the 3rd place Match;
+        // Cornhole a Best of 7 between its 2 Entrants with 5 Matches logged
+        // (3–2, still open); Darts 60 Attempts, each by a Participant; Blitz
+        // Chess 64 Entrants with round 1 paired: 32 Matches, none played.
         expect(facts).toEqual({
           participants: 100,
           entrants: 64,
-          heats: 64,
+          matches: 64,
           played: 20,
           ticks: 72,
+          cornhole: { entrants: 2, bestOf: 7 },
+          matches_logged: 5,
+          attempts: 60,
+          attempters: expect.any(Number),
+          blitz_entrants: 64,
+          blitz_matches: 32,
+          blitz_round_one: 32,
         });
+        expect(facts.attempters).toBeGreaterThan(1);
       },
       (database) => applyScaleFixture(database),
     );

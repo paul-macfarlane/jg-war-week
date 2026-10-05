@@ -1,7 +1,8 @@
 # ADR 0005: Self-report is the one Participant write
 
-- Status: accepted (built in `.scratch/hardening/epics/G-squads-and-self-report.md`)
+- Status: accepted (built in `.scratch/hardening/epics/G-squads-and-self-report.md`); superseded in part by ADR 0011
 - Date: 2026-09-27
+- Superseded in part by ADR 0011 (One self-report setting): its Bracket-only self-report switch and bound 4, "a second report is refused" (a player now edits a recorded result with self-report on). The account-linking and being-in-the-Match bounds stand.
 
 ## Context
 

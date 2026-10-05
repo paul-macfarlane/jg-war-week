@@ -2,9 +2,10 @@ import type { EnrollOffer } from "@/components/enroll-button";
 import {
   type EnrollFacet,
   enrollError,
+  enrollmentUnavailable,
+  onEntrantList,
   withdrawError,
-} from "@/lib/games/enroll-rule";
-import { onEntrantList } from "@/lib/games/log-rule";
+} from "@/lib/bracket/enroll-rule";
 import { getSquads } from "@/queries/brackets";
 import { getEnrollFacts } from "@/queries/enrollment";
 
@@ -21,7 +22,9 @@ export async function enrollOfferFor(
 ): Promise<EnrollOffer | null> {
   if (!email) return null;
   const { enroll: facet, linked } = await getEnrollFacts(competition.id, email);
-  if (!facet.selfEnroll || !linked) return null;
+  if (!facet.selfEnroll || !linked || enrollmentUnavailable(facet)) {
+    return null;
+  }
 
   const entered = onEntrantList(facet.scoring, linked, facet.entrants);
   const bySquads =

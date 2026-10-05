@@ -41,7 +41,6 @@ function warWeekFixture(): WarWeek {
     wikiUrl: null,
     winner: null,
     highlights: [],
-    finaleAwardsLayout: "one-slide",
     createdAt: new Date(),
     updatedAt: new Date(),
   } as WarWeek;
@@ -106,7 +105,9 @@ describe("PrivacyPage", () => {
     expect(text).toMatch(
       /Points Entry is shown in Admin to Organizers and to that Competition.{1,6}s Hosts/,
     );
-    expect(text).toMatch(/log Games and report Heats/);
+    expect(text).toMatch(
+      /log Matches and Attempts, and report Bracket Matches/,
+    );
     expect(text).toMatch(/kept for audit and never shown/);
   });
 
@@ -124,6 +125,9 @@ describe("PrivacyPage", () => {
     const { text } = await render();
     const source = readFileSync(new URL("./page.tsx", import.meta.url), "utf8");
     expect(source).toContain('export const dynamic = "force-dynamic"');
-    expect(text).not.toMatch(/\b(event|tournament|member|match|league)s?\b/i);
+    expect(text).not.toMatch(
+      /\b(event|tournament|member|heat|champion|game)s?\b/i,
+    );
+    expect(text).not.toMatch(/\b(un-?)?finali[sz]/i);
   });
 });

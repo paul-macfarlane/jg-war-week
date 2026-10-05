@@ -6,7 +6,7 @@ export type BracketPoints = { entrantId: string; points: number };
 
 /**
  * Points Entry drafts from final placings: each place (1–4, from the final
- * and the 3rd place game) with Placement Points gets them, and tied places each get that place's points (ties are
+ * and the 3rd place Match) with Placement Points gets them, and tied places each get that place's points (ties are
  * equal entries). Places without Placement Points get no entry.
  */
 export function pointsFor(

@@ -579,7 +579,7 @@ const competitionValues = {
   scoring: "individual" as const,
   placementPoints: [5, 3, 1],
   countsTowardTeam: true,
-  competitionGroup: "Board games",
+  competitionGroup: "Tabletop",
 };
 
 describe.skipIf(!isLocalDatabase)("Team mutations", () => {
@@ -965,7 +965,7 @@ describe.skipIf(!isLocalDatabase)("Competition mutations", () => {
       expect(chess).toMatchObject({
         placementPoints: [5, 3, 1],
         countsTowardTeam: true,
-        competitionGroup: "Board games",
+        competitionGroup: "Tabletop",
         format: "placement",
         bracketConfig: null,
       });
@@ -983,7 +983,7 @@ describe.skipIf(!isLocalDatabase)("Competition mutations", () => {
     });
   });
 
-  it("creates a Bracket with the default config: 2 per Heat, 1 advancing, no 3rd place game", async () => {
+  it("creates a Bracket with the default config: 2 per Match, 1 advancing, no 3rd place Match", async () => {
     await inRolledBackTransaction(async (tx) => {
       const { createCompetition } = await import("@/mutations/setup");
       const { schema, ctx } = await rosterFixture(tx);
@@ -1005,9 +1005,11 @@ describe.skipIf(!isLocalDatabase)("Competition mutations", () => {
       expect(row).toMatchObject({
         format: "bracket",
         bracketConfig: {
-          entrantsPerHeat: 2,
-          advancePerHeat: 1,
-          thirdPlaceGame: false,
+          kind: "head-to-head" as const,
+          entrantsPerMatch: 2,
+          advancePerMatch: 1,
+          thirdPlaceMatch: false,
+          rounds: {},
         },
       });
     });
@@ -1089,7 +1091,7 @@ describe.skipIf(!isLocalDatabase)("Competition mutations", () => {
     });
   });
 
-  it("refuses a scoring change while the Bracket is finalized, but not Placement Points or other fields", async () => {
+  it("refuses a scoring change while the Bracket is closed, but not Placement Points or other fields", async () => {
     await inRolledBackTransaction(async (tx) => {
       const { updateCompetition } = await import("@/mutations/setup");
       const { schema, home, ctx } = await rosterFixture(tx);
@@ -1105,7 +1107,7 @@ describe.skipIf(!isLocalDatabase)("Competition mutations", () => {
         .returning({ id: schema.competition.id });
       await tx
         .update(schema.competition)
-        .set({ finalizedAt: new Date() })
+        .set({ closedAt: new Date() })
         .where(eq(schema.competition.id, bracket.id));
 
       expect(
@@ -1132,7 +1134,7 @@ describe.skipIf(!isLocalDatabase)("Competition mutations", () => {
       ).toEqual({
         ok: false,
         error:
-          "This Competition's Bracket is finalized. Un-finalize the Bracket first.",
+          "This Competition's Bracket is closed. Reopen the Bracket first.",
       });
       const [saved] = await tx
         .select()
@@ -1167,7 +1169,7 @@ describe.skipIf(!isLocalDatabase)("Competition mutations", () => {
 
       await tx
         .update(schema.competition)
-        .set({ finalizedAt: null })
+        .set({ closedAt: null })
         .where(eq(schema.competition.id, bracket.id));
 
       expect(
@@ -1216,39 +1218,29 @@ describe.skipIf(!isLocalDatabase)("setCompetitionHosts", () => {
     const { competitionHost } = await import("@/db/schema");
     const { eq } = await import("drizzle-orm");
     const rows = await tx
-      .select({ email: competitionHost.email })
+      .select({ participantId: competitionHost.participantId })
       .from(competitionHost)
       .where(eq(competitionHost.competitionId, competitionId))
-      .orderBy(competitionHost.email);
-    return rows.map((row) => row.email);
+      .orderBy(competitionHost.participantId);
+    return rows.map((row) => row.participantId).sort();
   }
 
-  it("replaces the Hosts, lowercased and deduplicated", async () => {
+  it("replaces the Hosts with roster Participants, deduplicated, with or without an email", async () => {
     await inRolledBackTransaction(async (tx) => {
       const { setCompetitionHosts } = await import("@/mutations/setup");
-      const { catanId, relayId, ctx } = await rosterFixture(tx);
+      const { catanId, relayId, neoId, trinityId, ctx } =
+        await rosterFixture(tx);
 
+      // Neo has an email; Trinity has none, and can still be a Host.
       expect(
-        await setCompetitionHosts(
-          catanId,
-          [
-            "Tony@JahnelGroup.com",
-            " tony@jahnelgroup.com",
-            "tom@jahnelgroup.com",
-          ],
-          ctx,
-          tx,
-        ),
+        await setCompetitionHosts(catanId, [neoId, trinityId, neoId], ctx, tx),
       ).toEqual({ ok: true });
-      expect(await hostsOf(tx, catanId)).toEqual([
-        "tom@jahnelgroup.com",
-        "tony@jahnelgroup.com",
-      ]);
+      expect(await hostsOf(tx, catanId)).toEqual([neoId, trinityId].sort());
 
-      expect(
-        await setCompetitionHosts(catanId, ["amy@jahnelgroup.com"], ctx, tx),
-      ).toEqual({ ok: true });
-      expect(await hostsOf(tx, catanId)).toEqual(["amy@jahnelgroup.com"]);
+      expect(await setCompetitionHosts(catanId, [neoId], ctx, tx)).toEqual({
+        ok: true,
+      });
+      expect(await hostsOf(tx, catanId)).toEqual([neoId]);
       expect(await hostsOf(tx, relayId)).toEqual([]);
 
       expect(await setCompetitionHosts(catanId, [], ctx, tx)).toEqual({
@@ -1258,36 +1250,40 @@ describe.skipIf(!isLocalDatabase)("setCompetitionHosts", () => {
     });
   });
 
-  it("refuses an email outside @jahnelgroup.com and changes nothing", async () => {
+  it("refuses a Participant from another War Week's roster and changes nothing", async () => {
+    await inRolledBackTransaction(async (tx) => {
+      const { setCompetitionHosts } = await import("@/mutations/setup");
+      const { schema, other, catanId, neoId, ctx } = await rosterFixture(tx);
+      const [stranger] = await tx
+        .insert(schema.participant)
+        .values({ warWeekId: other, displayName: "Stranger" })
+        .returning({ id: schema.participant.id });
+      await setCompetitionHosts(catanId, [neoId], ctx, tx);
+
+      expect(
+        await setCompetitionHosts(catanId, [neoId, stranger.id], ctx, tx),
+      ).toEqual({
+        ok: false,
+        error: "A Host must be on this War Week's roster.",
+      });
+      expect(await hostsOf(tx, catanId)).toEqual([neoId]);
+    });
+  });
+
+  it("refuses an id that is no Participant at all", async () => {
     await inRolledBackTransaction(async (tx) => {
       const { setCompetitionHosts } = await import("@/mutations/setup");
       const { catanId, ctx } = await rosterFixture(tx);
-      await setCompetitionHosts(catanId, ["tony@jahnelgroup.com"], ctx, tx);
-
       expect(
         await setCompetitionHosts(
           catanId,
-          ["tom@jahnelgroup.com", "someone@gmail.com"],
+          ["00000000-0000-4000-8000-000000000000"],
           ctx,
           tx,
         ),
       ).toEqual({
         ok: false,
-        error: "Use an @jahnelgroup.com email.",
-      });
-      expect(await hostsOf(tx, catanId)).toEqual(["tony@jahnelgroup.com"]);
-    });
-  });
-
-  it("refuses a 255-character Host email with the validation message", async () => {
-    await inRolledBackTransaction(async (tx) => {
-      const { setCompetitionHosts } = await import("@/mutations/setup");
-      const { catanId, ctx } = await rosterFixture(tx);
-      const tooLong = `${"a".repeat(255 - "@jahnelgroup.com".length)}@jahnelgroup.com`;
-
-      expect(await setCompetitionHosts(catanId, [tooLong], ctx, tx)).toEqual({
-        ok: false,
-        error: "Use an @jahnelgroup.com email.",
+        error: "A Host must be on this War Week's roster.",
       });
       expect(await hostsOf(tx, catanId)).toEqual([]);
     });
@@ -1296,16 +1292,29 @@ describe.skipIf(!isLocalDatabase)("setCompetitionHosts", () => {
   it("won't touch another War Week's Competition", async () => {
     await inRolledBackTransaction(async (tx) => {
       const { setCompetitionHosts } = await import("@/mutations/setup");
-      const { other, catanId } = await rosterFixture(tx);
+      const { other, catanId, neoId } = await rosterFixture(tx);
 
       expect(
         await setCompetitionHosts(
           catanId,
-          ["tony@jahnelgroup.com"],
+          [neoId],
           { warWeekId: other, actorEmail },
           tx,
         ),
       ).toEqual({ ok: false, error: "That Competition no longer exists." });
+      expect(await hostsOf(tx, catanId)).toEqual([]);
+    });
+  });
+
+  it("removes a Host when their Participant is deleted from the roster", async () => {
+    await inRolledBackTransaction(async (tx) => {
+      const { setCompetitionHosts } = await import("@/mutations/setup");
+      const { schema, catanId, trinityId, ctx } = await rosterFixture(tx);
+      const { eq } = await import("drizzle-orm");
+      await setCompetitionHosts(catanId, [trinityId], ctx, tx);
+      await tx
+        .delete(schema.participant)
+        .where(eq(schema.participant.id, trinityId));
       expect(await hostsOf(tx, catanId)).toEqual([]);
     });
   });
@@ -1315,8 +1324,8 @@ describe.skipIf(!isLocalDatabase)("setCompetitionHosts", () => {
       const { setCompetitionHosts, updateCompetition } =
         await import("@/mutations/setup");
       const { parseCompetitionInput } = await import("@/lib/setup");
-      const { catanId, ctx } = await rosterFixture(tx);
-      await setCompetitionHosts(catanId, ["tony@jahnelgroup.com"], ctx, tx);
+      const { catanId, neoId, trinityId, ctx } = await rosterFixture(tx);
+      await setCompetitionHosts(catanId, [neoId], ctx, tx);
 
       const parsed = parseCompetitionInput({
         name: "Catan",
@@ -1325,14 +1334,14 @@ describe.skipIf(!isLocalDatabase)("setCompetitionHosts", () => {
         placementPoints: "",
         countsTowardTeam: false,
         group: "",
-        hosts: "tom@jahnelgroup.com",
+        hosts: trinityId,
       } as Parameters<typeof parseCompetitionInput>[0]);
       if (!parsed.ok) throw new Error(parsed.error);
       expect("hosts" in parsed.value).toBe(false);
       expect(await updateCompetition(catanId, parsed.value, ctx, tx)).toEqual({
         ok: true,
       });
-      expect(await hostsOf(tx, catanId)).toEqual(["tony@jahnelgroup.com"]);
+      expect(await hostsOf(tx, catanId)).toEqual([neoId]);
 
       // Even a values object carrying hosts past the parser writes none.
       expect(
@@ -1340,13 +1349,13 @@ describe.skipIf(!isLocalDatabase)("setCompetitionHosts", () => {
           catanId,
           {
             ...parsed.value,
-            hosts: ["tom@jahnelgroup.com"],
+            hosts: [trinityId],
           } as typeof parsed.value,
           ctx,
           tx,
         ),
       ).toEqual({ ok: true });
-      expect(await hostsOf(tx, catanId)).toEqual(["tony@jahnelgroup.com"]);
+      expect(await hostsOf(tx, catanId)).toEqual([neoId]);
     });
   });
 });

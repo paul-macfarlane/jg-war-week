@@ -1,10 +1,8 @@
 "use server";
 
-import { cookies } from "next/headers";
-
 import { guarded } from "@/actions/result";
 import { revalidateAdmin, revalidateSite } from "@/actions/revalidate";
-import { ADMIN_EDITION_COOKIE, getActor } from "@/auth/actor";
+import { getActor, setAdminEditionCookie } from "@/auth/actor";
 import { authorize } from "@/auth/authorize";
 import { getSessionEmail } from "@/auth/server";
 import { SIGN_IN_REFUSAL, can } from "@/lib/access";
@@ -114,7 +112,7 @@ export async function reopenWarWeek(
 
 /**
  * Unstart: `live → upcoming`, only while nothing has been scored (no Points
- * Entry, Heat result or Game). Re-checked under the row lock.
+ * Entry, Match result, logged Match or Attempt). Re-checked under the row lock.
  */
 export async function unstartWarWeek(
   warWeekId: string,
@@ -125,21 +123,6 @@ export async function unstartWarWeek(
     const result = await mutations.unstartWarWeek(organizer.ctx);
     if (result.ok) revalidateSite();
     return result;
-  });
-}
-
-async function setAdminEditionCookie(edition: string, isCurrent: boolean) {
-  const jar = await cookies();
-  if (isCurrent) {
-    jar.delete(ADMIN_EDITION_COOKIE);
-    return;
-  }
-  jar.set(ADMIN_EDITION_COOKIE, edition, {
-    httpOnly: true,
-    sameSite: "lax",
-    secure: process.env.NODE_ENV === "production",
-    path: "/",
-    maxAge: 60 * 60 * 24 * 30,
   });
 }
 

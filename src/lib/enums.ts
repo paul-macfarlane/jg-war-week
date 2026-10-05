@@ -28,18 +28,28 @@ export const COMPETITION_FORMATS = [
   "head-to-head",
   "best-score",
   "participation",
+  "league",
 ] as const;
 
 /**
- * A Placement Competition's Score direction (CONTEXT.md): whether a higher
- * or lower Score wins, or `none` when Places are set by hand. Other Formats
- * keep `none`.
+ * A Competition's Score direction (CONTEXT.md): whether a higher or lower
+ * Score wins, or `none` when places are set by hand. Best score is always
+ * higher or lower; Participation keeps `none` (the CHECK
+ * `competition_score_direction_by_format`).
  */
 export const SCORE_DIRECTIONS = ["none", "higher", "lower"] as const;
 
 export type ScoreDirection = (typeof SCORE_DIRECTIONS)[number];
 
-export const HEAT_STATUSES = ["pending", "ready", "played"] as const;
+/**
+ * A League Match's result (CONTEXT.md, League): Entrant A won, Entrant B
+ * won, or a draw. A bye or sit-out never has one.
+ */
+export const LEAGUE_RESULTS = ["a", "b", "draw"] as const;
+
+export type LeagueResult = (typeof LEAGUE_RESULTS)[number];
+
+export const MATCH_STATUSES = ["pending", "ready", "played"] as const;
 
 /**
  * A Finale slide's kind: the built-in slides, in their default order, then
@@ -49,7 +59,7 @@ export const FINALE_SLIDE_KINDS = [
   "title",
   "numbers",
   "awards",
-  "champions",
+  "winners",
   "standings",
   "winner",
   "custom",
@@ -57,22 +67,18 @@ export const FINALE_SLIDE_KINDS = [
 
 export type FinaleSlideKind = (typeof FINALE_SLIDE_KINDS)[number];
 
-/** How the Finale shows Awards: one slide, or one slide per Award Category. */
-export const FINALE_AWARDS_LAYOUTS = ["one-slide", "per-category"] as const;
-
-export type FinaleAwardsLayout = (typeof FINALE_AWARDS_LAYOUTS)[number];
-
 /**
- * The two Formats run as Games (CONTEXT.md): a Head-to-head or Best score
- * Competition's Games are logged, then it is closed for its Placement Points.
+ * The two Formats whose results are logged one at a time (CONTEXT.md): a
+ * Head-to-head series' Matches and a Best score Competition's Attempts.
+ * Each is closed for its Placement Points.
  */
-export const GAME_FORMATS = ["head-to-head", "best-score"] as const;
+export const LOGGED_FORMATS = ["head-to-head", "best-score"] as const;
 
-export type GameFormat = (typeof GAME_FORMATS)[number];
+export type LoggedFormat = (typeof LOGGED_FORMATS)[number];
 
-/** Whether a Competition Format is one of the Games Formats. */
-export function isGameFormat(
+/** Whether a Competition Format logs Matches (a series) or Attempts. */
+export function isLoggedFormat(
   format: (typeof COMPETITION_FORMATS)[number],
-): format is GameFormat {
-  return (GAME_FORMATS as readonly string[]).includes(format);
+): format is LoggedFormat {
+  return (LOGGED_FORMATS as readonly string[]).includes(format);
 }

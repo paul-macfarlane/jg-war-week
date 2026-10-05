@@ -1,0 +1,109 @@
+import { eq, sql } from "drizzle-orm";
+
+import { DBOrTx, db } from "@/db";
+import { competition } from "@/db/schema";
+import { NOT_LINKED, matchReportError } from "@/lib/bracket/match-report-rule";
+import type { MatchResult } from "@/lib/bracket/types";
+import {
+  COMPETITION_NOT_FOUND,
+  lockedCompetition,
+  refuse,
+  writeMatchResult,
+} from "@/mutations/brackets";
+import type { MutationContext, MutationResult } from "@/mutations/types";
+import { getMatchReportFacts } from "@/queries/match-reports";
+
+/** The Formats whose results a Participant may log (spec R21, decision 4). */
+export const SELF_REPORT_FORMATS: readonly string[] = [
+  "bracket",
+  "head-to-head",
+  "best-score",
+  "league",
+];
+export const NO_SELF_REPORT =
+  "Only a Bracket, Head-to-head, Best score or League Competition lets Participants log their own results.";
+
+/**
+ * Turns "Participants can log their own results" on or off (spec R21,
+ * decision 4) for a Bracket, Head-to-head, Best score or League
+ * Competition;
+ * Placement and Participation never take it. Takes the Competition's row
+ * lock, so a report in flight runs before or after it and its in-lock
+ * re-check sees the new setting. Results already in stand when it's
+ * turned off.
+ */
+export async function setSelfReport(
+  competitionId: string,
+  { on }: { on: boolean },
+  ctx: MutationContext,
+  dbOrTx: DBOrTx = db,
+): Promise<MutationResult> {
+  return dbOrTx.transaction(async (tx): Promise<MutationResult> => {
+    const found = await lockedCompetition(tx, competitionId, ctx);
+    if (!found) return refuse(COMPETITION_NOT_FOUND);
+    if (!SELF_REPORT_FORMATS.includes(found.format)) {
+      return refuse(NO_SELF_REPORT);
+    }
+    await tx
+      .update(competition)
+      .set({ selfReport: on, updatedAt: sql`now()` })
+      .where(eq(competition.id, competitionId));
+    return { ok: true };
+  });
+}
+
+/**
+ * A linked Participant's own Match Result (spec R21, decision 4; D1d):
+ * under the Competition's row lock, reloads the Match facts and checks them
+ * again (so a report after self-report is turned off, or once a later
+ * Match used the result, is refused), then writes it through the same core
+ * as a Host's result, recording the reporter on that Match. A player may
+ * also change their Match's recorded result.
+ */
+export async function submitMatchReport(
+  competitionId: string,
+  matchId: string,
+  result: MatchResult,
+  ctx: MutationContext,
+  dbOrTx: DBOrTx = db,
+): Promise<MutationResult> {
+  return reported(competitionId, matchId, result, ctx, dbOrTx);
+}
+
+/**
+ * A linked Participant clears their own Match's result (spec R21, S4),
+ * under the same rule as reporting it.
+ */
+export async function clearMatchReport(
+  competitionId: string,
+  matchId: string,
+  ctx: MutationContext,
+  dbOrTx: DBOrTx = db,
+): Promise<MutationResult> {
+  return reported(competitionId, matchId, null, ctx, dbOrTx);
+}
+
+async function reported(
+  competitionId: string,
+  matchId: string,
+  result: MatchResult | null,
+  ctx: MutationContext,
+  dbOrTx: DBOrTx,
+): Promise<MutationResult> {
+  return dbOrTx.transaction(async (tx) => {
+    const found = await lockedCompetition(tx, competitionId, ctx);
+    if (!found) return refuse(COMPETITION_NOT_FOUND);
+    const { matchReport, linked } = await getMatchReportFacts(
+      competitionId,
+      matchId,
+      ctx.actorEmail,
+      tx,
+    );
+    const refusal = matchReportError(matchReport);
+    if (refusal || !linked) return refuse(refusal ?? NOT_LINKED);
+    return writeMatchResult(tx, found, matchId, result, {
+      email: ctx.actorEmail,
+      participantId: linked.participantId,
+    });
+  });
+}

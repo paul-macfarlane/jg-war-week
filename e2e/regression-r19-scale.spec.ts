@@ -173,7 +173,7 @@ test.describe("100 Participants in the XII scale demo", () => {
           page.getByRole("heading", { name: "Record placements" }),
         ).toBeVisible();
         await expect(page.getByText(LONG_NAME).first()).toBeVisible();
-        // Finalized: no Remove column, header or button in the sheet.
+        // Closed: no Remove column, header or button in the sheet.
         const sheet = page.getByRole("list", { name: "Placements" });
         await expect(
           sheet.getByRole("button", { name: /^Remove / }),
@@ -204,6 +204,10 @@ test.describe("100 Participants in the XII scale demo", () => {
         await expect(
           page.getByRole("heading", { name: "Entrants and Bracket" }),
         ).toBeVisible();
+        // R24 D2: with results, Entrants and Seed Positions fold under a trigger.
+        await page
+          .getByRole("button", { name: "Entrants and Seed Positions (64)" })
+          .click();
         await expect(page.getByText("(64 chosen)")).toBeVisible();
       });
 
@@ -220,7 +224,7 @@ test.describe("100 Participants in the XII scale demo", () => {
     }
   });
 
-  test("r19 106 a picker finds a Participant by name and by email, all 100 with no cap", async ({
+  test("r19 106 a picker finds a Participant by name and not by email, all 100 with no cap", async ({
     browser,
   }, testInfo) => {
     const { context, page } = await organizerPage(browser);
@@ -233,15 +237,25 @@ test.describe("100 Participants in the XII scale demo", () => {
           .click();
         const picker = page.getByRole("combobox", { name: "Participant" });
         await picker.click();
-        // Every Participant's email has an "@": no result cap at 100.
-        await picker.fill("@");
+        // No result cap at 100: with nothing typed, every one is listed.
+        await picker.fill("");
         await expect(page.getByRole("option")).toHaveCount(100);
-        // By email: nothing in the name says "pim.ocelot".
+        // Not by email (R22: name-only): nothing in the name says "@".
+        await picker.fill("@");
+        await expect(page.getByRole("option")).toHaveCount(0);
         await picker.fill("pim.ocelot@jahnel");
-        await expect(page.getByRole("option")).toHaveText(["Pim Ocelot"]);
+        await expect(page.getByRole("option")).toHaveCount(0);
         // By name.
+        await picker.fill("pim ocel");
+        await expect(page.getByRole("option")).toHaveCount(1);
+        await expect(
+          page.getByRole("option", { name: "Pim Ocelot" }),
+        ).toBeVisible();
         await picker.fill("feather");
-        await expect(page.getByRole("option")).toHaveText([LONG_NAME]);
+        await expect(page.getByRole("option")).toHaveCount(1);
+        await expect(
+          page.getByRole("option", { name: LONG_NAME }),
+        ).toBeVisible();
         await picker.fill("an");
         if (size === PHONE) await expectNoSidewaysScroll(page);
         await page.screenshot({
@@ -254,7 +268,7 @@ test.describe("100 Participants in the XII scale demo", () => {
     }
   });
 
-  test("r19 106 the Awards recipient picker finds a Participant by email", async ({
+  test("r19 106 the Awards recipient picker finds a Participant by name and not by email", async ({
     browser,
   }) => {
     const { context, page } = await organizerPage(browser);
@@ -263,9 +277,15 @@ test.describe("100 Participants in the XII scale demo", () => {
       await page.getByRole("button", { name: "Add Award" }).click();
       const picker = page.getByRole("combobox", { name: /^Participants/ });
       await picker.click();
-      // By email: nothing in the name says "pim.ocelot".
+      // Not by email (R22: name-only).
       await picker.fill("pim.ocelot@jahnel");
-      await expect(page.getByRole("option")).toHaveText(["Pim Ocelot"]);
+      await expect(page.getByRole("option")).toHaveCount(0);
+      // By name.
+      await picker.fill("pim ocel");
+      await expect(page.getByRole("option")).toHaveCount(1);
+      await expect(
+        page.getByRole("option", { name: "Pim Ocelot" }),
+      ).toBeVisible();
     } finally {
       await context.close();
     }
@@ -309,6 +329,20 @@ test.describe("100 Participants in the XII scale demo", () => {
         await expect(page.getByRole("button", { name: "Replay" })).toBeVisible({
           timeout: 30_000,
         });
+        // Only rows ranked 10th or better count down; the rest are a line.
+        const ranks = await page
+          .getByRole("main")
+          .getByRole("listitem")
+          .evaluateAll((items) =>
+            items.map((li) =>
+              Number((li.textContent ?? "").trim().split(/\D/)[0]),
+            ),
+          );
+        expect(ranks[0]).toBe(1);
+        expect(Math.max(...ranks)).toBeLessThanOrEqual(10);
+        await expect(page.locator("[data-finale-more]")).toContainText(
+          "more Participant",
+        );
       });
     } finally {
       await context.close();

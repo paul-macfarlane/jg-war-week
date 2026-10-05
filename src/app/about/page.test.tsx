@@ -132,16 +132,16 @@ describe("AboutPage", () => {
     const imgs = html.match(/<img [^>]*>/g) ?? [];
     const stills = imgs.filter((img) => img.includes('src="/about/'));
 
-    // 6 feature cards, 3 Standings steps and the Finale poster, each twice.
-    expect(stills).toHaveLength(20);
+    // 7 feature cards, 3 Standings steps and the Finale poster, each twice.
+    expect(stills).toHaveLength(22);
     const light = stills.filter((img) =>
       img.includes('data-still-scheme="light"'),
     );
     const dark = stills.filter((img) =>
       img.includes('data-still-scheme="dark"'),
     );
-    expect(light).toHaveLength(10);
-    expect(dark).toHaveLength(10);
+    expect(light).toHaveLength(11);
+    expect(dark).toHaveLength(11);
     for (const img of dark) {
       expect(img).toMatch(/src="\/about\/[a-z-]+-dark\.png"/);
       expect(img).toMatch(/alt="[^"]+"/);
@@ -194,7 +194,7 @@ describe("AboutPage", () => {
     expect(text).not.toMatch(/your team/i);
   });
 
-  it("renders exactly the six feature cards, in order", async () => {
+  it("renders exactly the seven feature cards, in order", async () => {
     getCurrentWarWeek.mockResolvedValue(warWeekFixture());
     const { html } = await renderAbout();
 
@@ -207,6 +207,7 @@ describe("AboutPage", () => {
       "points",
       "announcements",
       "competitions",
+      "league",
       "archive",
     ]);
     const titles = ABOUT_FEATURES.map((f) => f.title);
@@ -216,6 +217,7 @@ describe("AboutPage", () => {
       "Points and Standings",
       "Announcements",
       "Competitions: Placements, Brackets, Head-to-head, Best score and Participation",
+      "League: round robin and Swiss",
       "The Archive",
     ]);
   });
@@ -227,7 +229,10 @@ describe("AboutPage", () => {
     expect(text).not.toMatch(/claude code/i);
     expect(text).not.toMatch(/atlas/i);
     expect(text).not.toMatch(/\bagents?\b/i);
-    expect(text).not.toMatch(/\b(event|tournament|member|match|league)s?\b/i);
+    expect(text).not.toMatch(
+      /\b(event|tournament|member|heat|champion|game)s?\b/i,
+    );
+    expect(text).not.toMatch(/\b(un-?)?finali[sz]/i);
   });
 
   it("is dynamic, not statically prerendered with a stale War Week", () => {

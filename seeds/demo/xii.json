@@ -59,9 +59,9 @@
         },
         {
           "startTime": "19:00",
-          "title": "Chess Heats, Round 1",
+          "title": "Chess Matches, Round 1",
           "category": "competition",
-          "competition": "Chess Heats",
+          "competition": "Chess Matches",
           "location": "Main room"
         }
       ]
@@ -142,9 +142,9 @@
         },
         {
           "startTime": "17:00",
-          "title": "Chess Heats, Final",
+          "title": "Chess Matches, Final",
           "category": "competition",
-          "competition": "Chess Heats",
+          "competition": "Chess Matches",
           "location": "Main room"
         }
       ]
@@ -231,9 +231,9 @@
       "scoring": "individual",
       "placementPoints": [3, 2, 1],
       "description": "One mile around the block, timed. Top three take Placement Points.",
-      "finalized": true,
-      "finalizedAt": "2027-02-21T11:17:00-05:00",
-      "finalizedByEmail": "demo-organizer@jahnelgroup.com"
+      "closed": true,
+      "closedAt": "2027-02-21T11:17:00-05:00",
+      "closedByEmail": "demo-organizer@jahnelgroup.com"
     },
     {
       "name": "Step Challenge",
@@ -241,33 +241,77 @@
       "description": "Points for steps logged each day of the week; no cap.",
       "scoreDirection": "higher",
       "placementPoints": [7, 6.5, 5.5, 4.5, 3.5, 3, 2.5, 2, 1.5, 1, 1, 0.5],
-      "finalized": true,
-      "finalizedAt": "2027-02-23T09:02:00-05:00",
-      "finalizedByEmail": "demo-organizer@jahnelgroup.com"
+      "closed": true,
+      "closedAt": "2027-02-23T09:02:00-05:00",
+      "closedByEmail": "demo-organizer@jahnelgroup.com"
     },
     {
       "name": "Ping Pong",
       "scoring": "individual",
       "format": "head-to-head",
-      "gameConfig": {
+      "seriesConfig": {
         "drawsAllowed": false,
-        "bestOf": null
+        "bestOf": 3
       },
-      "entrantsOpen": true,
+      "entrants": ["Ada Anvil", "Bo Banner"],
       "placementPoints": [3, 2, 1],
-      "description": "Log a Game from your phone whenever a table frees up."
+      "description": "Log a Match from your phone whenever a table frees up."
     },
     {
-      "name": "Chess Heats",
+      "name": "Chess Matches",
       "scoring": "individual",
       "format": "bracket",
       "bracketConfig": {
-        "entrantsPerHeat": 4,
-        "advancePerHeat": 2,
-        "thirdPlaceGame": false
+        "kind": "group",
+        "entrantsPerMatch": 4,
+        "advancePerMatch": 2,
+        "thirdPlaceMatch": false,
+        "rounds": {}
       },
       "placementPoints": [5, 3, 1],
-      "description": "Four-player Heats; the top two advance to the Final."
+      "description": "Four-player Matches; the top two advance to the Final."
+    },
+    {
+      "name": "Chess Round Robin",
+      "description": "Everyone plays everyone, one Match at a time: win 1, draw ½, loss 0. All five rounds are played and the League is Closed.",
+      "scoring": "individual",
+      "format": "league",
+      "leagueConfig": {
+        "pairing": "round-robin",
+        "rounds": null
+      },
+      "entrants": [
+        "Ada Anvil",
+        "Bo Banner",
+        "Cass Comet",
+        "Dot Dynamo",
+        "Eli Ember"
+      ],
+      "placementPoints": [5, 3, 1],
+      "closed": true,
+      "closedAt": "2027-02-25T17:00:00-05:00",
+      "closedByEmail": "demo-organizer@jahnelgroup.com"
+    },
+    {
+      "name": "Chess Swiss",
+      "description": "Eight players, three Swiss rounds paired one at a time. Rounds 1 and 2 are played; round 3 is paired with one result in.",
+      "scoring": "individual",
+      "format": "league",
+      "leagueConfig": {
+        "pairing": "swiss",
+        "rounds": 3
+      },
+      "entrants": [
+        "Ada Anvil",
+        "Fay Falcon",
+        "Gus Gadget",
+        "Hal Harbor",
+        "Ivy Ion",
+        "Jax Jetpack",
+        "Kit Kestrel",
+        "Lou Lantern"
+      ],
+      "placementPoints": [5, 3, 1]
     }
   ],
   "announcements": [
@@ -318,8 +362,8 @@
       }
     },
     {
-      "key": "chess-heats-tonight",
-      "title": "Chess Heats start tonight",
+      "key": "chess-matches-tonight",
+      "title": "Chess Matches start tonight",
       "authorEmail": "demo-organizer@jahnelgroup.com",
       "publishedAt": "2027-02-21T13:00:00-05:00",
       "body": {
@@ -368,7 +412,7 @@
       "kind": "awards"
     },
     {
-      "kind": "champions"
+      "kind": "winners"
     },
     {
       "kind": "standings"
@@ -497,6 +541,262 @@
       "participant": "Lou Lantern",
       "place": 12,
       "score": 0.5
+    }
+  ],
+  "leagueMatches": [
+    {
+      "key": "rr-1-0",
+      "competition": "Chess Round Robin",
+      "round": 1,
+      "position": 0,
+      "a": "Bo Banner",
+      "b": "Eli Ember",
+      "result": "a",
+      "recordedAt": "2027-02-22T12:30:00-05:00"
+    },
+    {
+      "key": "rr-1-1",
+      "competition": "Chess Round Robin",
+      "round": 1,
+      "position": 1,
+      "a": "Cass Comet",
+      "b": "Dot Dynamo",
+      "result": "a",
+      "recordedAt": "2027-02-22T12:30:00-05:00"
+    },
+    {
+      "key": "rr-1-2",
+      "competition": "Chess Round Robin",
+      "round": 1,
+      "position": 2,
+      "a": "Ada Anvil",
+      "b": null
+    },
+    {
+      "key": "rr-2-0",
+      "competition": "Chess Round Robin",
+      "round": 2,
+      "position": 0,
+      "a": "Ada Anvil",
+      "b": "Eli Ember",
+      "result": "b",
+      "recordedAt": "2027-02-23T12:30:00-05:00"
+    },
+    {
+      "key": "rr-2-1",
+      "competition": "Chess Round Robin",
+      "round": 2,
+      "position": 1,
+      "a": "Bo Banner",
+      "b": "Cass Comet",
+      "result": "a",
+      "recordedAt": "2027-02-23T12:30:00-05:00"
+    },
+    {
+      "key": "rr-2-2",
+      "competition": "Chess Round Robin",
+      "round": 2,
+      "position": 2,
+      "a": "Dot Dynamo",
+      "b": null
+    },
+    {
+      "key": "rr-3-0",
+      "competition": "Chess Round Robin",
+      "round": 3,
+      "position": 0,
+      "a": "Ada Anvil",
+      "b": "Dot Dynamo",
+      "result": "a",
+      "recordedAt": "2027-02-24T12:30:00-05:00"
+    },
+    {
+      "key": "rr-3-1",
+      "competition": "Chess Round Robin",
+      "round": 3,
+      "position": 1,
+      "a": "Eli Ember",
+      "b": "Cass Comet",
+      "result": "draw",
+      "recordedAt": "2027-02-24T12:30:00-05:00"
+    },
+    {
+      "key": "rr-3-2",
+      "competition": "Chess Round Robin",
+      "round": 3,
+      "position": 2,
+      "a": "Bo Banner",
+      "b": null
+    },
+    {
+      "key": "rr-4-0",
+      "competition": "Chess Round Robin",
+      "round": 4,
+      "position": 0,
+      "a": "Ada Anvil",
+      "b": "Cass Comet",
+      "result": "draw",
+      "recordedAt": "2027-02-25T12:30:00-05:00"
+    },
+    {
+      "key": "rr-4-1",
+      "competition": "Chess Round Robin",
+      "round": 4,
+      "position": 1,
+      "a": "Dot Dynamo",
+      "b": "Bo Banner",
+      "result": "draw",
+      "recordedAt": "2027-02-25T12:30:00-05:00"
+    },
+    {
+      "key": "rr-4-2",
+      "competition": "Chess Round Robin",
+      "round": 4,
+      "position": 2,
+      "a": "Eli Ember",
+      "b": null
+    },
+    {
+      "key": "rr-5-0",
+      "competition": "Chess Round Robin",
+      "round": 5,
+      "position": 0,
+      "a": "Ada Anvil",
+      "b": "Bo Banner",
+      "result": "a",
+      "recordedAt": "2027-02-25T16:30:00-05:00"
+    },
+    {
+      "key": "rr-5-1",
+      "competition": "Chess Round Robin",
+      "round": 5,
+      "position": 1,
+      "a": "Dot Dynamo",
+      "b": "Eli Ember",
+      "result": "draw",
+      "recordedAt": "2027-02-25T16:30:00-05:00"
+    },
+    {
+      "key": "rr-5-2",
+      "competition": "Chess Round Robin",
+      "round": 5,
+      "position": 2,
+      "a": "Cass Comet",
+      "b": null
+    },
+    {
+      "key": "sw-1-0",
+      "competition": "Chess Swiss",
+      "round": 1,
+      "position": 0,
+      "a": "Ada Anvil",
+      "b": "Ivy Ion",
+      "result": "draw",
+      "recordedAt": "2027-02-22T16:00:00-05:00"
+    },
+    {
+      "key": "sw-1-1",
+      "competition": "Chess Swiss",
+      "round": 1,
+      "position": 1,
+      "a": "Fay Falcon",
+      "b": "Jax Jetpack",
+      "result": "a",
+      "recordedAt": "2027-02-22T16:00:00-05:00"
+    },
+    {
+      "key": "sw-1-2",
+      "competition": "Chess Swiss",
+      "round": 1,
+      "position": 2,
+      "a": "Gus Gadget",
+      "b": "Kit Kestrel",
+      "result": "a",
+      "recordedAt": "2027-02-22T16:00:00-05:00"
+    },
+    {
+      "key": "sw-1-3",
+      "competition": "Chess Swiss",
+      "round": 1,
+      "position": 3,
+      "a": "Hal Harbor",
+      "b": "Lou Lantern",
+      "result": "draw",
+      "recordedAt": "2027-02-22T16:00:00-05:00"
+    },
+    {
+      "key": "sw-2-0",
+      "competition": "Chess Swiss",
+      "round": 2,
+      "position": 0,
+      "a": "Fay Falcon",
+      "b": "Gus Gadget",
+      "result": "a",
+      "recordedAt": "2027-02-23T16:00:00-05:00"
+    },
+    {
+      "key": "sw-2-1",
+      "competition": "Chess Swiss",
+      "round": 2,
+      "position": 1,
+      "a": "Ada Anvil",
+      "b": "Lou Lantern",
+      "result": "a",
+      "recordedAt": "2027-02-23T16:00:00-05:00"
+    },
+    {
+      "key": "sw-2-2",
+      "competition": "Chess Swiss",
+      "round": 2,
+      "position": 2,
+      "a": "Hal Harbor",
+      "b": "Ivy Ion",
+      "result": "draw",
+      "recordedAt": "2027-02-23T16:00:00-05:00"
+    },
+    {
+      "key": "sw-2-3",
+      "competition": "Chess Swiss",
+      "round": 2,
+      "position": 3,
+      "a": "Jax Jetpack",
+      "b": "Kit Kestrel",
+      "result": "a",
+      "recordedAt": "2027-02-23T16:00:00-05:00"
+    },
+    {
+      "key": "sw-3-0",
+      "competition": "Chess Swiss",
+      "round": 3,
+      "position": 0,
+      "a": "Fay Falcon",
+      "b": "Ada Anvil",
+      "result": "b",
+      "recordedAt": "2027-02-24T16:00:00-05:00"
+    },
+    {
+      "key": "sw-3-1",
+      "competition": "Chess Swiss",
+      "round": 3,
+      "position": 1,
+      "a": "Ivy Ion",
+      "b": "Jax Jetpack"
+    },
+    {
+      "key": "sw-3-2",
+      "competition": "Chess Swiss",
+      "round": 3,
+      "position": 2,
+      "a": "Gus Gadget",
+      "b": "Hal Harbor"
+    },
+    {
+      "key": "sw-3-3",
+      "competition": "Chess Swiss",
+      "round": 3,
+      "position": 3,
+      "a": "Lou Lantern",
+      "b": "Kit Kestrel"
     }
   ]
 }

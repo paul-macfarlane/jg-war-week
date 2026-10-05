@@ -3,12 +3,11 @@ import { describe, expect, it } from "vitest";
 import { toParticipationResult } from "@/mcp/participation";
 import type { ParticipationView } from "@/queries/participation";
 
-const CLOSES = new Date("2027-02-26T22:00:00.000Z");
-
 function view(
   overrides: Partial<ParticipationView["competition"]> = {},
 ): ParticipationView {
   return {
+    entryPoints: [],
     competition: {
       id: "c1",
       warWeekId: "w1",
@@ -17,7 +16,6 @@ function view(
       placementPoints: [5, 3, 1],
       participationPoints: null,
       selfCheckIn: true,
-      checkInClosesAt: CLOSES,
       closed: false,
       ...overrides,
     },
@@ -96,7 +94,6 @@ describe("toParticipationResult", () => {
         pointsPerParticipant: null,
         placementPoints: [5, 3, 1],
         selfCheckIn: true,
-        checkInClosesAt: "2027-02-26T22:00:00.000Z",
         closed: false,
       },
       tookPart: [
@@ -119,7 +116,6 @@ describe("toParticipationResult", () => {
           scoring: "individual",
           participationPoints: 2,
           placementPoints: null,
-          checkInClosesAt: null,
           closed: true,
         }),
         teamCounts: [],
@@ -129,7 +125,6 @@ describe("toParticipationResult", () => {
     expect(result).toMatchObject({
       competition: {
         teamScoring: null,
-        checkInClosesAt: null,
         closed: true,
       },
       teamCounts: [],

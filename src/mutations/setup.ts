@@ -1,27 +1,27 @@
-import { type SQL, and, count, eq, ne, sql } from "drizzle-orm";
+import { type SQL, and, count, eq, inArray, ne, sql } from "drizzle-orm";
 
 import { DBOrTx, db } from "@/db";
 import {
+  attempt,
   award,
   awardParticipant,
   competition,
   competitionHost,
   day,
   entrant,
-  game,
-  gamePlayer,
+  leagueMatch,
   participant,
   participation,
   placement,
   pointsEntry,
   scheduleItem,
+  seriesMatch,
   squad,
   squadParticipant,
   team,
   warWeek,
 } from "@/db/schema";
 import { formatDefaults } from "@/lib/format-defaults";
-import { JG_EMAIL_MESSAGE, jgEmailListSchema } from "@/lib/jg-email";
 import type { FieldErrors } from "@/lib/result";
 import {
   type RosterImportSignature,
@@ -56,6 +56,7 @@ const DAY_NOT_FOUND = "That Day no longer exists.";
 const TEAM_NOT_FOUND = "That Team no longer exists.";
 const PARTICIPANT_NOT_FOUND = "That Participant no longer exists.";
 const COMPETITION_NOT_FOUND = "That Competition no longer exists.";
+const HOST_NOT_ON_ROSTER = "A Host must be on this War Week's roster.";
 
 /** Postgres unique_violation: another save took the natural key meanwhile. */
 export function isUniqueViolation(error: unknown): boolean {
@@ -411,9 +412,9 @@ export async function deleteTeam(
         ],
         [await tx.$count(squad, eq(squad.teamId, id)), "Squad", "Squads"],
         [
-          await tx.$count(gamePlayer, eq(gamePlayer.teamId, id)),
-          "Game",
-          "Games",
+          await tx.$count(attempt, eq(attempt.teamId, id)),
+          "Attempt",
+          "Attempts",
         ],
       ],
       "Move or delete them first.",
@@ -678,9 +679,9 @@ export async function deleteParticipant(
           "Squads",
         ],
         [
-          await tx.$count(gamePlayer, eq(gamePlayer.participantId, id)),
-          "Game",
-          "Games",
+          await tx.$count(attempt, eq(attempt.participantId, id)),
+          "Attempt",
+          "Attempts",
         ],
       ],
       "Delete them or remove the Participant from them first.",
@@ -713,7 +714,7 @@ async function competitionRefusal(
       .select({
         scoring: competition.scoring,
         placementPoints: competition.placementPoints,
-        finalizedAt: competition.finalizedAt,
+        closedAt: competition.closedAt,
         format: competition.format,
       })
       .from(competition)
@@ -727,7 +728,7 @@ async function competitionRefusal(
     existing = {
       scoring: found.scoring,
       placementPoints: found.placementPoints,
-      finalizedAt: found.finalizedAt,
+      closedAt: found.closedAt,
       format: found.format,
       pointsEntryCount: await tx.$count(
         pointsEntry,
@@ -762,19 +763,22 @@ async function competitionRefusal(
     "Remove them before changing its scoring.",
   );
   if (entrantRefusal) return entrantRefusal;
-  // A Game's players are Teams or Participants by its scoring.
-  const gameRefusal = inUseError(
+  // A Match's Entrants and an Attempt's Team follow its scoring.
+  const loggedRefusal = inUseError(
     "Competition",
     [
       [
-        await tx.$count(game, eq(game.competitionId, exceptId)),
-        "Game",
-        "Games",
+        (await tx.$count(
+          seriesMatch,
+          eq(seriesMatch.competitionId, exceptId),
+        )) + (await tx.$count(attempt, eq(attempt.competitionId, exceptId))),
+        "Match or Attempt",
+        "Matches or Attempts",
       ],
     ],
     "Delete them before changing its scoring.",
   );
-  if (gameRefusal) return gameRefusal;
+  if (loggedRefusal) return loggedRefusal;
   // Who took part is checked against Teams in team scoring (ADR 0009).
   const participationRefusal = inUseError(
     "Competition",
@@ -826,8 +830,8 @@ export type CreateCompetitionResult =
 /**
  * Creates a Competition, with the Format an Organizer chose (default
  * "placement") and that Format's create defaults (`formatDefaults`, as a
- * Format change gives): a Bracket's default heat settings, a Head-to-head
- * or Best score Competition's default settings open to everyone, a
+ * Format change gives): a Bracket's default match settings, a Head-to-head's
+ * Best of 3, Best score's higher-is-better direction and Team score, a
  * `participation` Competition's 1 point per Participant when individual or
  * Placement Points 3, 2, 1 (ranked by headcount) when team, with Self
  * check-in off.
@@ -868,7 +872,7 @@ export async function updateCompetition(
     `There's already a Competition named "${values.name}".`,
     () =>
       dbOrTx.transaction(async (tx): Promise<MutationResult> => {
-        // Adding a Placement or Entrant, and Finalizing or closing (which
+        // Adding a Placement or Entrant, and Closing or closing (which
         // write its Points Entries), take the same lock, so the counts below
         // hold until this commits.
         if (!(await locked(competition, id, ctx, tx))) {
@@ -922,7 +926,8 @@ export async function updateCompetition(
 
 /**
  * Deletes a Competition of this War Week, refusing one with Points Entries,
- * Schedule Items, Games or anyone who took part.
+ * Schedule Items, Matches, Attempts, League Matches or anyone who took
+ * part.
  */
 export async function deleteCompetition(
   id: string,
@@ -946,11 +951,28 @@ export async function deleteCompetition(
           "Schedule Item",
           "Schedule Items",
         ],
-        [await tx.$count(game, eq(game.competitionId, id)), "Game", "Games"],
+        [
+          (await tx.$count(seriesMatch, eq(seriesMatch.competitionId, id))) +
+            (await tx.$count(attempt, eq(attempt.competitionId, id))),
+          "Match or Attempt",
+          "Matches or Attempts",
+        ],
       ],
       "Delete or move them first.",
     );
     if (refusal) return { ok: false, error: refusal };
+    const paired = inUseError(
+      "Competition",
+      [
+        [
+          await tx.$count(leagueMatch, eq(leagueMatch.competitionId, id)),
+          "League Match",
+          "League Matches",
+        ],
+      ],
+      "Clear the pairings first.",
+    );
+    if (paired) return { ok: false, error: paired };
     const tookPart = inUseError(
       "Competition",
       [
@@ -977,23 +999,36 @@ export async function deleteCompetition(
 }
 
 /**
- * Replaces a Competition's Hosts with `emails`, lowercased and deduplicated,
- * in one transaction. Refuses any non-JG email and a Competition outside
- * `ctx.warWeekId`. The only writer of `competition_host`: the Competition
- * setup save never carries Hosts.
+ * Replaces a Competition's Hosts with the Participants `participantIds`
+ * (deduplicated), in one transaction. Refuses a Participant who isn't on the
+ * roster of the Competition's War Week (`ctx.warWeekId`; a write-time rule,
+ * not a constraint) and a Competition outside it. The only writer of
+ * `competition_host`: the Competition setup save never carries Hosts.
  */
 export async function setCompetitionHosts(
   competitionId: string,
-  emails: string[],
+  participantIds: string[],
   ctx: MutationContext,
   dbOrTx: DBOrTx = db,
 ): Promise<MutationResult> {
-  const parsed = jgEmailListSchema.safeParse(emails);
-  if (!parsed.success) return { ok: false, error: JG_EMAIL_MESSAGE };
-  const hosts = [...new Set(parsed.data)];
+  const hosts = [...new Set(participantIds)];
   return dbOrTx.transaction(async (tx): Promise<MutationResult> => {
     if (!(await locked(competition, competitionId, ctx, tx))) {
       return { ok: false, error: COMPETITION_NOT_FOUND };
+    }
+    if (hosts.length > 0) {
+      const onRoster = await tx
+        .select({ id: participant.id })
+        .from(participant)
+        .where(
+          and(
+            eq(participant.warWeekId, ctx.warWeekId),
+            inArray(participant.id, hosts),
+          ),
+        );
+      if (onRoster.length !== hosts.length) {
+        return { ok: false, error: HOST_NOT_ON_ROSTER };
+      }
     }
     await tx
       .delete(competitionHost)
@@ -1001,7 +1036,9 @@ export async function setCompetitionHosts(
     if (hosts.length > 0) {
       await tx
         .insert(competitionHost)
-        .values(hosts.map((email) => ({ competitionId, email })));
+        .values(
+          hosts.map((participantId) => ({ competitionId, participantId })),
+        );
     }
     return { ok: true };
   });

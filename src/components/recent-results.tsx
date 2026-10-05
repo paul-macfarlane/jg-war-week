@@ -1,6 +1,7 @@
 import Link from "next/link";
 
 import { Avatar } from "@/components/avatar";
+import { TeamTag } from "@/components/participant-mark";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { formatPoints } from "@/lib/points";
@@ -32,6 +33,9 @@ function TargetName({
         />
       )}
       <span className="font-medium">{target.name}</span>
+      {target.kind === "participant" ? (
+        <TeamTag name={target.teamName} color={target.color} />
+      ) : null}
     </span>
   );
 }
@@ -65,11 +69,11 @@ function ResultSummary({
   return (
     <span className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm">
       <span className="text-foreground/70">
-        {result.kind === "games-closed" || result.kind === "placement-finalized"
+        {result.kind === "results-closed" || result.kind === "placement-closed"
           ? "Winner"
           : result.kind === "participation-closed"
             ? "Top"
-            : "Champion"}
+            : "Winner"}
       </span>
       {result.winners.map((target) => (
         <TargetName
@@ -125,13 +129,13 @@ export function RecentResultsSection({
                     {result.competition}
                   </Link>
                 )}
-                {result.kind === "bracket-finalized" ? (
-                  <Badge variant="secondary">Bracket finalized</Badge>
+                {result.kind === "bracket-closed" ? (
+                  <Badge variant="secondary">Bracket closed</Badge>
                 ) : null}
-                {result.kind === "placement-finalized" ? (
-                  <Badge variant="secondary">Finalized</Badge>
+                {result.kind === "placement-closed" ? (
+                  <Badge variant="secondary">Closed</Badge>
                 ) : null}
-                {result.kind === "games-closed" ||
+                {result.kind === "results-closed" ||
                 result.kind === "participation-closed" ? (
                   <Badge variant="secondary">Closed</Badge>
                 ) : null}

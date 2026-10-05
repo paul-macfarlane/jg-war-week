@@ -12,10 +12,10 @@
  * which is emptied first. Starts its own server on port 3212 and signs in
  * as a made-up Organizer (`finale-stills@jahnelgroup.com`), so the stills
  * show what the Organizer presents. So every built-in slide has something
- * to show, it adds, and removes again afterwards: two Awards in Award
- * Categories, a finalized Heats Bracket (`setupBracketDemo`, finalized
- * here with its placings' points) and the seeded Ping Pong Head-to-head
- * Competition closed with a winner. Pass an edition to shoot another War
+ * to show, it adds, and removes again afterwards: two Awards, a closed
+ * Matches Bracket (`setupBracketDemo`, closed here with its placings'
+ * points) and the seeded Ping Pong Head-to-head Competition closed with a
+ * winner. Pass an edition to shoot another War
  * Week's demo:
  *   pnpm stills:finale xiii
  */
@@ -66,8 +66,6 @@ const SIZES = [
   { width: 1920, height: 1080 },
   { width: 390, height: 844 },
 ];
-/** The Award Categories the two demo Awards go in (seeded keys). */
-const AWARD_CATEGORIES = ["war-week-mvp", "grind"];
 
 const sleep = (ms: number) => new Promise<void>((r) => setTimeout(r, ms));
 const note = (line: string) => console.log(line);
@@ -77,7 +75,7 @@ type StillsWarWeek = DemoWarWeek & { background_color: string };
 /** Undo steps, run in reverse in `finally` whatever happened. */
 const undo: (() => Promise<unknown>)[] = [];
 
-/** Two Awards, each in a seeded Award Category, with recipients. */
+/** Two Awards with recipients. */
 async function addAwards(warWeek: StillsWarWeek) {
   const people = await query<{ id: string }>(
     `select id from participant where war_week_id = $1 order by display_name limit 3`,
@@ -85,24 +83,22 @@ async function addAwards(warWeek: StillsWarWeek) {
   );
   const awards = [
     {
-      key: AWARD_CATEGORIES[0],
       name: "MVP",
       description: "Showed up for every Competition and carried the room.",
       recipients: people.slice(0, 1),
     },
     {
-      key: AWARD_CATEGORIES[1],
       name: "Hardest Worker",
-      description: "Billable hours by day, Heats by night.",
+      description: "Billable hours by day, Matches by night.",
       recipients: people.slice(1, 3),
     },
   ];
   for (const award of awards) {
     const [row] = await query<{ id: string }>(
-      `insert into award (war_week_id, name, description, category_id)
-       values ($1, $2, $3, (select id from award_category where key = $4))
+      `insert into award (war_week_id, name, description)
+       values ($1, $2, $3)
        returning id`,
-      [warWeek.id, award.name, award.description, award.key],
+      [warWeek.id, award.name, award.description],
     );
     undo.push(() => query(`delete from award where id = $1`, [row.id]));
     for (const p of award.recipients) {
@@ -111,57 +107,57 @@ async function addAwards(warWeek: StillsWarWeek) {
         [row.id, p.id],
       );
     }
-    note(`fixture: Award "${award.name}" in ${award.key}`);
+    note(`fixture: Award "${award.name}"`);
   }
 }
 
 /**
- * Finalizes a Competition the way finalize or close leaves it: its
+ * Closes a Competition the way close or close leaves it: its
  * placings' generated Points Entries (`[participantId, points]`) and its
- * finalize time; the undo removes both.
+ * close time; the undo removes both.
  */
-async function finalize(
+async function close(
   competitionId: string,
   placings: [string, number][],
   what: string,
 ) {
   undo.push(async () => {
     await query(
-      `delete from points_entry where competition_id = $1 and generated_by_bracket`,
+      `delete from points_entry where competition_id = $1 and generated`,
       [competitionId],
     );
-    await query(`update competition set finalized_at = null where id = $1`, [
+    await query(`update competition set closed_at = null where id = $1`, [
       competitionId,
     ]);
   });
   for (const [participantId, points] of placings) {
     await query(
-      `insert into points_entry (war_week_id, competition_id, participant_id, points, note, entered_by_email, generated_by_bracket)
+      `insert into points_entry (war_week_id, competition_id, participant_id, points, note, entered_by_email, generated)
        select war_week_id, id, $2, $3, 'Finale stills', $4, true from competition where id = $1`,
       [competitionId, participantId, points, DEMO_EMAIL],
     );
   }
-  await query(`update competition set finalized_at = now() where id = $1`, [
+  await query(`update competition set closed_at = now() where id = $1`, [
     competitionId,
   ]);
-  note(`fixture: ${what} finalized`);
+  note(`fixture: ${what} closed`);
 }
 
-/** A finished Heats Bracket, finalized: its Final's places get 5, 3, 1. */
-async function addFinalizedBracket(warWeek: StillsWarWeek) {
+/** A finished Matches Bracket, closed: its Final's places get 5, 3, 1. */
+async function addClosedBracket(warWeek: StillsWarWeek) {
   const bracket = await setupBracketDemo(warWeek, note);
   undo.push(bracket.teardown);
   const final = await query<{ participant_id: string }>(
-    `select e.participant_id from heat h
-     join heat_entrant he on he.heat_id = h.id
+    `select e.participant_id from bracket_match h
+     join bracket_match_entrant he on he.bracket_match_id = h.id
      join entrant e on e.id = he.entrant_id
      where h.competition_id = $1
-       and h.round = (select max(round) from heat where competition_id = $1)
+       and h.round = (select max(round) from bracket_match where competition_id = $1)
        and not h.third_place
      order by he.place limit 3`,
     [bracket.competitionId],
   );
-  await finalize(
+  await close(
     bracket.competitionId,
     final.map((row, i): [string, number] => [row.participant_id, [5, 3, 1][i]]),
     "the Bracket",
@@ -179,7 +175,7 @@ async function closePingPong(warWeek: StillsWarWeek) {
     `select id from participant where war_week_id = $1 order by display_name desc limit 3`,
     [warWeek.id],
   );
-  await finalize(
+  await close(
     pong.id,
     people.map((p, i): [string, number] => [p.id, [3, 2, 1][i]]),
     "Ping Pong",
@@ -293,7 +289,7 @@ async function main() {
       "Finale stills",
     );
     await addAwards(warWeek);
-    await addFinalizedBracket(warWeek);
+    await addClosedBracket(warWeek);
     await closePingPong(warWeek);
 
     await server.ready();

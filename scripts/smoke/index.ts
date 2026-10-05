@@ -21,11 +21,12 @@ import {
   assertAnnouncementUnsafeContentStripped,
 } from "./announcements";
 import { assertArchiveDetail, assertHistory } from "./archive";
-import {
-  assertAwardCategoriesSeeded,
-  assertAwardsPageGrouped,
-} from "./award-categories";
 import { assertAwardHistoryRoute } from "./award-history";
+import {
+  assertAwardNamesSeeded,
+  assertAwardPresets,
+  assertAwardsPageLinksByName,
+} from "./award-names";
 import {
   assertAwardActions,
   assertAwardAdminPages,
@@ -34,12 +35,11 @@ import {
 } from "./awards";
 import {
   assertBracketLoop,
-  assertHeatsLoop,
+  assertMatchesLoop,
   assertSquadSelfReportLoop,
 } from "./brackets";
 import { assertDiscretionaryPoints } from "./discretionary-points";
 import { assertFinale } from "./finale";
-import { assertGamesLoop } from "./games";
 import {
   BASE_URL,
   PORT,
@@ -64,7 +64,13 @@ import {
   assertParticipantRefused,
   deleteSmokeHosts,
 } from "./hosts";
+import {
+  assertLeagueConstraints,
+  assertLeagueLoop,
+  assertLeagueSeeds,
+} from "./league";
 import { assertPostedWarWeekWins, assertWarWeekLifecycle } from "./lifecycle";
+import { assertLoggedResultsLoop } from "./logged-results";
 import { assertMcp } from "./mcp";
 import {
   assertAboutPage,
@@ -74,6 +80,7 @@ import {
   assertDisplayScriptInHead,
   assertEditionErrorBoundary,
   assertFinaleSlidesKeptIds,
+  assertFormatColumnsConstraints,
   assertFreeForAllRoster,
   assertHomeNowNext,
   assertInstallable,
@@ -160,8 +167,10 @@ async function main() {
   await assertDiscretionaryReasonConstraint();
   await assertPlacementTargetConstraint();
   await assertParticipationColumnsConstraint();
+  await assertFormatColumnsConstraints();
+  await assertLeagueConstraints();
   await assertPlacementPointsSeeded();
-  await assertAwardCategoriesSeeded();
+  await assertAwardNamesSeeded();
 
   // Clear leftovers from an interrupted run, then add the smoke Organizer
   // to XI's allowlist until the run ends.
@@ -230,7 +239,8 @@ async function main() {
       await assertAnnouncementUnsafeContentStripped(sessions);
       await assertAnnouncementAdminPages(sessions);
       await assertAwardsPage();
-      await assertAwardsPageGrouped();
+      await assertAwardsPageLinksByName();
+      await assertAwardPresets(sessions);
       await assertFaqPage();
       await assertAwardActions(sessions);
       await assertAwardAdminPages(sessions);
@@ -238,16 +248,20 @@ async function main() {
       await assertSetupTeamsAndCompetitions(sessions);
       await assertSetupScheduleFaq(sessions);
       await assertBracketLoop(sessions);
-      await assertHeatsLoop(sessions);
+      await assertMatchesLoop(sessions);
       await assertSquadSelfReportLoop(sessions);
       await assertHostChecks(sessions);
       await assertParticipantRefused(sessions);
       await assertParticipationLoop(sessions);
+      await assertLeagueLoop(sessions);
       // Ends XI by SQL in its own step, then restores it.
-      await assertGamesLoop(sessions);
+      await assertLoggedResultsLoop(sessions);
       await assertPostedWarWeekWins(sessions);
       // It changes which War Week is current, then restores XI.
       await assertWarWeekLifecycle(sessions);
+      // Ends XI by SQL so XII is current, loads XII's demo Leagues, then
+      // restores XI and XII.
+      await assertLeagueSeeds(sessions);
       // Final phase: reloads the seeds with the XII scale demo, then puts
       // localSeedFiles() back. Before the step below, which can leave the
       // faq_item table hidden until `restoreFaqTable` in `finally`.

@@ -65,7 +65,7 @@ function discretionaryInWarWeek(id: string, warWeekId: string) {
     eq(pointsEntry.id, id),
     eq(pointsEntry.warWeekId, warWeekId),
     isNull(pointsEntry.competitionId),
-    eq(pointsEntry.generatedByBracket, false),
+    eq(pointsEntry.generated, false),
   );
 }
 

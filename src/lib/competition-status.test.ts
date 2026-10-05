@@ -1,12 +1,13 @@
 import { describe, expect, it } from "vitest";
 
 import { DEFAULT_BRACKET_CONFIG } from "@/lib/bracket/config";
-import type { Bracket, Heat } from "@/lib/bracket/types";
+import type { Bracket, Match } from "@/lib/bracket/types";
 import {
   type CompetitionStatusFacts,
   bracketRoundInPlay,
   competitionStatus,
   competitionStatusText,
+  leagueRoundInPlay,
 } from "@/lib/competition-status";
 
 /** A Competition with nothing entered yet; each case overrides a fact. */
@@ -16,7 +17,7 @@ function facts(
   return {
     format: "placement",
     scoring: "team",
-    finalized: false,
+    closed: false,
     hasResult: false,
     bracketRound: null,
     winners: [],
@@ -73,19 +74,19 @@ describe("competitionStatus", () => {
     ).toBe("Underway · Final");
   });
 
-  it("a Bracket with Entrants but no Heats yet is Underway, with no Round", () => {
+  it("a Bracket with Entrants but no Matches yet is Underway, with no Round", () => {
     expect(text({ format: "bracket", hasResult: true })).toBe("Underway");
   });
 
   it.each(["placement", "bracket"] as const)(
-    "a Finalized %s with a 1st place is Done · Winner",
+    "a Closed %s with a 1st place is Done · Winner",
     (format) => {
       expect(
         competitionStatus(
           facts({
             format,
             hasResult: true,
-            finalized: true,
+            closed: true,
             winners: ["Red Pill"],
           }),
         ),
@@ -97,7 +98,7 @@ describe("competitionStatus", () => {
     "a Closed %s Competition with a 1st place is Done · Winner",
     (format) => {
       expect(
-        text({ format, hasResult: true, finalized: true, winners: ["Zion"] }),
+        text({ format, hasResult: true, closed: true, winners: ["Zion"] }),
       ).toBe("Done · Winner: Zion");
     },
   );
@@ -108,7 +109,7 @@ describe("competitionStatus", () => {
         format: "participation",
         scoring: "team",
         hasResult: true,
-        finalized: true,
+        closed: true,
         winners: ["Nebuchadnezzar"],
       }),
     ).toBe("Done · Winner: Nebuchadnezzar");
@@ -119,7 +120,7 @@ describe("competitionStatus", () => {
       text({
         format: "placement",
         hasResult: true,
-        finalized: true,
+        closed: true,
         winners: ["Morpheus", "Trinity"],
       }),
     ).toBe("Done · Winners: Morpheus, Trinity");
@@ -132,7 +133,7 @@ describe("competitionStatus", () => {
           format: "participation",
           scoring: "individual",
           hasResult: true,
-          finalized: true,
+          closed: true,
           // Even were a winner passed, individual Participation names none.
           winners: ["Neo"],
         }),
@@ -143,24 +144,24 @@ describe("competitionStatus", () => {
   it.each(["head-to-head", "best-score"] as const)(
     "a Closed %s Competition without a 1st place is Closed",
     (format) => {
-      expect(text({ format, hasResult: true, finalized: true })).toBe("Closed");
+      expect(text({ format, hasResult: true, closed: true })).toBe("Closed");
     },
   );
 
-  it("a Finalized Placement without Placement Points is Done, naming no one", () => {
-    expect(
-      text({ format: "placement", hasResult: true, finalized: true }),
-    ).toBe("Done");
+  it("a Closed Placement without Placement Points is Done, naming no one", () => {
+    expect(text({ format: "placement", hasResult: true, closed: true })).toBe(
+      "Done",
+    );
   });
 });
 
-/** A Heat of a head-to-head Bracket: two Entrants unless `bye`. */
-function heat(
+/** A Match of a head-to-head Bracket: two Entrants unless `bye`. */
+function match(
   round: number,
   position: number,
-  status: Heat["status"],
+  status: Match["status"],
   { bye = false, thirdPlace = false } = {},
-): Heat {
+): Match {
   return {
     id: `r${round}p${position}${thirdPlace ? "-3rd" : ""}`,
     round,
@@ -177,9 +178,9 @@ function heat(
   };
 }
 
-const bracket = (heats: Heat[]): Bracket => ({
+const bracket = (matches: Match[]): Bracket => ({
   config: DEFAULT_BRACKET_CONFIG,
-  heats,
+  matches,
 });
 
 describe("bracketRoundInPlay", () => {
@@ -187,86 +188,161 @@ describe("bracketRoundInPlay", () => {
     expect(bracketRoundInPlay(bracket([]))).toBeNull();
   });
 
-  it("is Round 1 while a first-Round Heat is unplayed", () => {
+  it("is Round 1 while a first-Round Match is unplayed", () => {
     expect(
       bracketRoundInPlay(
         bracket([
-          heat(1, 1, "played"),
-          heat(1, 2, "ready"),
-          heat(2, 1, "pending"),
+          match(1, 1, "played"),
+          match(1, 2, "ready"),
+          match(2, 1, "pending"),
         ]),
       ),
     ).toEqual({ round: 1, of: 2 });
   });
 
-  it("is the first Round with an unplayed Heat, a bye never counting", () => {
+  it("is the first Round with an unplayed Match, a bye never counting", () => {
     expect(
       bracketRoundInPlay(
         bracket([
-          heat(1, 1, "played"),
-          heat(1, 2, "pending", { bye: true }),
-          heat(2, 1, "ready"),
-          heat(2, 2, "pending"),
-          heat(3, 1, "pending"),
-          heat(4, 1, "pending"),
+          match(1, 1, "played"),
+          match(1, 2, "pending", { bye: true }),
+          match(2, 1, "ready"),
+          match(2, 2, "pending"),
+          match(3, 1, "pending"),
+          match(4, 1, "pending"),
         ]),
       ),
     ).toEqual({ round: 2, of: 4 });
   });
 
-  it("is the final's Round while only the 3rd place game is left", () => {
+  it("is the final's Round while only the 3rd place Match is left", () => {
     expect(
       bracketRoundInPlay(
         bracket([
-          heat(1, 1, "played"),
-          heat(1, 2, "played"),
-          heat(2, 1, "played"),
-          heat(2, 2, "ready", { thirdPlace: true }),
+          match(1, 1, "played"),
+          match(1, 2, "played"),
+          match(2, 1, "played"),
+          match(2, 2, "ready", { thirdPlace: true }),
         ]),
       ),
     ).toEqual({ round: 2, of: 2 });
   });
 
-  it("is the first Round with a Heat to play in a Heats Bracket, a bye never counting", () => {
-    // 4 per Heat, 2 advancing: a Heat before the final with 2 Entrants is a bye.
+  it("is the first Round with a Match to play in a Matches Bracket, a bye never counting", () => {
+    // 4 per Match, 2 advancing: a Match before the final with 2 Entrants is a bye.
     expect(
       bracketRoundInPlay({
         config: {
-          entrantsPerHeat: 4,
-          advancePerHeat: 2,
-          thirdPlaceGame: false,
+          kind: "group" as const,
+          entrantsPerMatch: 4,
+          advancePerMatch: 2,
+          thirdPlaceMatch: false,
+          rounds: {},
         },
-        heats: [
-          heat(1, 1, "played"),
-          heat(1, 2, "pending", { bye: true }),
-          heat(2, 1, "pending"),
+        matches: [
+          match(1, 1, "played"),
+          match(1, 2, "pending", { bye: true }),
+          match(2, 1, "pending"),
         ],
       }),
     ).toEqual({ round: 2, of: 2 });
   });
 
-  it("is the final's Round while the final and the 3rd place game are both unplayed", () => {
+  it("is the final's Round while the final and the 3rd place Match are both unplayed", () => {
     expect(
       bracketRoundInPlay(
         bracket([
-          heat(1, 1, "played"),
-          heat(1, 2, "played"),
-          heat(2, 1, "ready"),
-          heat(2, 2, "ready", { thirdPlace: true }),
+          match(1, 1, "played"),
+          match(1, 2, "played"),
+          match(2, 1, "ready"),
+          match(2, 2, "ready", { thirdPlace: true }),
         ]),
       ),
     ).toEqual({ round: 2, of: 2 });
   });
 
-  it("is the final's Round once every Heat is played but not Finalized", () => {
+  it("is the final's Round once every Match is played but not Closed", () => {
     expect(
       bracketRoundInPlay(
         bracket([
-          heat(1, 1, "played"),
-          heat(1, 2, "played"),
-          heat(2, 1, "played"),
+          match(1, 1, "played"),
+          match(1, 2, "played"),
+          match(2, 1, "played"),
         ]),
       ),
     ).toEqual({ round: 2, of: 2 });
+  });
+});
+
+describe("a League's status", () => {
+  it("is Not started with no Entrant, Underway · Round 2 of 3 mid-League, and Done once Closed", () => {
+    expect(text({ format: "league" })).toBe("Not started");
+    expect(
+      text({
+        format: "league",
+        hasResult: true,
+        leagueRound: { round: 2, of: 3 },
+      }),
+    ).toBe("Underway · Round 2 of 3");
+    // A League has no final: its last round is still "Round m of m".
+    expect(
+      text({
+        format: "league",
+        hasResult: true,
+        leagueRound: { round: 3, of: 3 },
+      }),
+    ).toBe("Underway · Round 3 of 3");
+    expect(text({ format: "league", closed: true, hasResult: true })).toBe(
+      "Done",
+    );
+    expect(
+      text({
+        format: "league",
+        closed: true,
+        hasResult: true,
+        winners: ["Ada"],
+      }),
+    ).toBe("Done · Winner: Ada");
+  });
+});
+
+describe("leagueRoundInPlay", () => {
+  const swiss3 = { pairing: "swiss", rounds: 3 } as const;
+  const m = (
+    round: number,
+    b: string | null,
+    result: "a" | "b" | "draw" | null,
+  ) => ({ round, b, result });
+
+  it("is null before round 1 is paired", () => {
+    expect(leagueRoundInPlay(swiss3, 6, [])).toBeNull();
+  });
+
+  it("is the first round with a Match to play, a bye never being one", () => {
+    expect(
+      leagueRoundInPlay(swiss3, 5, [
+        m(1, "x", "a"),
+        m(1, "y", null),
+        m(1, null, null),
+      ]),
+    ).toEqual({ round: 1, of: 3 });
+  });
+
+  it("is the next round to pair once every paired round is played", () => {
+    expect(
+      leagueRoundInPlay(swiss3, 6, [m(1, "x", "a"), m(1, "y", "draw")]),
+    ).toEqual({ round: 2, of: 3 });
+  });
+
+  it("is the last round once every round is played", () => {
+    const rr = { pairing: "round-robin", rounds: null } as const;
+    // A round robin of 4 plays 3 rounds.
+    expect(
+      leagueRoundInPlay(rr, 4, [
+        m(1, "x", "a"),
+        m(2, "x", "b"),
+        m(3, "x", "a"),
+      ]),
+    ).toEqual({ round: 3, of: 3 });
   });
 });

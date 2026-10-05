@@ -2,7 +2,7 @@ import { readFileSync, readdirSync } from "node:fs";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
 
-import { categoryKeyForAwardName } from "@/lib/award-categories";
+import { awardNameSlug } from "@/lib/award-names";
 import { DEMO_SEED } from "@/seed/local-files";
 import { type WarWeekSeed, warWeekSeedSchema } from "@/seed/schema";
 
@@ -102,32 +102,67 @@ describe("War Week history", () => {
   });
 });
 
-describe("Award Categories", () => {
-  it("tag every seed Award exactly as the name matcher says", () => {
-    const tagged = [...all, demo, xiiDemo].flatMap((s) =>
-      s.awards.map((a) => ({
-        edition: s.edition,
-        name: a.name,
-        category: a.category ?? null,
-        expected: categoryKeyForAwardName(a.name),
-      })),
-    );
-    expect(tagged.length).toBeGreaterThan(0);
-    for (const a of tagged) {
-      expect(a.category, `${a.edition}: ${a.name}`).toBe(a.expected);
+describe("Award names", () => {
+  const namesOf = (edition: string) =>
+    all.find((s) => s.edition === edition)?.awards.map((a) => a.name) ?? [];
+
+  it("carry no Category tagging", () => {
+    for (const s of [...all, demo, xiiDemo]) {
+      for (const a of s.awards) {
+        expect(Object.keys(a), `${s.edition}: ${a.name}`).not.toContain(
+          "category",
+        );
+      }
     }
   });
 
-  it("tags the Awards the wikis name for each seeded Category", () => {
-    const keysOf = (edition: string) =>
-      all
-        .find((s) => s.edition === edition)
-        ?.awards.flatMap((a) => (a.category ? [a.category] : [])) ?? [];
-    expect(keysOf("iv")).toEqual(["war-week-mvp", "billable-hours-champ"]);
-    expect(keysOf("viii")).toEqual(["billable-hours-champ", "black-midnight"]);
-    expect(demo.awards.find((a) => a.name === "Black Midnight")?.category).toBe(
-      "black-midnight",
+  it("are aligned so the same Award groups across years", () => {
+    for (const edition of ["iv", "v", "viii"]) {
+      expect(namesOf(edition), edition).toContain("Billable Hours Champ");
+    }
+    expect(namesOf("iii")).toEqual(
+      expect.arrayContaining([
+        "Settlers of Catan Champion",
+        "Chess Tournament Champion",
+      ]),
     );
+    expect(namesOf("iv")).toEqual(
+      expect.arrayContaining([
+        "Settlers of Catan Champion",
+        "Chess Tournament Champion",
+        "Super Smash Bros. Champion",
+      ]),
+    );
+    expect(namesOf("vii")).toEqual(
+      expect.arrayContaining([
+        "Chess Tournament Champion",
+        "Battle of the Memes Champion",
+      ]),
+    );
+    expect(namesOf("ix")).toEqual(
+      expect.arrayContaining([
+        "Stairs Challenge Winner",
+        "Mario Kart Champion",
+      ]),
+    );
+    const retired = [
+      "Billing Hours Champ",
+      "Chess Tourney Champion",
+      "Chess Tournament Winners",
+      "Stairs Challenge Winners",
+      "Mario Kart Winner",
+      "Battle of the Memes Winner",
+    ];
+    const everyName = all.flatMap((s) => s.awards.map((a) => a.name));
+    for (const name of retired) expect(everyName).not.toContain(name);
+  });
+
+  it("every Award name has a slug to link to", () => {
+    for (const s of [...all, demo, xiiDemo]) {
+      for (const a of s.awards) {
+        expect(awardNameSlug(a.name), a.name).not.toBe("");
+      }
+    }
   });
 });
 
@@ -147,15 +182,15 @@ describe("War Week XI", () => {
     expect(xi.winner).toBe("Red");
   });
 
-  it("holds every wiki result as a Finalized Placement at the wiki scoreboard's time", () => {
+  it("holds every wiki result as a Closed Placement at the wiki scoreboard's time", () => {
     const placed = new Set(xi.placements.map((p) => p.competition));
     expect(placed.size).toBe(19);
     for (const name of placed) {
       const comp = xi.competitions.find((c) => c.name === name)!;
       expect(comp.format, name).toBe("placement");
-      expect(comp.finalized, name).toBe(true);
-      expect(comp.finalizedAt, name).toBe("2026-02-27T15:00:00-05:00");
-      expect(comp.finalizedByEmail, name).toBe("pmacfarlane@jahnelgroup.com");
+      expect(comp.closed, name).toBe(true);
+      expect(comp.closedAt, name).toBe("2026-02-27T15:00:00-05:00");
+      expect(comp.closedByEmail, name).toBe("pmacfarlane@jahnelgroup.com");
     }
     expect(xi.placements.every((p) => p.team != null)).toBe(true);
     // HQ Attendance and AI Survey Completion are Placements, not Discretionary.
@@ -209,31 +244,40 @@ describe("War Week XI demo", () => {
     expect(xi.competitions.length).toBeGreaterThan(15);
   });
 
-  it("runs a Head-to-head and a Best score Competition as Games, and the old ranked one as an empty Placement", () => {
+  it("runs Bouncy Pong as a Best of 3 between two Entrants, Tuesday Stairs as Sum of members, and the old ranked one as an empty Placement", () => {
     const formats = ["head-to-head", "best-score"];
-    const games = xi.competitions
+    const logged = xi.competitions
       .filter((c) => formats.includes(c.format))
       .map((c) => ({
         name: c.name,
         scoring: c.scoring,
         format: c.format,
-        gameConfig: c.gameConfig,
-        entrantsOpen: c.entrantsOpen,
+        seriesConfig: c.seriesConfig,
+        entrants: c.entrants,
+        scoreDirection: c.scoreDirection,
+        scoreUnit: c.scoreUnit,
+        bestScoreConfig: c.bestScoreConfig,
       }));
-    expect(games).toEqual([
+    expect(logged).toEqual([
       {
         name: "Bouncy Pong",
         scoring: "individual",
         format: "head-to-head",
-        gameConfig: { drawsAllowed: false, bestOf: null },
-        entrantsOpen: true,
+        seriesConfig: { drawsAllowed: false, bestOf: 3 },
+        entrants: ["Albert Hernandez", "Austin Gage"],
+        scoreDirection: undefined,
+        scoreUnit: undefined,
+        bestScoreConfig: undefined,
       },
       {
         name: "Tuesday Stairs",
         scoring: "team",
         format: "best-score",
-        gameConfig: { count: "total", betterIs: "higher", unit: "trips" },
-        entrantsOpen: true,
+        seriesConfig: undefined,
+        entrants: undefined,
+        scoreDirection: "higher",
+        scoreUnit: "trips",
+        bestScoreConfig: { teamScore: "sum-of-members" },
       },
     ]);
     const pong = xi.competitions.find((c) => c.name === "Bouncy Pong")!;
@@ -245,11 +289,11 @@ describe("War Week XI demo", () => {
       (c) => c.name === "Electric City Matrix",
     )!;
     expect(matrix.format).toBe("placement");
-    expect(matrix.finalized).toBeUndefined();
+    expect(matrix.closed).toBeUndefined();
     expect(xi.placements.filter((p) => p.competition === matrix.name)).toEqual(
       [],
     );
-    // Games aren't seeded: no Placements stand in for Pong or Stairs.
+    // Matches and Attempts aren't seeded: no Placements stand in for them.
     expect(
       xi.placements.filter((p) =>
         ["Bouncy Pong", "Tuesday Stairs"].includes(p.competition),
@@ -266,7 +310,6 @@ describe("War Week XI demo", () => {
         placementPoints: c.placementPoints,
         participationPoints: c.participationPoints,
         selfCheckIn: c.selfCheckIn,
-        checkInClosesAt: c.checkInClosesAt,
       }));
     expect(participation).toEqual([
       {
@@ -275,27 +318,24 @@ describe("War Week XI demo", () => {
         placementPoints: [5, 3, 1],
         participationPoints: undefined,
         selfCheckIn: true,
-        checkInClosesAt: undefined,
       },
     ]);
   });
 
-  it("has Finalized Placements: a fractional Placement Point value, a Counts-Toward-Team-off Competition, and the Settlers [5, 3, 1] kept", () => {
+  it("has Closed Placements: a fractional Placement Point value, a Counts-Toward-Team-off Competition, and the Settlers [5, 3, 1] kept", () => {
     const competitions = new Map(xi.competitions.map((c) => [c.name, c]));
-    const finalized = xi.competitions.filter((c) => c.finalized);
-    expect(finalized.length).toBe(12);
-    expect(finalized.every((c) => c.finalizedAt! < "2026-02-26")).toBe(true);
+    const closed = xi.competitions.filter((c) => c.closed);
+    expect(closed.length).toBe(12);
+    expect(closed.every((c) => c.closedAt! < "2026-02-26")).toBe(true);
     expect(
-      finalized.some((c) =>
-        c.placementPoints?.some((n) => !Number.isInteger(n)),
-      ),
+      closed.some((c) => c.placementPoints?.some((n) => !Number.isInteger(n))),
     ).toBe(true);
     expect(
-      finalized.some((c) => c.scoring === "individual" && !c.countsTowardTeam),
+      closed.some((c) => c.scoring === "individual" && !c.countsTowardTeam),
     ).toBe(true);
     expect(competitions.get("Settlers of Catan")).toMatchObject({
       placementPoints: [5, 3, 1],
-      finalized: true,
+      closed: true,
     });
     expect(
       xi.placements.filter((p) => p.competition === "Settlers of Catan"),
@@ -355,12 +395,14 @@ describe("War Week XII demo", () => {
     expect(xiiDemo.participants.every((p) => p.team == null)).toBe(true);
   });
 
-  it("has a few scheduled Days and one Bracket, one Head-to-head and two placement-only Competitions", () => {
+  it("has a few scheduled Days, one Bracket, one Head-to-head, two Leagues and two placement-only Competitions", () => {
     expect(xiiDemo.days.length).toBeGreaterThanOrEqual(3);
     expect(xiiDemo.days.every((d) => d.scheduleItems.length > 0)).toBe(true);
     expect(xiiDemo.competitions.map((c) => c.format).sort()).toEqual([
       "bracket",
       "head-to-head",
+      "league",
+      "league",
       "placement",
       "placement",
     ]);
@@ -369,7 +411,7 @@ describe("War Week XII demo", () => {
     );
   });
 
-  it("has one pinned Announcement, a Finalized Mile Run, and a Finalized Step Challenge scored by steps", () => {
+  it("has one pinned Announcement, a Closed Mile Run, and a Closed Step Challenge scored by steps", () => {
     expect(xiiDemo.announcements.filter((a) => a.pinned)).toHaveLength(1);
     const rows = (name: string) =>
       xiiDemo.placements.filter((p) => p.competition === name);
@@ -395,7 +437,70 @@ describe("War Week XII demo", () => {
     expect(steps.some((p) => p.place === 11)).toBe(false);
     expect(
       xiiDemo.competitions.find((c) => c.name === "Step Challenge"),
-    ).toMatchObject({ scoreDirection: "higher", finalized: true });
+    ).toMatchObject({ scoreDirection: "higher", closed: true });
     expect(xiiDemo.awards).toEqual([]);
+  });
+});
+
+describe("War Week XII demo Leagues", () => {
+  const leagueOf = (name: string) =>
+    xiiDemo.competitions.find((c) => c.name === name)!;
+  const matchesOf = (name: string) =>
+    xiiDemo.leagueMatches.filter((m) => m.competition === name);
+  const roster = new Set(xiiDemo.participants.map((p) => p.displayName));
+
+  it("holds a Closed round robin of 5 with every pair meeting once and the sit-outs unplayed", () => {
+    const league = leagueOf("Chess Round Robin");
+    expect(league).toMatchObject({
+      format: "league",
+      leagueConfig: { pairing: "round-robin", rounds: null },
+      closed: true,
+    });
+    expect(league.entrants).toEqual([
+      "Ada Anvil",
+      "Bo Banner",
+      "Cass Comet",
+      "Dot Dynamo",
+      "Eli Ember",
+    ]);
+    const matches = matchesOf("Chess Round Robin");
+    const played = matches.filter((m) => m.b !== null);
+    expect(played).toHaveLength(10);
+    expect(played.every((m) => m.result != null)).toBe(true);
+    expect(new Set(played.map((m) => [m.a, m.b].sort().join("|"))).size).toBe(
+      10,
+    );
+    expect(matches.filter((m) => m.b === null)).toHaveLength(5);
+    expect(new Set(matches.map((m) => m.round))).toEqual(
+      new Set([1, 2, 3, 4, 5]),
+    );
+  });
+
+  it("holds a Swiss of 8 over 3 rounds: rounds 1 and 2 played, round 3 paired with one result", () => {
+    const league = leagueOf("Chess Swiss");
+    expect(league).toMatchObject({
+      format: "league",
+      leagueConfig: { pairing: "swiss", rounds: 3 },
+    });
+    expect(league.closed).toBeUndefined();
+    expect(league.entrants).toHaveLength(8);
+    const matches = matchesOf("Chess Swiss");
+    const round = (n: number) => matches.filter((m) => m.round === n);
+    expect(round(1)).toHaveLength(4);
+    expect(round(2)).toHaveLength(4);
+    expect(round(3)).toHaveLength(4);
+    expect([...round(1), ...round(2)].every((m) => m.result != null)).toBe(
+      true,
+    );
+    expect(round(3).filter((m) => m.result != null)).toHaveLength(1);
+    expect(matches.some((m) => m.result === "draw")).toBe(true);
+  });
+
+  it("uses only roster Participants", () => {
+    for (const name of ["Chess Round Robin", "Chess Swiss"]) {
+      for (const entrant of leagueOf(name).entrants ?? []) {
+        expect(roster.has(entrant), entrant).toBe(true);
+      }
+    }
   });
 });

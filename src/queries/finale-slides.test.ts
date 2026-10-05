@@ -57,15 +57,18 @@ describe.skipIf(!isLocalDatabase)("Finale slide queries", () => {
               join points_entry p on p.competition_id = c.id
               where c.war_week_id = ${xi.id}`,
         ),
-        gamesLogged: await sqlNumber(
+        resultsLogged: await sqlNumber(
           tx,
-          sql`select count(*) as n from game g
-              join competition c on c.id = g.competition_id
-              where c.war_week_id = ${xi.id}`,
+          sql`select (select count(*) from series_match m
+                join competition c on c.id = m.competition_id
+                where c.war_week_id = ${xi.id})
+              + (select count(*) from attempt a
+                join competition c on c.id = a.competition_id
+                where c.war_week_id = ${xi.id}) as n`,
         ),
-        heatsPlayed: await sqlNumber(
+        matchesPlayed: await sqlNumber(
           tx,
-          sql`select count(*) as n from heat h
+          sql`select count(*) as n from bracket_match h
               join competition c on c.id = h.competition_id
               where c.war_week_id = ${xi.id} and h.status = 'played'`,
         ),
@@ -92,18 +95,18 @@ describe.skipIf(!isLocalDatabase)("Finale slide queries", () => {
     });
   });
 
-  it("lists a finalized Bracket's champion and a closed Head-to-head or Best score Competition's tied winners", async () => {
+  it("lists a closed Bracket's Winner and a closed Head-to-head or Best score Competition's tied winners", async () => {
     await inRolledBackTransaction(async (tx) => {
       const schema = await import("@/db/schema");
       const { asc, eq } = await import("drizzle-orm");
-      const { getChampions } = await import("@/queries/finale-slides");
+      const { getWinners } = await import("@/queries/finale-slides");
       const xi = await loadXiDemo(tx);
 
-      // As seeded, only the demo's twelve Finalized Placement Competitions
-      // have a champion; no Bracket or Games Competition is finalized.
-      const seeded = await getChampions(xi, tx);
+      // As seeded, only the demo's twelve Closed Placement Competitions
+      // have a winner; no Bracket, Head-to-head or Best score is closed.
+      const seeded = await getWinners(xi, tx);
       expect(seeded).toHaveLength(12);
-      expect(seeded.map((champion) => champion.format)).toEqual(
+      expect(seeded.map((winner) => winner.format)).toEqual(
         Array(12).fill("placement"),
       );
 
@@ -117,7 +120,7 @@ describe.skipIf(!isLocalDatabase)("Finale slide queries", () => {
       const competition = async (
         name: string,
         format: "head-to-head" | "bracket",
-        finalizedAt: Date,
+        closedAt: Date,
       ) => {
         const [row] = await tx
           .insert(schema.competition)
@@ -126,9 +129,9 @@ describe.skipIf(!isLocalDatabase)("Finale slide queries", () => {
             name,
             scoring: "individual",
             format,
-            finalizedAt,
+            closedAt,
             ...(format === "head-to-head"
-              ? { gameConfig: { drawsAllowed: false, bestOf: null } }
+              ? { seriesConfig: { drawsAllowed: false, bestOf: 3 as const } }
               : {}),
           })
           .returning({ id: schema.competition.id });
@@ -145,7 +148,7 @@ describe.skipIf(!isLocalDatabase)("Finale slide queries", () => {
           participantId,
           points,
           enteredByEmail: "organizer@jahnelgroup.com",
-          generatedByBracket: true,
+          generated: true,
         });
 
       const pong = await competition(
@@ -164,14 +167,14 @@ describe.skipIf(!isLocalDatabase)("Finale slide queries", () => {
       await generated(foosball, c, 5);
       await generated(foosball, a, 3);
 
-      const champions = (await getChampions(xi, tx)).filter(
-        (champion) => champion.format !== "placement",
+      const winners = (await getWinners(xi, tx)).filter(
+        (winner) => winner.format !== "placement",
       );
       expect(
-        champions.map((champion) => ({
-          competition: champion.competition,
-          format: champion.format,
-          winners: champion.winners.map((w) => w.id).sort(),
+        winners.map((winner) => ({
+          competition: winner.competition,
+          format: winner.format,
+          winners: winner.winners.map((w) => w.id).sort(),
         })),
       ).toEqual([
         {

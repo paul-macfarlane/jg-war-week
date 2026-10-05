@@ -1,12 +1,13 @@
-import { APIError, betterAuth } from "better-auth";
+import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { headers } from "next/headers";
 import { cache } from "react";
 
+import { rejectNonJahnelGroup } from "@/auth/reject-non-jahnel-group";
 import { trustedOrigins } from "@/auth/trusted-origins";
 import { db } from "@/db";
 import * as schema from "@/db/schema";
-import { JG_EMAIL_DOMAIN, isJahnelGroupEmail } from "@/lib/access";
+import { JG_EMAIL_DOMAIN } from "@/lib/access";
 import { type SessionIdentity, sessionIdentity } from "@/lib/test-sign-in";
 
 const googleClientId = process.env.GOOGLE_CLIENT_ID;
@@ -14,17 +15,6 @@ const googleClientSecret = process.env.GOOGLE_CLIENT_SECRET;
 
 /** Google is the only sign-in method; without credentials there is none. */
 export const isGoogleConfigured = Boolean(googleClientId && googleClientSecret);
-
-function rejectNonJahnelGroup(email: string | null | undefined) {
-  if (!isJahnelGroupEmail(email)) {
-    // The `code` makes better-auth's OAuth callback redirect to
-    // `/sign-in?error=...` instead of answering with a bare 403.
-    throw new APIError("FORBIDDEN", {
-      code: "NOT_JAHNEL_GROUP",
-      message: `Only @${JG_EMAIL_DOMAIN} accounts can sign in.`,
-    });
-  }
-}
 
 export const auth = betterAuth({
   trustedOrigins: trustedOrigins({

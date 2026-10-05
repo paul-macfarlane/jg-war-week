@@ -5,7 +5,7 @@
 import { z } from "zod";
 
 import { SQUAD_PARTICIPANTS_MAX } from "@/lib/bracket/squads";
-import type { HeatResult } from "@/lib/bracket/types";
+import type { MatchResult } from "@/lib/bracket/types";
 import type { Parsed } from "@/lib/result";
 
 function parse<T>(schema: z.ZodType<T, unknown>, input: unknown): Parsed<T> {
@@ -53,20 +53,73 @@ export function parseSquadInput(input: unknown): Parsed<SquadInput> {
   };
 }
 
-const entrantId = id("Choose the Heat's Entrants.");
+const entrantId = id("Choose the Match's Entrants.");
 
-const heatResultSchema = z.object({
+const matchResultSchema = z.object({
   order: z.array(entrantId).min(1, {
-    error: "Put the Heat's Entrants in finishing order.",
+    error: "Put the Match's Entrants in finishing order.",
   }),
+  // A Score is a number (numeric(12,3)); blank is none.
   scores: z
     .record(
       entrantId,
-      z.string().trim().max(40, { error: "Scores are at most 40 characters." }),
+      z
+        .string()
+        .trim()
+        .regex(/^(-?\d{1,9}(\.\d{1,3})?)?$/, {
+          error: "A Score is a number, like 21 or 9.5.",
+        }),
     )
     .optional(),
 });
 
-export function parseHeatResultInput(input: unknown): Parsed<HeatResult> {
-  return parse(heatResultSchema, input);
+export function parseMatchResultInput(input: unknown): Parsed<MatchResult> {
+  return parse(matchResultSchema, input);
+}
+
+const advanceSchema = z.object({
+  advanceCount: z
+    .number({ error: "Choose how many advance." })
+    .int({ error: "Choose how many advance." }),
+});
+
+/** A Group Match's advancing count; the engine checks it against the Match. */
+export function parseMatchAdvanceInput(
+  input: unknown,
+): Parsed<{ advanceCount: number }> {
+  return parse(advanceSchema, input);
+}
+
+const moveSchema = z.object({
+  entrantId: id("Choose the Entrant to move."),
+  toMatchId: id("Choose the Match to move them to."),
+});
+
+/** An Entrant and the Match of its Round it moves to. */
+export function parseMoveEntrantInput(
+  input: unknown,
+): Parsed<{ entrantId: string; toMatchId: string }> {
+  return parse(moveSchema, input);
+}
+
+const roundDefaultsInputSchema = z.object({
+  round: z
+    .number({ error: "That Round isn't in this Bracket." })
+    .int({ error: "That Round isn't in this Bracket." })
+    .min(1, { error: "That Round isn't in this Bracket." }),
+  entrantsPerMatch: z
+    .number({ error: "Choose the entrants per Match." })
+    .int({ error: "Choose the entrants per Match." }),
+  advancePerMatch: z
+    .number({ error: "Choose how many advance." })
+    .int({ error: "Choose how many advance." }),
+});
+
+/** A Round and its new defaults; the engine checks the sizes. */
+export function parseRoundDefaultsInput(input: unknown): Parsed<{
+  round: number;
+  entrantsPerMatch: number;
+  advancePerMatch: number;
+}> {
+  return parse(roundDefaultsInputSchema, input);
 }

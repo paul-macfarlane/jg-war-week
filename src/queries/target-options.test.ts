@@ -56,10 +56,19 @@ describe.skipIf(!isLocalDatabase)("getTargetOptions", () => {
         {
           id: expect.any(String),
           name: "Ashley Schuliger",
+          image: null,
           team: "Red",
           teamId: f.red,
+          teamColor: "#f00",
         },
-        { id: expect.any(String), name: "Neo", team: null, teamId: null },
+        {
+          id: expect.any(String),
+          name: "Neo",
+          image: null,
+          team: null,
+          teamId: null,
+          teamColor: null,
+        },
       ]);
       expect(options.teams).toEqual([{ id: f.red, name: "Red", team: null }]);
     });

@@ -1,9 +1,15 @@
 import type { Competition } from "@/db/schema";
 import { isBye } from "@/lib/bracket/formats";
+import { matchAdvanceCount } from "@/lib/bracket/groups";
 import type { BracketFormat } from "@/lib/bracket/types";
-import { groupRounds, heatName } from "@/lib/bracket/view";
-import { type GameFormat, isGameFormat } from "@/lib/enums";
+import { groupRounds, matchName } from "@/lib/bracket/view";
+import { type LoggedFormat, isLoggedFormat } from "@/lib/enums";
 import { notFoundMessage } from "@/mcp/not-found";
+import {
+  type ScoreDirectionLabel,
+  scoreDirectionLabel,
+  scoreUnitLabel,
+} from "@/mcp/score";
 import type { BracketView } from "@/queries/brackets";
 
 export type BracketResult =
@@ -13,12 +19,22 @@ export type BracketResult =
         name: string;
         scoring: Competition["scoring"];
         format: BracketFormat;
-        /** Entrants per Heat. */
-        heatSize: number;
-        /** How many of each Heat advance. */
+        /** Head-to-head (2 per Match, 1 advancing) or group. */
+        kind: "head-to-head" | "group";
+        scoreDirection: ScoreDirectionLabel;
+        scoreUnit: string | null;
+        /** Entrants per Match. */
+        matchSize: number;
+        /** How many of each Match advance. */
         advancing: number;
-        thirdPlaceGame: boolean;
-        finalized: boolean;
+        /** Rounds whose defaults differ from the Bracket-wide ones. */
+        roundDefaults: {
+          round: number;
+          matchSize: number;
+          advancing: number;
+        }[];
+        thirdPlaceMatch: boolean;
+        closed: boolean;
       };
       entrants: {
         seedPosition: number;
@@ -30,14 +46,18 @@ export type BracketResult =
       rounds: {
         round: number;
         name: string;
-        heats: {
+        matches: {
           name: string;
           status: string;
-          /** When a played Heat's Result was recorded (ISO instant); else null. */
+          /** Entrants the Match holds. */
+          size: number;
+          /** How many of the Match advance. */
+          advancing: number;
+          /** When a played Match's result was recorded (ISO instant); else null. */
           recordedAt: string | null;
           /**
-           * The 3rd place game, beside the final in the last Round; the
-           * final is the last Round's other Heat.
+           * The 3rd place Match, beside the final in the last Round; the
+           * final is the last Round's other Match.
            */
           thirdPlace: boolean;
           entrants: {
@@ -47,7 +67,8 @@ export type BracketResult =
           }[];
         }[];
       }[];
-      champion: string | null;
+      /** The final's Winner once the Bracket is Closed; else null. */
+      winner: string | null;
     }
   | {
       found: true;
@@ -64,7 +85,7 @@ export type BracketResult =
       competition: {
         name: string;
         scoring: Competition["scoring"];
-        format: GameFormat | "participation";
+        format: LoggedFormat | "participation" | "league";
       };
       bracket: null;
       message: string;
@@ -75,8 +96,8 @@ export type BracketResult =
  * The `get_bracket` answer for a Head-to-head or Best score Competition,
  * which is never a Bracket: no Bracket, and a pointer to `get_games`. Pure.
  */
-export function toGamesBracketResult(
-  competition: Pick<Competition, "name" | "scoring"> & { format: GameFormat },
+export function toLoggedBracketResult(
+  competition: Pick<Competition, "name" | "scoring"> & { format: LoggedFormat },
 ): BracketResult {
   return {
     found: true,
@@ -110,9 +131,28 @@ export function toParticipationBracketResult(
 }
 
 /**
+ * The `get_bracket` answer for a League, which is never a Bracket: no
+ * Bracket, and a pointer to `get_league`. Pure.
+ */
+export function toLeagueBracketResult(
+  competition: Pick<Competition, "name" | "scoring">,
+): BracketResult {
+  return {
+    found: true,
+    competition: {
+      name: competition.name,
+      scoring: competition.scoring,
+      format: "league",
+    },
+    bracket: null,
+    message: `${competition.name} isn't run as a Bracket; it's run as a League. Call get_league instead.`,
+  };
+}
+
+/**
  * Serializes a Bracket (or its absence, or a Placement Competition) into the
  * `get_bracket` MCP tool payload. Names only: never an email, the Organizer
- * list, Hosts or who self-reported a Heat. Pure: the route resolves the
+ * list, Hosts or who self-reported a Match. Pure: the route resolves the
  * Competition by name and loads `view`.
  */
 export function toBracketResult(
@@ -126,8 +166,8 @@ export function toBracketResult(
     };
   }
 
-  if (isGameFormat(view.competition.format)) {
-    return toGamesBracketResult({
+  if (isLoggedFormat(view.competition.format)) {
+    return toLoggedBracketResult({
       name: view.competition.name,
       scoring: view.competition.scoring,
       format: view.competition.format,
@@ -135,6 +175,10 @@ export function toBracketResult(
   }
   if (view.competition.format === "participation") {
     return toParticipationBracketResult(view.competition);
+  }
+
+  if (view.competition.format === "league") {
+    return toLeagueBracketResult(view.competition);
   }
 
   if (view.competition.format === "placement") {
@@ -160,10 +204,20 @@ export function toBracketResult(
       name: view.competition.name,
       scoring: view.competition.scoring,
       format: view.competition.format,
-      heatSize: view.bracket.config.entrantsPerHeat,
-      advancing: view.bracket.config.advancePerHeat,
-      thirdPlaceGame: view.bracket.config.thirdPlaceGame,
-      finalized: view.finalized,
+      kind: view.bracket.config.kind,
+      scoreDirection: scoreDirectionLabel(view.competition.scoreDirection),
+      scoreUnit: scoreUnitLabel(view.competition.scoreUnit),
+      matchSize: view.bracket.config.entrantsPerMatch,
+      advancing: view.bracket.config.advancePerMatch,
+      roundDefaults: Object.entries(view.bracket.config.rounds)
+        .map(([round, defaults]) => ({
+          round: Number(round),
+          matchSize: defaults.entrantsPerMatch,
+          advancing: defaults.advancePerMatch,
+        }))
+        .sort((a, b) => a.round - b.round),
+      thirdPlaceMatch: view.bracket.config.thirdPlaceMatch,
+      closed: view.closed,
     },
     entrants: view.entrants.map((entrant) => ({
       seedPosition: entrant.seedPosition,
@@ -174,12 +228,14 @@ export function toBracketResult(
     rounds: groupRounds(view.bracket).map((round) => ({
       round: round.round,
       name: round.name,
-      heats: round.heats.map((heat) => ({
-        name: heatName(view.bracket, heat),
-        status: isBye(view.bracket, heat) ? "bye" : heat.status,
-        recordedAt: heat.recordedAt ? heat.recordedAt.toISOString() : null,
-        thirdPlace: heat.thirdPlace,
-        entrants: heat.slots
+      matches: round.matches.map((match) => ({
+        name: matchName(view.bracket, match),
+        status: isBye(view.bracket, match) ? "bye" : match.status,
+        size: match.slots.length,
+        advancing: matchAdvanceCount(view.bracket, match),
+        recordedAt: match.recordedAt ? match.recordedAt.toISOString() : null,
+        thirdPlace: match.thirdPlace,
+        entrants: match.slots
           .filter((slot) => slot.entrantId !== null)
           .map((slot) => ({
             name: entrantsById[slot.entrantId!] ?? "Unknown",
@@ -188,9 +244,7 @@ export function toBracketResult(
           })),
       })),
     })),
-    champion:
-      view.finalized && view.champion
-        ? (entrantsById[view.champion] ?? null)
-        : null,
+    winner:
+      view.closed && view.winner ? (entrantsById[view.winner] ?? null) : null,
   };
 }

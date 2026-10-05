@@ -13,7 +13,9 @@ import {
   orderPlacementRows,
   placementPointsByRow,
 } from "@/lib/placement/score";
+import type { EntryPoints } from "@/lib/results-table";
 import { isUuid } from "@/lib/uuid";
+import { getCompetitionEntryPoints } from "@/queries/entry-points";
 import {
   participantImageSql,
   participantNameSql,
@@ -49,19 +51,22 @@ export type PlacementCompetition = Pick<
   | "countsTowardTeam"
   | "placementPoints"
   | "scoreDirection"
-  | "finalizedAt"
+  | "scoreUnit"
+  | "closedAt"
 >;
 
 export type PlacementsView = {
   competition: PlacementCompetition;
   /** Placed rows by Place (ties by name), then unplaced rows by name. */
   rows: PlacementRowView[];
+  /** Once Closed (Closed), its generated Points Entries; else empty. */
+  entryPoints: EntryPoints[];
 };
 
 /**
  * A Placement Competition's rows with names (Profile names, ADR 0007) and
  * what each Place earns, ordered for display. Reads within `dbOrTx`, so
- * Finalize reads the rows it locked.
+ * Close reads the rows it locked.
  */
 export async function getPlacementRows(
   competitionRow: Pick<Competition, "id" | "placementPoints">,
@@ -130,7 +135,8 @@ export async function getPlacementsView(
       countsTowardTeam: competition.countsTowardTeam,
       placementPoints: competition.placementPoints,
       scoreDirection: competition.scoreDirection,
-      finalizedAt: competition.finalizedAt,
+      scoreUnit: competition.scoreUnit,
+      closedAt: competition.closedAt,
     })
     .from(competition)
     .where(eq(competition.id, competitionId))
@@ -145,9 +151,13 @@ export async function getPlacementsView(
       countsTowardTeam: found.countsTowardTeam,
       placementPoints: found.placementPoints,
       scoreDirection: found.scoreDirection,
-      finalizedAt: found.finalizedAt,
+      scoreUnit: found.scoreUnit,
+      closedAt: found.closedAt,
     },
     rows: await getPlacementRows(found, dbOrTx),
+    entryPoints: found.closedAt
+      ? await getCompetitionEntryPoints(found.id, dbOrTx)
+      : [],
   };
 }
 
@@ -156,6 +166,9 @@ export type PlacementCandidate = {
   id: string;
   name: string;
   team: string | null;
+  teamColor: string | null;
+  /** A Participant's picture URL; null for a Team and for initials. */
+  image: string | null;
 };
 
 /**
@@ -182,7 +195,12 @@ export async function getPlacementCandidates(
       .from(team)
       .where(and(eq(team.warWeekId, warWeek.id), notInArray(team.id, placed)))
       .orderBy(asc(team.name));
-    return teams.map((t) => ({ ...t, team: null }));
+    return teams.map((t) => ({
+      ...t,
+      team: null,
+      teamColor: null,
+      image: null,
+    }));
   }
   const participantTeam = aliasedTable(team, "participant_team");
   const placed = dbOrTx
@@ -199,7 +217,9 @@ export async function getPlacementCandidates(
       .select({
         id: participant.id,
         name: participantNameSql(),
+        image: participantImageSql(),
         team: participantTeam.name,
+        teamColor: participantTeam.color,
       })
       .from(participant)
       .leftJoin(participantTeam, eq(participantTeam.id, participant.teamId))

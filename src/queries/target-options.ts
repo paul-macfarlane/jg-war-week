@@ -1,9 +1,13 @@
-import { and, asc, eq, isNotNull } from "drizzle-orm";
+import { asc, eq } from "drizzle-orm";
 import { alias } from "drizzle-orm/pg-core";
 
 import { DBOrTx, db } from "@/db";
 import { WarWeek, competition, participant, team } from "@/db/schema";
-import { participantNameSql, withProfile } from "@/queries/profile-join";
+import {
+  participantImageSql,
+  participantNameSql,
+  withProfile,
+} from "@/queries/profile-join";
 
 export type TargetOptionsCompetition = {
   id: string;
@@ -19,9 +23,14 @@ export type TargetOptionsTarget = {
   team: string | null;
 };
 
-/** A Participant as the forms offer one, with their Team's id (or null). */
+/**
+ * A Participant as the forms offer one, with their Team's id and color (or
+ * null) and picture. Never an email.
+ */
 export type TargetOptionsParticipant = TargetOptionsTarget & {
   teamId: string | null;
+  teamColor: string | null;
+  image: string | null;
 };
 
 export type TargetOptions = {
@@ -61,8 +70,10 @@ export async function getTargetOptions(
         .select({
           id: participant.id,
           name: participantNameSql(),
+          image: participantImageSql(),
           team: participantTeam.name,
           teamId: participant.teamId,
+          teamColor: participantTeam.color,
         })
         .from(participant)
         .leftJoin(participantTeam, eq(participantTeam.id, participant.teamId))
@@ -77,21 +88,4 @@ export async function getTargetOptions(
     teams: teams.map((t) => ({ ...t, team: null })),
     participants,
   };
-}
-
-/**
- * Each Participant's roster email by id, for the search of an
- * Organizer-only picker. Never for a page a Participant or Host sees.
- */
-export async function getParticipantEmails(
-  warWeek: Pick<WarWeek, "id">,
-  dbOrTx: DBOrTx = db,
-): Promise<Map<string, string>> {
-  const rows = await dbOrTx
-    .select({ id: participant.id, email: participant.email })
-    .from(participant)
-    .where(
-      and(eq(participant.warWeekId, warWeek.id), isNotNull(participant.email)),
-    );
-  return new Map(rows.map((r) => [r.id, r.email as string]));
 }

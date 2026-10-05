@@ -10,10 +10,8 @@ import { SlideEyebrow } from "./slide-eyebrow";
 import type { FinaleSlideProps } from "./types";
 
 /**
- * An Awards slide: the War Week's Awards, grouped by Award Category (the
- * uncategorized last as "Other Awards"), one Award revealed per step. In
- * the per-Category layout each slide holds one Category's Awards under its
- * name. Each newly revealed Award scrolls into view if the slide is full.
+ * An Awards slide: the War Week's Awards, one revealed per step. Each newly
+ * revealed Award scrolls into view if the slide is full.
  */
 export function AwardsSlide({
   data,

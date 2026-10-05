@@ -1,28 +1,27 @@
 "use client";
 
-import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
-import { reportHeatResult } from "@/actions/heat-reports";
+import { clearMatchReport, reportMatchResult } from "@/actions/match-reports";
 import { AutoRefresh } from "@/components/auto-refresh";
+import { BracketPodium } from "@/components/bracket-podium";
 import { BracketTree } from "@/components/bracket-tree";
-import {
-  type BracketViewEntrant,
-  EntrantMark,
-} from "@/components/entrant-mark";
-import { HeatResultForm } from "@/components/heat-result-form";
+import type { BracketViewEntrant } from "@/components/entrant-mark";
+import { MatchResultForm } from "@/components/match-result-form";
 import { ResponsiveSheetDialog } from "@/components/responsive-sheet-dialog";
-import { Button, buttonVariants } from "@/components/ui/button";
+import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { useYou } from "@/components/you";
+import type { PodiumPlace } from "@/lib/bracket/podium";
 import type { Bracket } from "@/lib/bracket/types";
 import {
-  type NextHeat,
+  type NextMatch,
+  currentMatchFor,
   entrantForYou,
-  heatName,
-  nextHeatFor,
+  matchName,
+  nextMatchFor,
 } from "@/lib/bracket/view";
-import { YOU_ROW_CLASS } from "@/lib/you";
+import type { ScoreDirection } from "@/lib/enums";
 
 type Scoring = "team" | "individual";
 
@@ -45,31 +44,31 @@ function listNames(names: string[]): string {
 }
 
 /**
- * The "Your next Heat" card (props only): the Heat You play next and
+ * The "Your next Match" card (props only): the Match You play next and
  * against whom, or the Round You advanced to. `canReport` adds **Report
- * result** (the server found the Heat reportable by You, known by account
+ * result** (the server found the Match reportable by You, known by account
  * linking).
  */
-export function YourNextHeatCard({
+export function YourNextMatchCard({
   next,
   bracket,
   entrantsById,
   canReport,
   onReport,
 }: {
-  next: NextHeat;
+  next: NextMatch;
   bracket: Bracket;
   entrantsById: Map<string, BracketViewEntrant>;
   canReport: boolean;
   onReport: () => void;
 }) {
   return (
-    <Card size="sm" aria-label="Your next Heat" className="ring-accent ring-2">
+    <Card size="sm" aria-label="Your next Match" className="ring-accent ring-2">
       <CardContent className="flex min-w-0 flex-col gap-1">
         {next.kind === "advanced" ? (
           <>
             <span className="text-foreground/60 text-xs font-medium uppercase">
-              Your next Heat
+              Your next Match
             </span>
             <span className="font-semibold">
               Advanced to Round {next.round} · waiting for Round{" "}
@@ -79,7 +78,7 @@ export function YourNextHeatCard({
         ) : (
           <>
             <span className="text-foreground/60 text-xs font-medium uppercase">
-              Your next Heat · {heatName(bracket, next.heat)}
+              Your next Match · {matchName(bracket, next.match)}
             </span>
             {next.opponentIds.length > 0 ? (
               <span className="font-semibold break-words">
@@ -93,7 +92,7 @@ export function YourNextHeatCard({
             ) : (
               <span className="text-foreground/70">
                 {next.waitingFor
-                  ? `Waiting for ${heatName(bracket, next.waitingFor)}`
+                  ? `Waiting for ${matchName(bracket, next.waitingFor)}`
                   : "Waiting for an opponent"}
               </span>
             )}
@@ -119,15 +118,20 @@ export type BracketViewSelfReport = {
   on: boolean;
   /** The Participant the session email links to, or null. */
   linkedParticipantId: string | null;
-  /** Your next Heat, when the server found it reportable by You; else null. */
-  reportableHeatId: string | null;
+  /** Your Matches the server found You may record or change now. */
+  reportableMatchIds: string[];
+  /** Your decided Matches whose result is locked (`resultLockReason`). */
+  lockedMatchIds: string[];
 };
 
 /**
- * The Competition page's Bracket: the champion and Your next Heat pinned on
- * top, then the Bracket's tree (the same one admin records from), Your
- * Entrant highlighted under the You rules. Your Heat, when you may
- * self-report it, carries Record result in the tree as on the card. Owns
+ * The Competition page's Bracket: Top finishers (the places decided so
+ * far, Provisional until it's Closed) and Your next Match pinned on top,
+ * then the Bracket's tree (the same one admin records from), Your
+ * Entrant highlighted under the You rules. Each Match of yours you may
+ * record or change carries Record result (Edit once played) in the tree,
+ * and your next one on the card too; one a later Match already used shows
+ * Edit disabled with the reason. Owns
  * the report Sheet (a centered Dialog on large screens), and refreshes
  * live while it's closed (a Bracket not drawn yet too, so the draw
  * appears).
@@ -136,30 +140,53 @@ export function BracketView({
   competitionId,
   entrants,
   bracket,
-  champion,
+  podium,
+  closed,
   scoring,
+  scoreUnit = null,
+  scoreDirection = "none",
   primaryColor,
   participantTeams,
   participantSquads,
-  finaleHref,
   selfReport,
 }: {
   competitionId: string;
   entrants: BracketViewEntrant[];
   bracket: Bracket;
-  champion: string | null;
+  /** The places decided so far, with their points (`podium`). */
+  podium: PodiumPlace[];
+  /** Whether the Bracket is Closed: its podium's points are final. */
+  closed: boolean;
   scoring: Scoring;
+  /** The Competition's Score unit, for Score labels. */
+  scoreUnit?: string | null;
+  /** The Score direction: with one, Scores decide a Match's places. */
+  scoreDirection?: ScoreDirection;
   primaryColor: string;
   /** Each Participant's Team id, for finding Your Team's Entrant. */
   participantTeams: Record<string, string>;
   /** Each Participant's Squad id in this Competition, for Your Squad's Entrant. */
   participantSquads: Record<string, string>;
-  /** The Bracket Finale, once the Bracket is finalized; null before. */
-  finaleHref: string | null;
   selfReport: BracketViewSelfReport;
 }) {
   const you = useYou();
   const [reporting, setReporting] = useState<string | null>(null);
+  const [highlighted, setHighlighted] = useState<string | null>(null);
+  const treeRef = useRef<HTMLDivElement>(null);
+
+  // The ring lasts a few seconds, or until the next interaction.
+  useEffect(() => {
+    if (!highlighted) return;
+    const clear = () => setHighlighted(null);
+    const timer = setTimeout(clear, 5000);
+    document.addEventListener("pointerdown", clear);
+    document.addEventListener("keydown", clear);
+    return () => {
+      clearTimeout(timer);
+      document.removeEventListener("pointerdown", clear);
+      document.removeEventListener("keydown", clear);
+    };
+  }, [highlighted]);
   const entrantsById = new Map(entrants.map((e) => [e.id, e]));
   const youEntrantId = entrantForYou(
     entrants,
@@ -172,15 +199,38 @@ export function BracketView({
       : null,
     scoring,
   );
-  const next = youEntrantId ? nextHeatFor(bracket, youEntrantId) : null;
-  const winner = champion ? entrantsById.get(champion) : undefined;
-  const heatsById = new Map(bracket.heats.map((h) => [h.id, h]));
+  const next = youEntrantId ? nextMatchFor(bracket, youEntrantId) : null;
+  const current = youEntrantId
+    ? currentMatchFor(bracket, youEntrantId, closed)
+    : null;
+  const jumpToCurrent = () => {
+    if (!current) return;
+    const el = treeRef.current?.querySelector<HTMLElement>(
+      `[data-match-id="${CSS.escape(current.id)}"]`,
+    );
+    if (!el) return;
+    const reduced = window.matchMedia(
+      "(prefers-reduced-motion: reduce)",
+    ).matches;
+    // Scrolls the Rounds region sideways and the page down, as needed.
+    el.scrollIntoView({
+      behavior: reduced ? "auto" : "smooth",
+      block: "center",
+      inline: "center",
+    });
+    // Screen-reader and keyboard users land on the Match too. The ring's
+    // keydown/pointerdown listeners attach in an effect after this state
+    // change, so moving focus doesn't clear it.
+    el.focus({ preventScroll: true });
+    setHighlighted(current.id);
+  };
+  const matchesById = new Map(bracket.matches.map((h) => [h.id, h]));
+  const mine =
+    selfReport.on && you?.participantId === selfReport.linkedParticipantId;
+  const reportable = mine ? selfReport.reportableMatchIds : [];
   const canReport =
-    selfReport.on &&
-    you?.participantId === selfReport.linkedParticipantId &&
-    next?.kind === "heat" &&
-    next.heat.id === selfReport.reportableHeatId;
-  const reportHeat = reporting ? heatsById.get(reporting) : undefined;
+    next?.kind === "match" && reportable.includes(next.match.id);
+  const reportMatch = reporting ? matchesById.get(reporting) : undefined;
   const close = () => setReporting(null);
   const squadHelp = entrants.some((e) => e.squadId) ? (
     <p className="text-foreground/70 text-sm">
@@ -189,7 +239,7 @@ export function BracketView({
     </p>
   ) : null;
 
-  if (bracket.heats.length === 0) {
+  if (bracket.matches.length === 0) {
     return (
       <section className="flex flex-col gap-2" aria-label="Bracket">
         <h2 className="text-lg font-semibold">Bracket</h2>
@@ -207,91 +257,85 @@ export function BracketView({
       <h2 className="text-lg font-semibold">Bracket</h2>
       {squadHelp}
 
-      {winner && (
-        <Card size="sm" aria-label="Champion" className="ring-primary ring-2">
-          <CardContent className="flex min-w-0 items-center gap-3">
-            <span aria-hidden className="text-3xl">
-              🏆
-            </span>
-            <div className="flex min-w-0 flex-col">
-              <span className="text-foreground/60 text-xs font-medium uppercase">
-                Champion
-              </span>
-              <span
-                className={`flex min-w-0 items-center gap-2 text-lg font-bold ${YOU_ROW_CLASS}`}
-              >
-                <EntrantMark
-                  entrant={winner}
-                  scoring={scoring}
-                  primaryColor={primaryColor}
-                />
-                <span className="truncate">{winner.label}</span>
-                {winner.id === youEntrantId && <YouMark />}
-              </span>
-            </div>
-            {finaleHref && (
-              <Link
-                href={finaleHref}
-                className={`${buttonVariants({ variant: "outline", size: "sm" })} ml-auto shrink-0`}
-              >
-                Play the Finale
-              </Link>
-            )}
-          </CardContent>
-        </Card>
-      )}
+      <BracketPodium
+        places={podium}
+        entrantsById={entrantsById}
+        scoring={scoring}
+        primaryColor={primaryColor}
+        closed={closed}
+        after={(id) => (id === youEntrantId ? <YouMark /> : null)}
+      />
 
       {next && (
-        <YourNextHeatCard
+        <YourNextMatchCard
           next={next}
           bracket={bracket}
           entrantsById={entrantsById}
           canReport={canReport}
           onReport={() => {
-            if (next.kind === "heat") setReporting(next.heat.id);
+            if (next.kind === "match") setReporting(next.match.id);
           }}
         />
       )}
 
-      <BracketTree
-        bracket={bracket}
-        entrantsById={entrantsById}
-        scoring={scoring}
-        primaryColor={primaryColor}
-        youEntrantId={youEntrantId}
-        recordableHeatIds={
-          canReport && selfReport.reportableHeatId
-            ? [selfReport.reportableHeatId]
-            : []
-        }
-        onRecord={setReporting}
-      />
+      {current && (
+        <Button
+          type="button"
+          variant="outline"
+          className="min-h-11 w-fit sm:min-h-8"
+          onClick={jumpToCurrent}
+        >
+          Jump to your Match
+        </Button>
+      )}
+
+      {/* From md up the tree breaks out of the page's text column. */}
+      <div
+        ref={treeRef}
+        className="min-w-0 md:relative md:left-1/2 md:w-[min(calc(100vw-2rem),96rem)] md:max-w-none md:-translate-x-1/2"
+      >
+        <BracketTree
+          bracket={bracket}
+          entrantsById={entrantsById}
+          scoring={scoring}
+          scoreUnit={scoreUnit}
+          scoreDirection={scoreDirection}
+          primaryColor={primaryColor}
+          youEntrantId={youEntrantId}
+          highlightedMatchId={highlighted}
+          recordableMatchIds={reportable}
+          lockedMatchIds={mine ? selfReport.lockedMatchIds : []}
+          onRecord={setReporting}
+        />
+      </div>
 
       <ResponsiveSheetDialog
-        open={reportHeat !== undefined}
+        open={reportMatch !== undefined}
         onOpenChange={(open) => {
           if (!open) close();
         }}
       >
-        {reportHeat && (
-          <HeatResultForm
-            key={reportHeat.id}
-            heat={reportHeat}
+        {reportMatch && (
+          <MatchResultForm
+            key={reportMatch.id}
+            match={reportMatch}
             bracket={bracket}
             entrantsById={entrantsById}
             scoring={scoring}
+            scoreUnit={scoreUnit}
+            scoreDirection={scoreDirection}
             primaryColor={primaryColor}
             submit={(result) =>
-              reportHeatResult(competitionId, reportHeat.id, result)
+              reportMatchResult(competitionId, reportMatch.id, result)
             }
-            confirmResets={false}
+            clear={() => clearMatchReport(competitionId, reportMatch.id)}
             successToast={() => "Result reported."}
             onSaved={close}
           />
         )}
       </ResponsiveSheetDialog>
 
-      {reportHeat === undefined && <AutoRefresh />}
+      {reportMatch === undefined && <AutoRefresh />}
     </section>
   );
 }

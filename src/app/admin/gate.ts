@@ -6,9 +6,10 @@ import { adminEditions, can } from "@/lib/access";
 import { getWarWeeks, selectCurrentWarWeek } from "@/queries/war-weeks";
 
 /**
- * Who an admin page is for: every page an Organizer or a Host of the shown
- * War Week may open, or Organizers only (settings, Days, Teams, FAQ,
- * Awards, the Organizer list, Create next War Week).
+ * Who an admin page is for: the pages an Organizer or a Host of the shown
+ * War Week may open (Competitions, their pages and the Guide), or Organizers
+ * only (everything else: Schedule, Announcements, Finale, settings, Days,
+ * Teams, FAQ, Awards, the Organizer list, Create next War Week).
  */
 export type AdminPageAccess = "organizers-and-hosts" | "organizers";
 

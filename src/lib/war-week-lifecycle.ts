@@ -68,8 +68,9 @@ export type LifecycleAction =
 /** What has been scored in a War Week; Unstart needs all three at zero. */
 export type ScoredCounts = {
   pointsEntries: number;
-  heatResults: number;
-  games: number;
+  matchResults: number;
+  /** Head-to-head Matches and Best score Attempts logged. */
+  logged: number;
 };
 
 type LifecycleWarWeek = Pick<
@@ -80,8 +81,8 @@ type LifecycleWarWeek = Pick<
 /**
  * Why Unstart can't move a War Week back to `upcoming`, or null. Only a
  * `live` edition that has never been ended (End sets its `winner`, and
- * Reopen keeps it) and has nothing scored: no Points Entry, no Heat result
- * (`played`) and no Game. Refusals in that order.
+ * Reopen keeps it) and has nothing scored: no Points Entry, no Match result
+ * (`played`) and no logged Match or Attempt. Refusals in that order.
  */
 export function unstartError({
   status,
@@ -99,19 +100,19 @@ export function unstartError({
   if (scored.pointsEntries > 0) {
     return "Points have been entered; Unstart isn't available.";
   }
-  if (scored.heatResults > 0) {
-    return "A Heat has a result; Unstart isn't available.";
+  if (scored.matchResults > 0) {
+    return "A Match has a result; Unstart isn't available.";
   }
-  if (scored.games > 0) {
-    return "A Game has been logged; Unstart isn't available.";
+  if (scored.logged > 0) {
+    return "A Match or Attempt has been logged; Unstart isn't available.";
   }
   return null;
 }
 
 const NOTHING_SCORED: ScoredCounts = {
   pointsEntries: 0,
-  heatResults: 0,
-  games: 0,
+  matchResults: 0,
+  logged: 0,
 };
 
 const warWeekName = (w: Pick<WarWeek, "edition">) =>

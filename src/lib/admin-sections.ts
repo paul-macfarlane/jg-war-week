@@ -2,7 +2,9 @@
  * Every `/admin` section, in nav order: the side column and, on a phone,
  * the bottom bar and its More Sheet. `organizerOnly` sections are hidden
  * from Hosts; `tab` sections get a tab on the phone's bottom bar (the rest
- * go in More). `icon` is a key; components map it to the icon
+ * go in More). `tabLabel` is the shorter text a tab shows on the bar, where
+ * the full label would not fit; the tab's accessible name stays the full
+ * label. `icon` is a key; components map it to the icon
  * (`AdminSectionIcon`), as src/lib never imports icons (ADR 0001).
  */
 const ADMIN_SECTIONS = [
@@ -14,12 +16,19 @@ const ADMIN_SECTIONS = [
   },
   {
     label: "Discretionary points",
+    tabLabel: "Points",
     icon: "points",
     href: "/admin/discretionary-points",
     tab: true,
     organizerOnly: true,
   },
-  { label: "Schedule", icon: "schedule", href: "/admin/schedule", tab: true },
+  {
+    label: "Schedule",
+    icon: "schedule",
+    href: "/admin/schedule",
+    tab: true,
+    organizerOnly: true,
+  },
   {
     label: "Roster",
     icon: "roster",
@@ -28,9 +37,11 @@ const ADMIN_SECTIONS = [
   },
   {
     label: "Announcements",
+    tabLabel: "News",
     icon: "announcements",
     href: "/admin/announcements",
     tab: true,
+    organizerOnly: true,
   },
   {
     label: "Awards",
@@ -39,7 +50,12 @@ const ADMIN_SECTIONS = [
     organizerOnly: true,
   },
   { label: "FAQ", icon: "faq", href: "/admin/faq", organizerOnly: true },
-  { label: "Finale", icon: "finale", href: "/admin/finale" },
+  {
+    label: "Finale",
+    icon: "finale",
+    href: "/admin/finale",
+    organizerOnly: true,
+  },
   {
     label: "Settings",
     icon: "settings",
@@ -69,15 +85,19 @@ export function adminSectionsFor(isOrganizer: boolean) {
 export type AdminSectionIconKey = (typeof ADMIN_SECTIONS)[number]["icon"];
 
 type AdminNavItem = {
+  /** The full section name: page title, side column, More Sheet. */
   label: string;
+  /** What a bottom-bar tab shows: the short `tabLabel`, else `label`. */
+  tabLabel: string;
   href: string;
   icon: AdminSectionIconKey;
   current: boolean;
 };
 
 /**
- * The phone's admin nav: the bottom bar's tabs (Competitions, Discretionary
- * points, Schedule, Announcements) and the rest of the viewer's sections for the
+ * The phone's admin nav: the bottom bar's tabs (Competitions, Points,
+ * Schedule, News; their full labels are Discretionary points and
+ * Announcements) and the rest of the viewer's sections for the
  * More Sheet. `moreCurrent` is true when `current` is one of the More sections.
  */
 export function adminNavFor(
@@ -88,11 +108,12 @@ export function adminNavFor(
   const more: AdminNavItem[] = [];
   for (const section of adminSectionsFor(isOrganizer)) {
     const { label, href, icon } = section;
-    const isCurrent = label === current;
+    const tabLabel = "tabLabel" in section ? section.tabLabel : label;
+    const item = { label, tabLabel, href, icon, current: label === current };
     if ("tab" in section) {
-      tabs.push({ label, href, icon, current: isCurrent });
+      tabs.push(item);
     } else {
-      more.push({ label, href, icon, current: isCurrent });
+      more.push(item);
     }
   }
   return { tabs, more, moreCurrent: more.some((item) => item.current) };

@@ -1,13 +1,10 @@
 import { describe, expect, it } from "vitest";
 
 import {
-  type LedgerRow,
-  buildCompetitionLedger,
   competitionPageHref,
   describeScoring,
   groupCompetitions,
   hasPlacementPoints,
-  hostName,
   placementLabel,
   placementLimit,
   placementLimitRefusal,
@@ -28,10 +25,10 @@ describe("groupCompetitions", () => {
 
   it("groups by Competition Group, ordering groups and Competitions by name", () => {
     const result = groupCompetitions([
-      competition("Cypher", "Night Games"),
+      competition("Cypher", "Night Contests"),
       competition("HQ Attendance", "Before the Week"),
       competition("Black Midnight"),
-      competition("Deja Vu", "Night Games"),
+      competition("Deja Vu", "Night Contests"),
       competition("AI Survey Completion", "Before the Week"),
       competition("Beyblades"),
     ]);
@@ -45,10 +42,10 @@ describe("groupCompetitions", () => {
         ],
       },
       {
-        name: "Night Games",
+        name: "Night Contests",
         competitions: [
-          competition("Cypher", "Night Games"),
-          competition("Deja Vu", "Night Games"),
+          competition("Cypher", "Night Contests"),
+          competition("Deja Vu", "Night Contests"),
         ],
       },
     ]);
@@ -78,82 +75,6 @@ describe("describeScoring", () => {
     ],
   ] as const)("describes %o as %s", (c, expected) => {
     expect(describeScoring(c, "House")).toBe(expected);
-  });
-});
-
-describe("buildCompetitionLedger", () => {
-  const red = { name: "Red", color: "#ff3b3b" };
-  const rows: LedgerRow[] = [
-    {
-      id: "e2",
-      points: 1.5,
-      note: null,
-      enteredAt: new Date("2026-02-24T19:30:00-05:00"),
-      team: null,
-      participant: { displayName: "Neo", team: red },
-    },
-    {
-      id: "e1",
-      points: 3,
-      note: "Won the final",
-      enteredAt: new Date("2026-02-24T19:00:00-05:00"),
-      team: red,
-      participant: null,
-    },
-    {
-      id: "e3",
-      points: 1,
-      note: null,
-      enteredAt: new Date("2026-02-25T13:00:00-05:00"),
-      team: null,
-      participant: { displayName: "Trinity", team: null },
-    },
-  ];
-
-  it("lists entries in the order they were entered, naming each target", () => {
-    expect(buildCompetitionLedger({ rows })).toEqual({
-      entries: [
-        {
-          id: "e1",
-          target: { name: "Red", color: "#ff3b3b", team: null },
-          points: 3,
-          note: "Won the final",
-        },
-        {
-          id: "e2",
-          target: { name: "Neo", color: "#ff3b3b", team: "Red" },
-          points: 1.5,
-          note: null,
-        },
-        {
-          id: "e3",
-          target: { name: "Trinity", color: null, team: null },
-          points: 1,
-          note: null,
-        },
-      ],
-    });
-  });
-
-  it("returns no entries for a Competition nobody has scored yet", () => {
-    expect(buildCompetitionLedger({ rows: [] })).toEqual({ entries: [] });
-  });
-
-  it("keeps entries entered at the same moment in a stable order, by id", () => {
-    const sameMoment = new Date("2026-02-24T19:00:00-05:00");
-    const tied: LedgerRow[] = ["e-c", "e-a", "e-b"].map((id) => ({
-      id,
-      points: 1,
-      note: null,
-      enteredAt: sameMoment,
-      team: red,
-      participant: null,
-    }));
-    const order = (input: LedgerRow[]) =>
-      buildCompetitionLedger({ rows: input }).entries.map((e) => e.id);
-
-    expect(order(tied)).toEqual(["e-a", "e-b", "e-c"]);
-    expect(order([...tied].reverse())).toEqual(["e-a", "e-b", "e-c"]);
   });
 });
 
@@ -201,32 +122,6 @@ describe("placementLabel", () => {
       "4th",
       "5th",
     ]);
-  });
-});
-
-describe("hostName", () => {
-  const profiles = new Map([
-    [
-      "host@jahnelgroup.com",
-      { profileName: "Hosty", profileImage: null, googleImage: null },
-    ],
-    [
-      "plain@jahnelgroup.com",
-      { profileName: null, profileImage: null, googleImage: null },
-    ],
-  ]);
-
-  it("shows the Profile name, matching the email in any case", () => {
-    expect(hostName("Host@JahnelGroup.com", profiles)).toBe("Hosty");
-  });
-
-  it("shows the email with no Profile name or no Profile", () => {
-    expect(hostName("plain@jahnelgroup.com", profiles)).toBe(
-      "plain@jahnelgroup.com",
-    );
-    expect(hostName("new@jahnelgroup.com", profiles)).toBe(
-      "new@jahnelgroup.com",
-    );
   });
 });
 

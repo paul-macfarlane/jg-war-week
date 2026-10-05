@@ -1,6 +1,6 @@
 import { Client } from "pg";
 
-import { E2E_EMAIL_PATTERN, E2E_EXACT_EMAILS } from "./env";
+import { E2E_EMAIL_PATTERN, E2E_EXACT_EMAILS, E2E_HOST_EMAIL } from "./env";
 
 /** Runs one query on its own connection, as `scripts/smoke/harness.ts` does. */
 export async function runQuery<T extends Record<string, unknown>>(
@@ -40,26 +40,68 @@ export async function deleteE2eUsers() {
   await runQuery(`delete from organizer where email = any($1::text[])`, [
     E2E_EXACT_EMAILS,
   ]);
-  await runQuery(`delete from competition_host where email like $1`, [
-    E2E_EMAIL_PATTERN,
-  ]);
+  // The roster Participants `addE2eHost` made (their Host rows cascade).
+  await runQuery(
+    `delete from participant where email like $1 and display_name like 'E2E %'`,
+    [E2E_EMAIL_PATTERN],
+  );
 }
 
 /**
- * Deletes the Award Categories an e2e run added: only the seeded ones have a
- * `key`. Awards go with their War Week's reset first (`on delete restrict`).
+ * Makes the roster Participant with `email` (default the e2e Host) a Host of
+ * the Competition, adding that Participant to the Competition's War Week
+ * roster first when it has none with that email (a Host is a roster
+ * Participant, ADR 0012). Undo with `removeE2eHost`.
  */
-export async function deleteE2eAwardCategories() {
+export async function addE2eHost(
+  competitionId: string,
+  email: string = E2E_HOST_EMAIL,
+) {
+  const name =
+    email === E2E_HOST_EMAIL ? "E2E Host" : `E2E ${email.split("@")[0]}`;
   await runQuery(
-    `delete from award_category c where c.key is null
-     and not exists (select 1 from award a where a.category_id = c.id)`,
+    `insert into participant (war_week_id, display_name, email)
+     select war_week_id, $2, $3 from competition where id = $1
+     on conflict (war_week_id, email) do nothing`,
+    [competitionId, name, email],
+  );
+  await runQuery(
+    `insert into competition_host (competition_id, participant_id)
+     select c.id, p.id from competition c
+     join participant p on p.war_week_id = c.war_week_id and lower(p.email) = lower($2)
+     where c.id = $1
+     on conflict do nothing`,
+    [competitionId, email],
+  );
+}
+
+/**
+ * Removes the Host row `addE2eHost` made, and the roster Participant it
+ * created (one named "E2E …"; a seeded Participant is never deleted).
+ */
+export async function removeE2eHost(
+  competitionId: string,
+  email: string = E2E_HOST_EMAIL,
+) {
+  await runQuery(
+    `delete from competition_host h using participant p
+     where h.participant_id = p.id and h.competition_id = $1
+       and lower(p.email) = lower($2)`,
+    [competitionId, email],
+  );
+  await runQuery(
+    `delete from participant p using competition c
+     where c.id = $1 and p.war_week_id = c.war_week_id
+       and lower(p.email) = lower($2) and p.display_name like 'E2E %'
+       and not exists (select 1 from competition_host h where h.participant_id = p.id)`,
+    [competitionId, email],
   );
 }
 
 /**
  * Gives War Week XI back the default Finale: no saved slide list (so it
- * plays Title, By the numbers, Awards, Champions, Standings countdown,
- * Winner) and the one-slide Awards layout. Each Finale slide spec calls it
+ * plays Title, By the numbers, Awards, Winners, Standings countdown,
+ * Winner). Each Finale slide spec calls it
  * before and after its flows.
  */
 export async function resetXiFinaleSlides() {
@@ -67,17 +109,24 @@ export async function resetXiFinaleSlides() {
     `delete from finale_slide s using war_week w
      where s.war_week_id = w.id and w.edition = 'xi'`,
   );
-  await runQuery(
-    `update war_week set finale_awards_layout = 'one-slide' where edition = 'xi'`,
-  );
 }
 
-/** Deletes a War Week XI Competition by name, if it exists. Test cleanup. */
+/**
+ * Deletes a War Week XI Competition by name, if it exists, and every roster
+ * Participant `addE2eHost` made (named "E2E %", an `e2e-` email) that no
+ * longer hosts anything. The orphan sweep covers every War Week, not just XI.
+ * Test cleanup.
+ */
 export async function deleteXiCompetition(name: string) {
   await runQuery(
     `delete from competition c using war_week w
      where c.war_week_id = w.id and w.edition = 'xi' and c.name = $1`,
     [name],
+  );
+  await runQuery(
+    `delete from participant p
+     where p.display_name like 'E2E %' and p.email like 'e2e-%'
+       and not exists (select 1 from competition_host h where h.participant_id = p.id)`,
   );
 }
 
@@ -91,7 +140,7 @@ export async function xiCompetitionEntries(
 ): Promise<{ target: string; points: number; generated: boolean }[]> {
   return runQuery<{ target: string; points: number; generated: boolean }>(
     `select coalesce(p.display_name, t.name) as target,
-       pe.points::float as points, pe.generated_by_bracket as generated
+       pe.points::float as points, pe.generated as generated
      from points_entry pe
      join war_week w on w.id = pe.war_week_id and w.edition = 'xi'
      left join competition c on c.id = pe.competition_id
@@ -238,8 +287,9 @@ export type BracketSnapshot = {
   format: string | null;
   bracket_config: unknown;
   self_enroll: boolean;
+  entrant_limit: number | null;
   self_report: boolean;
-  finalized_at: Date | null;
+  closed_at: Date | null;
   score_direction: string;
   /** A move to a Bracket keeps only the first 4 places (ticket 101). */
   placement_points: string | null;
@@ -249,8 +299,8 @@ export async function snapshotBracket(
   competitionId: string,
 ): Promise<BracketSnapshot> {
   const [row] = await runQuery<BracketSnapshot>(
-    `select format::text as format, bracket_config, self_enroll, self_report,
-       finalized_at,
+    `select format::text as format, bracket_config, self_enroll,
+       entrant_limit, self_report, closed_at,
        score_direction::text as score_direction,
        placement_points::text as placement_points
      from competition where id = $1`,
@@ -259,20 +309,22 @@ export async function snapshotBracket(
   return row;
 }
 
-/** Drops the Competition's Heats and Entrants and restores its snapshot. */
+/** Drops the Competition's Matches and Entrants and restores its snapshot. */
 export async function restoreBracket(
   competitionId: string,
   snapshot: BracketSnapshot,
 ) {
-  await runQuery(`delete from heat where competition_id = $1`, [competitionId]);
+  await runQuery(`delete from bracket_match where competition_id = $1`, [
+    competitionId,
+  ]);
   await runQuery(`delete from entrant where competition_id = $1`, [
     competitionId,
   ]);
   await runQuery(
     `update competition set format = $2::competition_format,
-       bracket_config = $3, self_enroll = $4, finalized_at = $5,
+       bracket_config = $3, self_enroll = $4, closed_at = $5,
        score_direction = $6::score_direction, self_report = $7,
-       placement_points = $8::numeric[]
+       placement_points = $8::numeric[], entrant_limit = $9
      where id = $1`,
     [
       competitionId,
@@ -281,19 +333,20 @@ export async function restoreBracket(
         ? null
         : JSON.stringify(snapshot.bracket_config),
       snapshot.self_enroll,
-      snapshot.finalized_at,
+      snapshot.closed_at,
       snapshot.score_direction,
       snapshot.self_report,
       snapshot.placement_points,
+      snapshot.entrant_limit,
     ],
   );
 }
 
 /**
- * The seeded individual Competitions are Finalized Placement sheets (R16),
- * and a Finalized Competition's Format is locked. A Bracket flow calls this
+ * The seeded individual Competitions are Closed Placement sheets (R16),
+ * and a Closed Competition's Format is locked. A Bracket flow calls this
  * first: it snapshots the Competition (Format, Bracket settings, its
- * Placements and Points Entries), then clears them and un-finalizes it so a
+ * Placements and Points Entries), then clears them and reopens it so a
  * Bracket can be built. The returned function puts everything back; call it
  * in `finally` or `afterEach`.
  */
@@ -315,7 +368,7 @@ export async function openForBracket(
   await runQuery(`delete from placement where competition_id = $1`, [
     competitionId,
   ]);
-  await runQuery(`update competition set finalized_at = null where id = $1`, [
+  await runQuery(`update competition set closed_at = null where id = $1`, [
     competitionId,
   ]);
   return async () => {

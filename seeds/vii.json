@@ -649,7 +649,7 @@
     },
     {
       "key": "battle-of-the-memes",
-      "name": "Battle of the Memes Winner",
+      "name": "Battle of the Memes Champion",
       "description": "2nd win in a row.",
       "participants": ["Tristin Knapp"]
     },
@@ -691,7 +691,7 @@
     },
     {
       "key": "chess-tournament",
-      "name": "Chess Tournament Winners",
+      "name": "Chess Tournament Champion",
       "description": "Solomon (1st), Joe C (2nd) and Dylan Mann (3rd).",
       "participants": ["Solomon Mori", "Joe C", "Dylan Mann"]
     },

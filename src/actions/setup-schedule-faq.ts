@@ -2,7 +2,7 @@
 
 import { guarded } from "@/actions/result";
 import { revalidateWarWeek } from "@/actions/revalidate";
-import { authorize, postedCompetitionId } from "@/auth/authorize";
+import { authorize } from "@/auth/authorize";
 import {
   type FaqItemInput,
   type ScheduleItemInput,
@@ -15,8 +15,7 @@ import type { MutationResult } from "@/mutations/types";
 export type SetupScheduleFaqActionResult = MutationResult;
 
 /**
- * Adds a Schedule Item to the War Week the form was rendered for. A Host
- * must link it to a Competition they host.
+ * Adds a Schedule Item to the War Week the form was rendered for.
  */
 export async function createScheduleItem(
   warWeekId: string,
@@ -27,7 +26,6 @@ export async function createScheduleItem(
       "schedule-item.create",
       "warWeek",
       warWeekId,
-      { postedCompetitionId: postedCompetitionId(input) },
     );
     if (!authorized.ok) return authorized;
     const parsed = parseScheduleItemInput(input);
@@ -42,7 +40,6 @@ export async function createScheduleItem(
   });
 }
 
-/** A Host needs both the item's current and its posted link, and can't unlink. */
 export async function updateScheduleItem(
   id: string,
   input: ScheduleItemInput,
@@ -52,9 +49,6 @@ export async function updateScheduleItem(
       "schedule-item.edit",
       "scheduleItem",
       id,
-      {
-        postedCompetitionId: postedCompetitionId(input),
-      },
     );
     if (!authorized.ok) return authorized;
     const parsed = parseScheduleItemInput(input);

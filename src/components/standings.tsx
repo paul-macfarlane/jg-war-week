@@ -1,4 +1,6 @@
 import { Avatar } from "@/components/avatar";
+import { TeamTag } from "@/components/participant-mark";
+import { ResultsTable } from "@/components/results-table";
 import { Card } from "@/components/ui/card";
 import {
   Collapsible,
@@ -175,12 +177,11 @@ export function IndividualStandingsList({
               <span className="flex-1">
                 {row.name}
                 {team ? (
-                  <span
-                    className="ml-2 text-xs font-medium"
-                    style={{ color: team.color }}
-                  >
-                    {team.name}
-                  </span>
+                  <TeamTag
+                    name={team.name}
+                    color={team.color}
+                    className="ml-2 align-baseline"
+                  />
                 ) : null}
               </span>
               <YouTag participantId={row.id} />
@@ -242,7 +243,104 @@ export function HomeStandings({
   );
 }
 
-/** Both leaderboards, the main one first. */
+/** The War Week's Team standings as a results table. */
+function TeamStandingsTable({
+  rows,
+  teamLabel,
+  breakdown,
+}: {
+  rows: TeamStanding[];
+  teamLabel: string;
+  breakdown?: Map<string, PointsBreakdownRow[]>;
+}) {
+  if (rows.length === 0) return <NoPointsYet />;
+  return (
+    <ResultsTable
+      label={`${teamLabel} standings`}
+      entrantHeader={teamLabel}
+      rows={rows.map((row) => {
+        const rowBreakdown = breakdown?.get(row.id);
+        return {
+          key: row.id,
+          rank: row.rank,
+          name: row.name,
+          lead: (
+            <span
+              aria-hidden
+              className="mt-1 size-3 shrink-0 rounded-full"
+              style={{ backgroundColor: row.color }}
+            />
+          ),
+          points: row.total,
+          expansion: rowBreakdown
+            ? {
+                label: `Show points breakdown for ${row.name}`,
+                content: <PointsBreakdownList rows={rowBreakdown} />,
+              }
+            : undefined,
+        };
+      })}
+    />
+  );
+}
+
+/** The War Week's individual leaderboard as a results table. */
+function IndividualStandingsTable({
+  rows,
+  label,
+  primaryColor,
+  breakdown,
+}: {
+  rows: IndividualStanding[];
+  label: string;
+  primaryColor: string;
+  breakdown?: Map<string, PointsBreakdownRow[]>;
+}) {
+  if (rows.length === 0) return <NoPointsYet />;
+  return (
+    <ResultsTable
+      label={label}
+      entrantHeader="Participant"
+      rows={rows.map((row) => {
+        const rowBreakdown = breakdown?.get(row.id);
+        return {
+          key: row.id,
+          rank: row.rank,
+          name: row.name,
+          lead: (
+            <Avatar
+              name={row.name}
+              teamColor={row.team?.color ?? null}
+              primaryColor={primaryColor}
+              image={row.image}
+              className="size-6"
+            />
+          ),
+          after: <YouTag participantId={row.id} />,
+          // The Team by name and color dot: colored text wouldn't read on
+          // every row's background.
+          detail: row.team ? (
+            <TeamTag name={row.team.name} color={row.team.color} />
+          ) : null,
+          points: row.total,
+          className: YOU_ROW_CLASS,
+          expansion: rowBreakdown
+            ? {
+                label: `Show points breakdown for ${row.name}`,
+                content: <PointsBreakdownList rows={rowBreakdown} />,
+              }
+            : undefined,
+        };
+      })}
+    />
+  );
+}
+
+/**
+ * Both leaderboards, the main one first, each as the results table (spec
+ * R20, decision 1): Rank, name and War Week points, no Score column and no
+ * Provisional badge; each row opens its points breakdown.
+ */
 export function LeaderboardStandings({
   standings,
   teamLabel,
@@ -255,22 +353,25 @@ export function LeaderboardStandings({
   primaryColor: string;
   breakdown?: PointsBreakdown;
 }) {
+  const teamTitle = `${teamLabel} standings`;
+  // A free-for-all War Week's main list is titled "Standings"; in `teams`
+  // mode this is the secondary, individual list.
+  const individualTitle =
+    standings.main === "individual" ? "Standings" : "Individual leaderboard";
   const teamSection = (
-    <StandingsSection key="team" title={`${teamLabel} standings`}>
-      <TeamStandingsList rows={standings.team} breakdown={breakdown?.byTeam} />
+    <StandingsSection key="team" title={teamTitle}>
+      <TeamStandingsTable
+        rows={standings.team}
+        teamLabel={teamLabel}
+        breakdown={breakdown?.byTeam}
+      />
     </StandingsSection>
   );
   const individualSection = (
-    <StandingsSection
-      key="individual"
-      // A free-for-all War Week's main list is titled "Standings"; in
-      // `teams` mode this is the secondary, individual list.
-      title={
-        standings.main === "individual" ? "Standings" : "Individual leaderboard"
-      }
-    >
-      <IndividualStandingsList
+    <StandingsSection key="individual" title={individualTitle}>
+      <IndividualStandingsTable
         rows={standings.individual}
+        label={individualTitle}
         primaryColor={primaryColor}
         breakdown={breakdown?.byParticipant}
       />

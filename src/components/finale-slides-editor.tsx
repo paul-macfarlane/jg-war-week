@@ -43,19 +43,16 @@ export type FinaleSlideListItem = {
  * The War Week's Finale slides in their Finale order. An Organizer hides or
  * shows each, moves it with Move up/down, or drags it to a new place (on a
  * pointer device; the buttons are the keyboard and touch way). Each change
- * saves at once. A Host sees the list without controls.
+ * saves at once.
  */
 export function FinaleSlidesEditor({
   warWeekId,
   slides,
-  canEdit,
   themeSwatches,
 }: {
   /** The War Week this page was rendered for; every change posts it. */
   warWeekId: string;
   slides: FinaleSlideListItem[];
-  /** Organizers only: the controls and the drag. */
-  canEdit: boolean;
   /** The theme's colors, as a Custom slide background's swatches. */
   themeSwatches: ColorSwatch[];
 }) {
@@ -79,7 +76,6 @@ export function FinaleSlidesEditor({
     run(() => moveFinaleSlide(warWeekId, { slide, toIndex }));
 
   function dragProps(slide: FinaleSlideListItem, index: number) {
-    if (!canEdit) return {};
     const endDrag = () => {
       setDragging(null);
       setOver(null);
@@ -119,7 +115,7 @@ export function FinaleSlidesEditor({
     <div {...SETUP_EDITOR} className="flex flex-col gap-3">
       <ol aria-label="Finale slides">
         {slides.map((slide, index) => {
-          const ref = canEdit ? finaleSlideRef(slide) : null;
+          const ref = finaleSlideRef(slide);
           const customId = slide.kind === "custom" ? slide.id : null;
           return (
             <SetupListRow
@@ -143,7 +139,7 @@ export function FinaleSlidesEditor({
                 ...dragProps(slide, index),
               }}
               form={
-                canEdit && customId
+                customId
                   ? (close) => (
                       <CustomFinaleSlideForm
                         warWeekId={warWeekId}
@@ -160,9 +156,7 @@ export function FinaleSlidesEditor({
                   : undefined
               }
               onDelete={
-                canEdit && customId
-                  ? () => deleteCustomFinaleSlide(customId)
-                  : undefined
+                customId ? () => deleteCustomFinaleSlide(customId) : undefined
               }
               deleteTitle={`Delete "${slide.name}"?`}
               deleteSuccess="Custom slide deleted"
@@ -202,18 +196,16 @@ export function FinaleSlidesEditor({
           );
         })}
       </ol>
-      {canEdit ? (
-        <SetupAddButton
-          label="Add Custom slide"
-          form={(close) => (
-            <CustomFinaleSlideForm
-              warWeekId={warWeekId}
-              themeSwatches={themeSwatches}
-              onSaved={close}
-            />
-          )}
-        />
-      ) : null}
+      <SetupAddButton
+        label="Add Custom slide"
+        form={(close) => (
+          <CustomFinaleSlideForm
+            warWeekId={warWeekId}
+            themeSwatches={themeSwatches}
+            onSaved={close}
+          />
+        )}
+      />
     </div>
   );
 }

@@ -6,22 +6,24 @@ import { useId, useState, useTransition } from "react";
 import { toast } from "sonner";
 
 import {
-  addEveryone,
   addPlacement,
-  finalizePlacements,
+  closePlacements,
   removePlacement,
   reopenPlacements,
   savePlacements,
 } from "@/actions/placements";
 import { ConfirmActionButton } from "@/components/confirm-dialog";
 import { EntityCombobox } from "@/components/entity-combobox";
+import { ParticipantPicker } from "@/components/participant-picker";
 import { Button } from "@/components/ui/button";
 import { Field, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { placementLabel } from "@/lib/competitions";
 import type { ScoreDirection } from "@/lib/enums";
+import { optionsFromTargets } from "@/lib/participant-options";
 import { placementPointsByRow, refilledPlaces } from "@/lib/placement/score";
 import { formatPoints } from "@/lib/points";
+import { isSetByHand, scoreLabel } from "@/lib/scoring";
 import type { MutationResult } from "@/mutations/types";
 
 /** A row as the sheet shows it: names and numbers, never an email. */
@@ -57,8 +59,8 @@ function placeOf(text: string): number | null {
 
 /**
  * A Placement Competition's sheet (CONTEXT.md, Placement), the run area of
- * its Competition page: add people by search or Add everyone, give each
- * row a Place and an optional Score, Save, then Finalize into Points
+ * its Competition page: add people by search, give each
+ * row a Place and an optional Score, Save, then Close into Points
  * Entries by the Placement Points; Reopen withdraws them. With a Score
  * direction (a setting in the page's Settings, saved on its own), Places
  * fill from Scores as they're typed and stay editable for ties and
@@ -75,11 +77,18 @@ export function PlacementSheet({
     scoring: "team" | "individual";
     placementPoints: number[] | null;
     scoreDirection: ScoreDirection;
-    finalized: boolean;
+    scoreUnit: string | null;
+    closed: boolean;
   };
   rows: PlacementSheetRow[];
   /** Who the search can add: Teams, or Participants with their Team. */
-  candidates: { id: string; name: string; team: string | null }[];
+  candidates: {
+    id: string;
+    name: string;
+    team: string | null;
+    teamColor?: string | null;
+    image?: string | null;
+  }[];
   teamLabel: string;
 }) {
   const id = useId();
@@ -87,8 +96,8 @@ export function PlacementSheet({
   const [running, startTransition] = useTransition();
   const [saving, startSaving] = useTransition();
   const pending = running || saving;
-  const locked = competition.finalized;
-  // A Finalized sheet has no Remove buttons, so no column for them.
+  const locked = competition.closed;
+  // A Closed sheet has no Remove buttons, so no column for them.
   const columns = locked
     ? "grid-cols-[3.5rem_1fr_5.5rem_3rem]"
     : "grid-cols-[3.5rem_1fr_5.5rem_3rem_2.75rem]";
@@ -97,6 +106,7 @@ export function PlacementSheet({
   // Unsaved edits by row id; anything not edited shows what's saved.
   const [edits, setEdits] = useState<Record<string, Typed>>({});
   const direction = competition.scoreDirection;
+  const scoring = { direction, unit: competition.scoreUnit };
   const typed = (row: PlacementSheetRow) => edits[row.id] ?? typedOf(row);
   const changed = rows.filter((row) => {
     const now = typed(row);
@@ -140,6 +150,17 @@ export function PlacementSheet({
         : withPlaces(all, refilledPlaces(before, scoresOf(all), direction)),
     );
   }
+
+  // With a direction and every Score in, a Place that differs from the
+  // Scores' order (a tie settled by hand, say) is called out.
+  const setByHand = isSetByHand(
+    rows.map((row) => ({
+      id: row.id,
+      score: numberOf(typed(row).score),
+      place: placeOf(typed(row).place),
+    })),
+    direction,
+  );
 
   const points = new Map(
     placementPointsByRow(
@@ -206,12 +227,12 @@ export function PlacementSheet({
       <p className="text-foreground/70 text-sm">
         {pointsLine
           ? `Placement Points: ${pointsLine}`
-          : "No Placement Points: Finalize gives no points. Set them in the Settings above."}
+          : "No Placement Points: Close gives no points. Set them in the Settings above."}
       </p>
 
       {locked ? (
         <p className="border-border rounded-lg border px-3 py-2 text-sm">
-          Finalized: its Points Entries are in the ledger. Reopen to change the
+          Closed: its Points Entries are in the Standings. Reopen to change the
           sheet.
         </p>
       ) : (
@@ -221,36 +242,36 @@ export function PlacementSheet({
               <FieldLabel htmlFor={`${id}-add`}>
                 {isTeam ? `Add a ${teamLabel}` : "Add a Participant"}
               </FieldLabel>
-              <EntityCombobox
-                id={`${id}-add`}
-                items={candidates.map((c) => ({
-                  id: c.id,
-                  label: c.name,
-                  detail: c.team ?? undefined,
-                }))}
-                value={adding}
-                onValueChange={add}
-                placeholder="Search by name"
-                emptyText={
-                  candidates.length === 0
-                    ? "Everyone is on the sheet."
-                    : "No one matches."
-                }
-                disabled={pending}
-              />
+              {isTeam ? (
+                <EntityCombobox
+                  id={`${id}-add`}
+                  items={candidates.map((c) => ({ id: c.id, label: c.name }))}
+                  value={adding}
+                  onValueChange={add}
+                  placeholder="Search by name"
+                  emptyText={
+                    candidates.length === 0
+                      ? "Everyone is on the sheet."
+                      : "No one matches."
+                  }
+                  disabled={pending}
+                />
+              ) : (
+                <ParticipantPicker
+                  id={`${id}-add`}
+                  options={optionsFromTargets(candidates)}
+                  value={adding}
+                  onValueChange={add}
+                  placeholder="Search by name"
+                  emptyText={
+                    candidates.length === 0
+                      ? "Everyone is on the sheet."
+                      : "No one matches."
+                  }
+                  disabled={pending}
+                />
+              )}
             </Field>
-            <Button
-              type="button"
-              variant="outline"
-              size="lg"
-              className="min-h-11 w-fit sm:min-h-9"
-              disabled={pending || candidates.length === 0}
-              onClick={() =>
-                run(() => addEveryone(competition.id), "Everyone added")
-              }
-            >
-              Add everyone
-            </Button>
           </div>
         </div>
       )}
@@ -262,9 +283,14 @@ export function PlacementSheet({
             ({rows.length})
           </span>
         </h2>
+        {setByHand ? (
+          <p className="text-foreground/70 text-sm" data-slot="set-by-hand">
+            Places set by hand: they differ from the Scores&apos; order.
+          </p>
+        ) : null}
         {rows.length === 0 ? (
           <p className="text-foreground/70 text-sm">
-            No one yet. Search above, or Add everyone.
+            No one yet. Search above to add someone.
           </p>
         ) : (
           <ol className="flex flex-col divide-y" aria-label="Placements">
@@ -274,7 +300,7 @@ export function PlacementSheet({
             >
               <span>Place</span>
               <span>Name</span>
-              <span>Score</span>
+              <span className="truncate">{scoreLabel(scoring)}</span>
               <span className="text-right">Points</span>
               {locked ? null : <span />}
             </li>
@@ -303,7 +329,9 @@ export function PlacementSheet({
                     <span className="font-medium break-words">{row.name}</span>
                     {row.team || needsPlace ? (
                       <span className="text-foreground/60 truncate text-xs">
-                        {needsPlace ? "Needs a Place" : row.team}
+                        {[row.team, needsPlace && "Needs a Place"]
+                          .filter(Boolean)
+                          .join(" · ")}
                       </span>
                     ) : null}
                   </span>
@@ -386,29 +414,29 @@ export function PlacementSheet({
                 className="min-h-11"
                 disabled
               >
-                Finalize
+                Close
               </Button>
             ) : (
               <ConfirmActionButton
-                title="Finalize this Competition?"
+                title="Close this Competition?"
                 description={
                   pointsLine
                     ? `Each Place gets its Placement Points (${pointsLine}); tied rows each get their place's points, unplaced rows nothing.`
                     : "It has no Placement Points, so no points are given."
                 }
-                confirmLabel="Finalize"
-                action={() => finalizePlacements(competition.id)}
-                successMessage="Competition finalized"
+                confirmLabel="Close"
+                action={() => closePlacements(competition.id)}
+                successMessage="Competition closed"
                 variant="default"
                 size="lg"
                 className="min-h-11"
               >
-                Finalize
+                Close
               </ConfirmActionButton>
             )}
             {dirty ? (
               <p className="text-foreground/70 text-sm">
-                Save before you Finalize.
+                Save before you Close.
               </p>
             ) : null}
           </>

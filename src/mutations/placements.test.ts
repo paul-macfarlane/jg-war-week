@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 
 import type { DBTx } from "@/db";
 import { isLocalDatabaseUrl } from "@/db/local-url";
+import { insertHosts } from "@/db/test-hosts";
 import { inRolledBackTransaction } from "@/db/test-transaction";
 
 // Runs only against a local Postgres (see vitest.config.ts).
@@ -101,11 +102,12 @@ async function fixture(tx: DBTx) {
         name: "Pong",
         scoring: "individual" as const,
         format: "head-to-head" as const,
-        entrantsOpen: true,
+        seriesConfig: { drawsAllowed: false, bestOf: 3 as const },
       },
     ])
     .returning({ id: schema.competition.id });
-  await tx.insert(schema.competitionHost).values(
+  await insertHosts(
+    tx,
     [darts.id, quiz.id].map((competitionId) => ({
       competitionId,
       email: HOST,
@@ -138,7 +140,7 @@ async function fixture(tx: DBTx) {
           participantId: schema.pointsEntry.participantId,
           points: schema.pointsEntry.points,
           note: schema.pointsEntry.note,
-          generated: schema.pointsEntry.generatedByBracket,
+          generated: schema.pointsEntry.generated,
           enteredByEmail: schema.pointsEntry.enteredByEmail,
         })
         .from(schema.pointsEntry)
@@ -156,7 +158,7 @@ async function fixture(tx: DBTx) {
         .select({
           format: schema.competition.format,
           scoreDirection: schema.competition.scoreDirection,
-          finalizedAt: schema.competition.finalizedAt,
+          closedAt: schema.competition.closedAt,
         })
         .from(schema.competition)
         .where(eq(schema.competition.id, id))
@@ -201,16 +203,50 @@ async function fixture(tx: DBTx) {
 }
 
 async function load() {
-  return import("@/mutations/placements");
+  const placements = await import("@/mutations/placements");
+  const close = await import("@/mutations/close");
+  return {
+    ...placements,
+    closePlacements: close.closeCompetition,
+    reopenPlacements: close.reopenCompetition,
+  };
+}
+
+/** Puts everyone of the War Week on a sheet, unplaced (a test shortcut). */
+async function putEveryoneOn(
+  tx: DBTx,
+  competitionId: string,
+  ctx: { warWeekId: string; actorEmail: string },
+  team: boolean,
+) {
+  const schema = await import("@/db/schema");
+  const { addPlacement } = await import("@/mutations/placements");
+  const ids = team
+    ? await tx
+        .select({ id: schema.team.id })
+        .from(schema.team)
+        .where(eq(schema.team.warWeekId, ctx.warWeekId))
+    : await tx
+        .select({ id: schema.participant.id })
+        .from(schema.participant)
+        .where(eq(schema.participant.warWeekId, ctx.warWeekId));
+  for (const { id } of ids) {
+    await addPlacement(
+      competitionId,
+      team ? { teamId: id } : { participantId: id },
+      ctx,
+      tx,
+    );
+  }
 }
 
 const participantOf = (id: string) => ({ participantId: id });
 const teamOf = (id: string) => ({ teamId: id });
 
 describe.skipIf(!isLocalDatabase)("Placement rows", () => {
-  it("adds a Participant once, and Add everyone adds the rest of the roster", async () => {
+  it("adds a Participant once", async () => {
     await inRolledBackTransaction(async (tx) => {
-      const { addPlacement, addEveryone } = await load();
+      const { addPlacement } = await load();
       const f = await fixture(tx);
       expect(
         await addPlacement(f.ids.darts, participantOf(f.ids.neo), f.ctx, tx),
@@ -220,31 +256,6 @@ describe.skipIf(!isLocalDatabase)("Placement rows", () => {
         await addPlacement(f.ids.darts, participantOf(f.ids.neo), f.ctx, tx),
       ).toEqual({ ok: true });
       expect(await f.rows(f.ids.darts)).toHaveLength(1);
-
-      expect(await addEveryone(f.ids.darts, f.ctx, tx)).toEqual({ ok: true });
-      const people = (await f.rows(f.ids.darts)).map((r) => r.participantId);
-      expect(people.sort()).toEqual(
-        [
-          f.ids.neo,
-          f.ids.trinity,
-          f.ids.morpheus,
-          f.ids.tank,
-          f.ids.cypher,
-        ].sort(),
-      );
-      // Never another War Week's Smith.
-      expect(people).not.toContain(f.ids.smith);
-    });
-  });
-
-  it("Add everyone in a team Competition adds every Team of the War Week", async () => {
-    await inRolledBackTransaction(async (tx) => {
-      const { addEveryone } = await load();
-      const f = await fixture(tx);
-      expect(await addEveryone(f.ids.quiz, f.ctx, tx)).toEqual({ ok: true });
-      expect((await f.rows(f.ids.quiz)).map((r) => r.teamId).sort()).toEqual(
-        [f.ids.red, f.ids.blue, f.ids.green].sort(),
-      );
     });
   });
 
@@ -362,14 +373,9 @@ describe.skipIf(!isLocalDatabase)("Placement rows", () => {
       expect(
         await m.addPlacement(f.ids.pong, participantOf(f.ids.neo), f.ctx, tx),
       ).toEqual(refused);
-      expect(await m.addEveryone(f.ids.pong, f.ctx, tx)).toEqual(refused);
       expect(
         await m.savePlacements(f.ids.pong, { rows: [] }, f.ctx, tx),
       ).toEqual(refused);
-      expect(await m.finalizePlacements(f.ids.pong, f.ctx, tx)).toEqual(
-        refused,
-      );
-      expect(await m.reopenPlacements(f.ids.pong, f.ctx, tx)).toEqual(refused);
       expect(await f.rows(f.ids.pong)).toEqual([]);
       expect((await f.competitionRow(f.ids.pong)).scoreDirection).toBe("none");
     });
@@ -377,10 +383,17 @@ describe.skipIf(!isLocalDatabase)("Placement rows", () => {
 
   it("refuses a Competition of another War Week than the request's", async () => {
     await inRolledBackTransaction(async (tx) => {
-      const { addEveryone } = await load();
+      const { addPlacement } = await load();
       const f = await fixture(tx);
       const elsewhere = { warWeekId: crypto.randomUUID(), actorEmail: HOST };
-      expect(await addEveryone(f.ids.darts, elsewhere, tx)).toEqual({
+      expect(
+        await addPlacement(
+          f.ids.darts,
+          participantOf(f.ids.neo),
+          elsewhere,
+          tx,
+        ),
+      ).toEqual({
         ok: false,
         error: "That Competition no longer exists.",
       });
@@ -389,12 +402,12 @@ describe.skipIf(!isLocalDatabase)("Placement rows", () => {
   });
 });
 
-describe.skipIf(!isLocalDatabase)("Finalize and Reopen", () => {
+describe.skipIf(!isLocalDatabase)("Close and Reopen", () => {
   /** Darts with Neo 1st, Morpheus 1st (a tie), Trinity 3rd, Tank 4th (beyond the list) and Cypher unplaced. */
   async function placed(tx: DBTx) {
     const m = await load();
     const f = await fixture(tx);
-    await m.addEveryone(f.ids.darts, f.ctx, tx);
+    await putEveryoneOn(tx, f.ids.darts, f.ctx, false);
     const id = (p: string) => f.rowOf(f.ids.darts, p);
     await m.savePlacements(
       f.ids.darts,
@@ -415,8 +428,12 @@ describe.skipIf(!isLocalDatabase)("Finalize and Reopen", () => {
 
   it("writes generated Points Entries by Place: ties share the full points, beyond the list and unplaced earn nothing", async () => {
     await inRolledBackTransaction(async (tx) => {
-      const { m, f } = await placed(tx);
-      expect(await m.finalizePlacements(f.ids.darts, f.ctx, tx)).toEqual({
+      const { f } = await placed(tx);
+      expect(
+        await (
+          await import("@/mutations/close")
+        ).closeCompetition(f.ids.darts, f.ctx, tx),
+      ).toEqual({
         ok: true,
       });
       const entry = (participantId: string, points: number) => ({
@@ -439,7 +456,7 @@ describe.skipIf(!isLocalDatabase)("Finalize and Reopen", () => {
             a.participantId.localeCompare(b.participantId),
         ),
       );
-      expect((await f.competitionRow(f.ids.darts)).finalizedAt).not.toBeNull();
+      expect((await f.competitionRow(f.ids.darts)).closedAt).not.toBeNull();
     });
   });
 
@@ -447,7 +464,7 @@ describe.skipIf(!isLocalDatabase)("Finalize and Reopen", () => {
     await inRolledBackTransaction(async (tx) => {
       const m = await load();
       const f = await fixture(tx);
-      await m.addEveryone(f.ids.quiz, f.ctx, tx);
+      await putEveryoneOn(tx, f.ids.quiz, f.ctx, true);
       const rows = await f.rows(f.ids.quiz);
       const rowFor = (teamId: string) =>
         rows.find((r) => r.teamId === teamId)!.id;
@@ -462,7 +479,11 @@ describe.skipIf(!isLocalDatabase)("Finalize and Reopen", () => {
         f.ctx,
         tx,
       );
-      expect(await m.finalizePlacements(f.ids.quiz, f.ctx, tx)).toEqual({
+      expect(
+        await (
+          await import("@/mutations/close")
+        ).closeCompetition(f.ids.quiz, f.ctx, tx),
+      ).toEqual({
         ok: true,
       });
       expect(
@@ -497,17 +518,21 @@ describe.skipIf(!isLocalDatabase)("Finalize and Reopen", () => {
         f.ctx,
         tx,
       );
-      expect(await m.finalizePlacements(f.ids.darts, f.ctx, tx)).toEqual({
+      expect(
+        await (
+          await import("@/mutations/close")
+        ).closeCompetition(f.ids.darts, f.ctx, tx),
+      ).toEqual({
         ok: false,
         error:
           "Give every row with a Score a Place, or clear its Score. No Place: Cypher.",
       });
       expect(await f.entries(f.ids.darts)).toEqual([]);
-      expect((await f.competitionRow(f.ids.darts)).finalizedAt).toBeNull();
+      expect((await f.competitionRow(f.ids.darts)).closedAt).toBeNull();
     });
   });
 
-  it("refuses every row change while Finalized; Reopen withdraws the generated entries and keeps a non-generated one", async () => {
+  it("refuses every row change while Closed; Reopen withdraws the generated entries and keeps a non-generated one", async () => {
     await inRolledBackTransaction(async (tx) => {
       const { m, f } = await placed(tx);
       await tx.insert(f.schema.pointsEntry).values({
@@ -517,7 +542,9 @@ describe.skipIf(!isLocalDatabase)("Finalize and Reopen", () => {
         points: 2,
         enteredByEmail: HOST,
       });
-      await m.finalizePlacements(f.ids.darts, f.ctx, tx);
+      await (
+        await import("@/mutations/close")
+      ).closeCompetition(f.ids.darts, f.ctx, tx);
       const before = await f.rows(f.ids.darts);
       const neo = await f.rowOf(f.ids.darts, f.ids.neo);
       const refused = { ok: false, error: REOPEN_FIRST };
@@ -536,7 +563,14 @@ describe.skipIf(!isLocalDatabase)("Finalize and Reopen", () => {
       expect(
         await m.addPlacement(f.ids.darts, participantOf(f.ids.neo), f.ctx, tx),
       ).toEqual(refused);
-      expect(await m.addEveryone(f.ids.darts, f.ctx, tx)).toEqual(refused);
+      expect(
+        await m.addPlacement(
+          f.ids.darts,
+          participantOf(f.ids.cypher),
+          f.ctx,
+          tx,
+        ),
+      ).toEqual(refused);
       expect(await f.rows(f.ids.darts)).toEqual(
         before.filter((r) => r.id !== neo),
       );
@@ -544,7 +578,11 @@ describe.skipIf(!isLocalDatabase)("Finalize and Reopen", () => {
         "higher",
       );
 
-      expect(await m.reopenPlacements(f.ids.darts, f.ctx, tx)).toEqual({
+      expect(
+        await (
+          await import("@/mutations/close")
+        ).reopenCompetition(f.ids.darts, f.ctx, tx),
+      ).toEqual({
         ok: true,
       });
       expect(await f.entries(f.ids.darts)).toEqual([
@@ -558,30 +596,48 @@ describe.skipIf(!isLocalDatabase)("Finalize and Reopen", () => {
           enteredByEmail: HOST,
         },
       ]);
-      expect((await f.competitionRow(f.ids.darts)).finalizedAt).toBeNull();
+      expect((await f.competitionRow(f.ids.darts)).closedAt).toBeNull();
     });
   });
 
-  it("Finalize twice writes the same entries and keeps the first time; Reopen twice is harmless", async () => {
+  it("Close twice writes the same entries and keeps the first time; Reopen twice is harmless", async () => {
     await inRolledBackTransaction(async (tx) => {
-      const { m, f } = await placed(tx);
-      await m.finalizePlacements(f.ids.darts, f.ctx, tx);
+      const { f } = await placed(tx);
+      await (
+        await import("@/mutations/close")
+      ).closeCompetition(f.ids.darts, f.ctx, tx);
       const entries = await f.entries(f.ids.darts);
-      const at = (await f.competitionRow(f.ids.darts)).finalizedAt;
-      expect(await m.finalizePlacements(f.ids.darts, f.ctx, tx)).toEqual({
+      const at = (await f.competitionRow(f.ids.darts)).closedAt;
+      expect(
+        await (
+          await import("@/mutations/close")
+        ).closeCompetition(f.ids.darts, f.ctx, tx),
+      ).toEqual({
         ok: true,
       });
       expect(await f.entries(f.ids.darts)).toEqual(entries);
-      expect((await f.competitionRow(f.ids.darts)).finalizedAt).toEqual(at);
+      expect((await f.competitionRow(f.ids.darts)).closedAt).toEqual(at);
 
-      expect(await m.reopenPlacements(f.ids.darts, f.ctx, tx)).toEqual({
+      expect(
+        await (
+          await import("@/mutations/close")
+        ).reopenCompetition(f.ids.darts, f.ctx, tx),
+      ).toEqual({
         ok: true,
       });
-      expect(await m.reopenPlacements(f.ids.darts, f.ctx, tx)).toEqual({
+      expect(
+        await (
+          await import("@/mutations/close")
+        ).reopenCompetition(f.ids.darts, f.ctx, tx),
+      ).toEqual({
         ok: true,
       });
       expect(await f.entries(f.ids.darts)).toEqual([]);
-      expect(await m.finalizePlacements(f.ids.darts, f.ctx, tx)).toEqual({
+      expect(
+        await (
+          await import("@/mutations/close")
+        ).closeCompetition(f.ids.darts, f.ctx, tx),
+      ).toEqual({
         ok: true,
       });
       expect(await f.entries(f.ids.darts)).toEqual(entries);
@@ -590,9 +646,9 @@ describe.skipIf(!isLocalDatabase)("Finalize and Reopen", () => {
 });
 
 describe.skipIf(!isLocalDatabase)("a Placement Competition's setup", () => {
-  it("refuses a Format or scoring change while Finalized, but takes a Placement Points change", async () => {
+  it("refuses a Format or scoring change while Closed, but takes a Placement Points change", async () => {
     await inRolledBackTransaction(async (tx) => {
-      const { addPlacement, finalizePlacements, savePlacements } = await load();
+      const { addPlacement, closePlacements, savePlacements } = await load();
       const { setCompetitionFormat } = await import("@/mutations/brackets");
       const { updateCompetition } = await import("@/mutations/setup");
       const f = await fixture(tx);
@@ -611,12 +667,12 @@ describe.skipIf(!isLocalDatabase)("a Placement Competition's setup", () => {
         f.ctx,
         tx,
       );
-      expect(await finalizePlacements(f.ids.darts, f.ctx, tx)).toEqual({
+      expect(await closePlacements(f.ids.darts, f.ctx, tx)).toEqual({
         ok: true,
       });
       const refused = {
         ok: false,
-        error: "This Competition is finalized. Reopen it first.",
+        error: "This Competition is closed. Reopen it first.",
       };
       expect(
         await setCompetitionFormat(

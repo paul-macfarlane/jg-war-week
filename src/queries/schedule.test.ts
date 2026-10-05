@@ -33,7 +33,7 @@ async function fixture(tx: DBTx) {
         year: 9200 + n,
         startDate: "2099-01-01",
         endDate: "2099-01-05",
-        storyTheme: "Timed Heats test",
+        storyTheme: "Timed Matches test",
         status: "upcoming",
         mode: "teams",
         teamLabel: "Team",
@@ -134,28 +134,28 @@ async function bracket(
   expect(
     await mutations.generateBracket(row.id, { rng: rngKeep }, ctx, tx),
   ).toEqual({ ok: true });
-  const heatId = async (round: number, position: number) => {
-    const [heat] = await tx
-      .select({ id: f.schema.heat.id })
-      .from(f.schema.heat)
+  const matchId = async (round: number, position: number) => {
+    const [match] = await tx
+      .select({ id: f.schema.bracketMatch.id })
+      .from(f.schema.bracketMatch)
       .where(
         and(
-          eq(f.schema.heat.competitionId, row.id),
-          eq(f.schema.heat.round, round),
-          eq(f.schema.heat.position, position),
+          eq(f.schema.bracketMatch.competitionId, row.id),
+          eq(f.schema.bracketMatch.round, round),
+          eq(f.schema.bracketMatch.position, position),
         ),
       );
-    return heat.id;
+    return match.id;
   };
-  return { id: row.id, heatId };
+  return { id: row.id, matchId };
 }
 
 describe.skipIf(!isLocalDatabase)("getSchedule", () => {
-  it("lists a Competition's own Schedule Items and no Heat, however ready the Heats are", async () => {
+  it("lists a Competition's own Schedule Items and no Match, however ready the Matches are", async () => {
     await inRolledBackTransaction(async (tx) => {
       const { queries } = await modules();
       const f = await fixture(tx);
-      // Two ready Heats (Semifinals) and a pending Final.
+      // Two ready Matches (Semifinals) and a pending Final.
       const beyblades = await bracket(tx, f, f.ctx, "Beyblades", "team", [
         ...f.teamIds,
       ]);
@@ -167,16 +167,16 @@ describe.skipIf(!isLocalDatabase)("getSchedule", () => {
         competitionId: beyblades.id,
       });
 
-      const readyHeats = await tx
-        .select({ id: f.schema.heat.id })
-        .from(f.schema.heat)
+      const readyMatches = await tx
+        .select({ id: f.schema.bracketMatch.id })
+        .from(f.schema.bracketMatch)
         .where(
           and(
-            eq(f.schema.heat.competitionId, beyblades.id),
-            eq(f.schema.heat.status, "ready"),
+            eq(f.schema.bracketMatch.competitionId, beyblades.id),
+            eq(f.schema.bracketMatch.status, "ready"),
           ),
         );
-      expect(readyHeats).toHaveLength(2);
+      expect(readyMatches).toHaveLength(2);
 
       const days = await queries.getSchedule(f.ctx.warWeekId, {}, tx);
       expect(days.flatMap((day) => day.items.map((i) => i.title))).toEqual([
@@ -187,8 +187,8 @@ describe.skipIf(!isLocalDatabase)("getSchedule", () => {
         id: beyblades.id,
         name: "Beyblades",
       });
-      for (const heat of readyHeats) {
-        expect(item.id).not.toBe(heat.id);
+      for (const match of readyMatches) {
+        expect(item.id).not.toBe(match.id);
       }
       expect(JSON.stringify(days)).not.toMatch(/Semifinal|Round 1/);
     });

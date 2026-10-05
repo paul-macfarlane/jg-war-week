@@ -1,13 +1,7 @@
 import { and, eq, sql } from "drizzle-orm";
 
 import { DBOrTx, db } from "@/db";
-import {
-  competition,
-  participant,
-  participation,
-  pointsEntry,
-  warWeek,
-} from "@/db/schema";
+import { competition, participant, participation, warWeek } from "@/db/schema";
 import {
   NOT_LINKED,
   NOT_PARTICIPATION,
@@ -16,15 +10,11 @@ import {
   markError,
 } from "@/lib/participation/check-in-rule";
 import type { ParticipationSettings } from "@/lib/participation/input";
-import { scoreParticipation } from "@/lib/participation/score";
-import { generatedNote } from "@/lib/points-entry";
 import {
   COMPETITION_NOT_FOUND,
-  GAMES_CLOSED,
-  deleteGenerated,
+  REOPEN_FIRST,
   refuse,
 } from "@/mutations/brackets";
-import { ALREADY_CLOSED } from "@/mutations/games";
 import type { MutationContext, MutationResult } from "@/mutations/types";
 import { getCheckInFacts } from "@/queries/participation";
 
@@ -54,7 +44,7 @@ async function lockedParticipation(
       scoring: competition.scoring,
       placementPoints: competition.placementPoints,
       participationPoints: competition.participationPoints,
-      finalizedAt: competition.finalizedAt,
+      closedAt: competition.closedAt,
       teamLabel: warWeek.teamLabel,
     })
     .from(competition)
@@ -73,8 +63,8 @@ async function lockedParticipation(
 
 /**
  * Saves a `participation` Competition's settings: N when individual, its
- * Placement Points when team (ranked by headcount), and Self check-in with
- * its close time. Refused while closed.
+ * Placement Points when team (ranked by headcount), and Self check-in.
+ * Refused while closed.
  */
 export async function setParticipationSettings(
   competitionId: string,
@@ -85,7 +75,7 @@ export async function setParticipationSettings(
   return dbOrTx.transaction(async (tx): Promise<MutationResult> => {
     const found = await lockedParticipation(tx, competitionId, ctx);
     if (typeof found === "string") return refuse(found);
-    if (found.finalizedAt) return refuse(GAMES_CLOSED);
+    if (found.closedAt) return refuse(REOPEN_FIRST);
     const individual = found.scoring === "individual";
     if (individual) {
       if (input.placementPoints) return refuse(INDIVIDUAL_NO_PLACEMENT_POINTS);
@@ -104,7 +94,6 @@ export async function setParticipationSettings(
         participationPoints: individual ? input.participationPoints : null,
         placementPoints: individual ? null : input.placementPoints,
         selfCheckIn: input.selfCheckIn,
-        checkInClosesAt: input.checkInClosesAt,
         updatedAt: sql`now()`,
       })
       .where(eq(competition.id, competitionId));
@@ -126,7 +115,7 @@ export async function markParticipant(
   return dbOrTx.transaction(async (tx): Promise<MutationResult> => {
     const found = await lockedParticipation(tx, competitionId, ctx);
     if (typeof found === "string") return refuse(found);
-    if (found.finalizedAt) return refuse(GAMES_CLOSED);
+    if (found.closedAt) return refuse(REOPEN_FIRST);
     const [who] = await tx
       .select({ teamId: participant.teamId })
       .from(participant)
@@ -166,7 +155,7 @@ export async function unmarkParticipant(
   return dbOrTx.transaction(async (tx): Promise<MutationResult> => {
     const found = await lockedParticipation(tx, competitionId, ctx);
     if (typeof found === "string") return refuse(found);
-    if (found.finalizedAt) return refuse(GAMES_CLOSED);
+    if (found.closedAt) return refuse(REOPEN_FIRST);
     await tx
       .delete(participation)
       .where(
@@ -235,75 +224,6 @@ export async function checkOut(
           eq(participation.checkedIn, true),
         ),
       );
-    return { ok: true };
-  });
-}
-
-/**
- * Closes a `participation` Competition: who took part becomes Points
- * Entries (`scoreParticipation`, each Participant's Team as it is now),
- * marked generated and noted "From participation"; then no marks or
- * check-ins until Reopen. Nobody marked closes with no entries.
- */
-export async function closeParticipation(
-  competitionId: string,
-  ctx: MutationContext,
-  dbOrTx: DBOrTx = db,
-): Promise<MutationResult> {
-  return dbOrTx.transaction(async (tx): Promise<MutationResult> => {
-    const found = await lockedParticipation(tx, competitionId, ctx);
-    if (typeof found === "string") return refuse(found);
-    if (found.finalizedAt) return refuse(ALREADY_CLOSED);
-
-    const tookPart = await tx
-      .select({
-        participantId: participation.participantId,
-        teamId: participant.teamId,
-      })
-      .from(participation)
-      .innerJoin(participant, eq(participant.id, participation.participantId))
-      .where(eq(participation.competitionId, competitionId));
-    const scored = scoreParticipation(tookPart, found);
-    await deleteGenerated(tx, competitionId);
-    if (scored.length) {
-      await tx.insert(pointsEntry).values(
-        scored.map(({ teamId, participantId, points }) => ({
-          warWeekId: ctx.warWeekId,
-          competitionId,
-          teamId,
-          participantId,
-          points,
-          note: generatedNote("participation"),
-          enteredByEmail: ctx.actorEmail,
-          generatedByBracket: true,
-        })),
-      );
-    }
-    await tx
-      .update(competition)
-      .set({ finalizedAt: sql`now()`, updatedAt: sql`now()` })
-      .where(eq(competition.id, competitionId));
-    return { ok: true };
-  });
-}
-
-/**
- * Reopens a `participation` Competition: deletes its generated Points
- * Entries and clears `finalized_at`.
- */
-export async function reopenParticipation(
-  competitionId: string,
-  ctx: MutationContext,
-  dbOrTx: DBOrTx = db,
-): Promise<MutationResult> {
-  return dbOrTx.transaction(async (tx): Promise<MutationResult> => {
-    const found = await lockedParticipation(tx, competitionId, ctx);
-    if (typeof found === "string") return refuse(found);
-    await deleteGenerated(tx, competitionId);
-    await tx
-      .update(competition)
-      .set({ finalizedAt: null, updatedAt: sql`now()` })
-      .where(eq(competition.id, competitionId));
     return { ok: true };
   });
 }

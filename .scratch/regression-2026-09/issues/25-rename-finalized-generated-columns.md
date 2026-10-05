@@ -4,7 +4,7 @@
 
 **Blocked by:** none
 
-**Status:** needs-triage
+**Status:** done
 
 **Source:** Epic R3 follow-up (`../epics/R3-execution.md` [CLOSEOUT]), 2026-09-29
 
@@ -21,3 +21,6 @@
 
 ## Comments
 - 2026-09-29 (Paul): backlog. Internal naming only, no user-facing effect; a schema change that needs a red-team. Do it alongside a future schema change that is red-teamed anyway.
+
+- 2026-10-04: folded into Epic R21 (`../../competition-setup/spec.md`); closes when that epic ships.
+- 2026-10-04: done. Folded into R21, .scratch/competition-setup/ (migration `0031` renamed `finalized_at` to `closed_at` and `generated_by_bracket` to `generated`, row-preserving; code, seeds and CONTEXT.md updated).

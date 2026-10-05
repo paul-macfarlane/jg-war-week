@@ -52,7 +52,7 @@ export async function assertFinale(sessions: {
   );
 
   await run(
-    "GET /admin/finale shows the Finale page with Open Finale, the slide list and the Awards layout control to an Organizer and the refusal to a non-Organizer",
+    "GET /admin/finale shows the Finale page with Open Finale, the slide list and no Awards layout control to an Organizer and the refusal to a non-Organizer",
     async () => {
       const organizer = await page("/admin/finale", sessions.organizer);
       const notOrganizer = await page("/admin/finale", sessions.notOrganizer);
@@ -64,10 +64,10 @@ export async function assertFinale(sessions: {
         slides:
           organizer.body.includes('aria-label="Finale slides"') &&
           organizer.body.includes("Standings countdown"),
-        awardsLayout:
-          organizer.body.includes("Awards layout") &&
-          organizer.body.includes("All on one slide") &&
-          organizer.body.includes("One slide per Category"),
+        noAwardsLayout:
+          !organizer.body.includes("Awards layout") &&
+          !organizer.body.includes("All on one slide") &&
+          !organizer.body.includes("One slide per Category"),
         refused:
           notOrganizer.body.includes(ADMIN_REFUSAL_TEXT) &&
           !notOrganizer.body.includes("Open Finale"),

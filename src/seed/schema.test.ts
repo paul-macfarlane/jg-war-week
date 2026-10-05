@@ -152,9 +152,11 @@ describe("warWeekSeedSchema", () => {
           withCompetition({
             format: "bracket",
             bracketConfig: {
-              entrantsPerHeat: 4,
-              advancePerHeat: 2,
-              thirdPlaceGame: false,
+              kind: "group" as const,
+              entrantsPerMatch: 4,
+              advancePerMatch: 2,
+              thirdPlaceMatch: false,
+              rounds: {},
             },
             placementPoints: [5, 4, 3, 2, 1],
           }),
@@ -194,9 +196,11 @@ describe("warWeekSeedSchema", () => {
     }
     const at = `competitions.${loadFixture().competitions.length}.bracketConfig`;
     const full = {
-      entrantsPerHeat: 5,
-      advancePerHeat: 2,
-      thirdPlaceGame: false,
+      kind: "group" as const,
+      entrantsPerMatch: 5,
+      advancePerMatch: 2,
+      thirdPlaceMatch: false,
+      rounds: {},
     };
 
     it("accepts a Bracket with its full config", () => {
@@ -208,16 +212,16 @@ describe("warWeekSeedSchema", () => {
 
     it("rejects a Bracket without its config", () => {
       expect(rejectionOf(withCompetition({ format: "bracket" }))).toContain(
-        `${at}: a Bracket needs its bracketConfig (entrantsPerHeat, advancePerHeat, thirdPlaceGame)`,
+        `${at}: a Bracket needs its bracketConfig (kind, entrantsPerMatch, advancePerMatch, thirdPlaceMatch, rounds)`,
       );
     });
 
-    it("rejects a Bracket config missing its 3rd place game", () => {
+    it("rejects a Bracket config missing its 3rd place Match", () => {
       expect(
         rejectionOf(
           withCompetition({
             format: "bracket",
-            bracketConfig: { entrantsPerHeat: 4, advancePerHeat: 2 },
+            bracketConfig: { entrantsPerMatch: 4, advancePerMatch: 2 },
           }),
         ),
       ).not.toEqual([]);
@@ -229,19 +233,21 @@ describe("warWeekSeedSchema", () => {
           withCompetition({
             format: "bracket",
             bracketConfig: {
-              entrantsPerHeat: 4,
-              advancePerHeat: 4,
-              thirdPlaceGame: false,
+              kind: "group" as const,
+              entrantsPerMatch: 4,
+              advancePerMatch: 4,
+              thirdPlaceMatch: false,
+              rounds: {},
             },
           }),
         ),
       ).toContain(
-        `${at}.advancePerHeat: Fewer must advance than play in a Heat.`,
+        `${at}.advancePerMatch: Fewer must advance than play in a Match.`,
       );
     });
 
     it("rejects the retired Format names", () => {
-      for (const format of ["single-elimination", "heats"]) {
+      for (const format of ["single-elimination", "matches"]) {
         expect(
           warWeekSeedSchema.safeParse(
             withCompetition({ format, bracketConfig: full }),
@@ -256,6 +262,100 @@ describe("warWeekSeedSchema", () => {
           withCompetition({ format: "placement", bracketConfig: full }),
         ),
       ).toContain(`${at}: bracketConfig is only for a Bracket`);
+    });
+  });
+
+  describe("Head-to-head and Best score", () => {
+    function withCompetition(competition: Record<string, unknown>) {
+      const fixture = loadFixture();
+      return {
+        ...fixture,
+        competitions: [
+          ...fixture.competitions,
+          { name: "Fixture Series", scoring: "individual", ...competition },
+        ],
+      };
+    }
+    const at = `competitions.${loadFixture().competitions.length}`;
+
+    it("accepts a Head-to-head's Best of and two named Entrants", () => {
+      const result = warWeekSeedSchema.safeParse(
+        withCompetition({
+          format: "head-to-head",
+          seriesConfig: { drawsAllowed: true, bestOf: 1 },
+          entrants: ["Albert Hernandez", "Austin Gage"],
+        }),
+      );
+      expect(result.success ? [] : result.error.issues).toEqual([]);
+    });
+
+    it("rejects an unknown, repeated or third Entrant, and Entrants on another Format", () => {
+      expect(
+        rejectionOf(
+          withCompetition({
+            format: "head-to-head",
+            entrants: ["Albert Hernandez", "Nobody Atall"],
+          }),
+        ),
+      ).toContain(`${at}.entrants.1: unknown Participant "Nobody Atall"`);
+      expect(
+        rejectionOf(
+          withCompetition({
+            format: "head-to-head",
+            entrants: ["Albert Hernandez", "Albert Hernandez"],
+          }),
+        ),
+      ).toContain(`${at}.entrants: a head-to-head's 2 entrants are different`);
+      rejectionOf(
+        withCompetition({
+          format: "head-to-head",
+          entrants: ["Albert Hernandez", "Austin Gage", "Casey Snow"],
+        }),
+      );
+      expect(
+        rejectionOf(
+          withCompetition({
+            format: "best-score",
+            entrants: ["Albert Hernandez", "Austin Gage"],
+          }),
+        ),
+      ).toContain(
+        `${at}.entrants: entrants is only for a head-to-head or league Competition`,
+      );
+    });
+
+    it("has no Best of off and no Best / Total count", () => {
+      rejectionOf(
+        withCompetition({
+          format: "head-to-head",
+          seriesConfig: { drawsAllowed: false, bestOf: null },
+        }),
+      );
+      rejectionOf(
+        withCompetition({
+          format: "best-score",
+          bestScoreConfig: { teamScore: "best-member", count: "total" },
+        }),
+      );
+      rejectionOf(withCompetition({ format: "best-score", count: "best" }));
+    });
+
+    it("gives Best score a higher or lower direction, never none, and no close times anywhere", () => {
+      expect(
+        rejectionOf(
+          withCompetition({ format: "best-score", scoreDirection: "none" }),
+        ),
+      ).toContain(
+        `${at}.scoreDirection: a best-score Competition's scoreDirection is higher or lower`,
+      );
+      for (const key of [
+        "entrantsOpen",
+        "loggingClosesAt",
+        "enrollClosesAt",
+        "checkInClosesAt",
+      ]) {
+        rejectionOf(withCompetition({ format: "best-score", [key]: null }));
+      }
     });
   });
 
@@ -278,7 +378,6 @@ describe("warWeekSeedSchema", () => {
           scoring: "team",
           placementPoints: [5, 3, 1],
           selfCheckIn: true,
-          checkInClosesAt: "2026-02-27T22:00:00Z",
         },
         { scoring: "individual", participationPoints: 2 },
         { scoring: "individual" },
@@ -296,14 +395,9 @@ describe("warWeekSeedSchema", () => {
           format: "placement",
           participationPoints: 1,
           selfCheckIn: true,
-          checkInClosesAt: "2026-02-27T22:00:00Z",
         }),
       );
-      for (const key of [
-        "participationPoints",
-        "selfCheckIn",
-        "checkInClosesAt",
-      ]) {
+      for (const key of ["participationPoints", "selfCheckIn"]) {
         expect(issues).toContain(
           `${at}.${key}: ${key} is only for a participation Competition`,
         );
@@ -490,16 +584,6 @@ describe("warWeekSeedSchema", () => {
     );
   });
 
-  it("accepts an Award's Category key and refuses a name-like value", () => {
-    const fixture = loadFixture();
-    fixture.awards[0].category = "war-week-mvp";
-    expect(warWeekSeedSchema.parse(fixture).awards[0].category).toBe(
-      "war-week-mvp",
-    );
-    fixture.awards[0].category = "War Week MVP";
-    expect(rejectionOf(fixture).join("\n")).toContain("awards.0.category");
-  });
-
   it("rejects Teams in a free-for-all War Week", () => {
     expect(rejectionOf({ ...loadFixture(), mode: "free-for-all" })).toContain(
       "teams: a free-for-all War Week has no Teams",
@@ -575,18 +659,11 @@ describe("warWeekSeedSchema Finale slides", () => {
     ]);
   });
 
-  it("leaves finaleSlides and finaleAwardsLayout out when a seed has none", () => {
+  it("leaves finaleSlides out when a seed has none", () => {
     const fixture = loadFixture();
     delete fixture.finaleSlides;
     const seed = warWeekSeedSchema.parse(fixture);
     expect(seed.finaleSlides).toBeUndefined();
-    expect(seed.finaleAwardsLayout).toBeUndefined();
-    expect(
-      warWeekSeedSchema.parse({
-        ...fixture,
-        finaleAwardsLayout: "per-category",
-      }).finaleAwardsLayout,
-    ).toBe("per-category");
   });
 
   it("requires a heading on a Custom slide and refuses Custom fields on a built-in", () => {
@@ -642,9 +719,9 @@ describe("warWeekSeedSchema Placements", () => {
         scoring: "individual",
         placementPoints: [10, 6, 3],
         scoreDirection: "higher",
-        finalized: true,
-        finalizedAt: "2099-01-03T18:00:00.000Z",
-        finalizedByEmail: "host@jahnelgroup.com",
+        closed: true,
+        closedAt: "2099-01-03T18:00:00.000Z",
+        closedByEmail: "host@jahnelgroup.com",
       },
       { name: "Quiz", scoring: "team" },
       { name: "Pong", scoring: "individual", format: "head-to-head" },
@@ -655,7 +732,7 @@ describe("warWeekSeedSchema Placements", () => {
   const participant = () => loadFixture().participants[0].displayName;
   const team = () => loadFixture().teams[0].name;
 
-  it("parses Placements and a Finalized Placement Competition", () => {
+  it("parses Placements and a Closed Placement Competition", () => {
     const seed = warWeekSeedSchema.parse({
       ...base(),
       placements: [
@@ -672,17 +749,17 @@ describe("warWeekSeedSchema Placements", () => {
     expect(seed.placements).toHaveLength(2);
     expect(seed.competitions[0]).toMatchObject({
       scoreDirection: "higher",
-      finalized: true,
+      closed: true,
     });
   });
 
-  it("requires finalizedAt and finalizedByEmail with finalized, and only on a Placement Competition", () => {
+  it("requires closedAt and closedByEmail with closed, and only on a Placement Competition", () => {
     const [darts, quiz, pong] = base().competitions;
-    const withoutEmail = { ...darts, finalizedByEmail: undefined };
+    const withoutEmail = { ...darts, closedByEmail: undefined };
     expect(
       rejectionOf({ ...base(), competitions: [withoutEmail, quiz, pong] }),
     ).toEqual([
-      "competitions.0.finalized: finalized needs finalizedAt and finalizedByEmail together",
+      "competitions.0.closed: closed needs closedAt and closedByEmail together",
     ]);
     expect(
       rejectionOf({
@@ -693,15 +770,15 @@ describe("warWeekSeedSchema Placements", () => {
           {
             ...pong,
             scoreDirection: "lower",
-            finalized: true,
-            finalizedAt: darts.finalizedAt,
-            finalizedByEmail: darts.finalizedByEmail,
+            closed: true,
+            closedAt: darts.closedAt,
+            closedByEmail: darts.closedByEmail,
           },
         ],
       }),
     ).toEqual([
-      "competitions.2.scoreDirection: scoreDirection is only for a placement Competition",
-      "competitions.2.finalized: finalized is only for a placement Competition",
+      "competitions.2.closed: closed is only for a placement or league Competition",
+      "competitions.2.scoreDirection: scoreDirection is only for a placement, best-score or league Competition",
     ]);
   });
 
@@ -743,5 +820,195 @@ describe("warWeekSeedSchema Placements", () => {
       'placements.4.participant: unknown Participant "Nobody"',
       'placements.5.team: unknown Team "Nobody"',
     ]);
+  });
+});
+
+describe("League seeds", () => {
+  const NAMES = [
+    "Albert Hernandez",
+    "Austin Gage",
+    "Ashley Schuliger",
+    "Sam Schantz",
+  ];
+  const league = (extra: object = {}) => ({
+    name: "Fixture League",
+    scoring: "individual",
+    format: "league",
+    leagueConfig: { pairing: "round-robin", rounds: null },
+    entrants: NAMES,
+    ...extra,
+  });
+  const match = (extra: object = {}) => ({
+    key: "m1",
+    competition: "Fixture League",
+    round: 1,
+    position: 0,
+    a: NAMES[0],
+    b: NAMES[1],
+    result: "a",
+    ...extra,
+  });
+  const seed = (competition: object, leagueMatches: object[] = []) => {
+    const fixture = loadFixture();
+    return {
+      ...fixture,
+      competitions: [...fixture.competitions, competition],
+      leagueMatches,
+    };
+  };
+  const at = `competitions.${loadFixture().competitions.length}`;
+  const parse = (input: unknown) => {
+    const result = warWeekSeedSchema.safeParse(input);
+    return result.success
+      ? []
+      : result.error.issues.map((i) => `${i.path.join(".")}: ${i.message}`);
+  };
+
+  it("takes a League with any number of Entrants and its Matches, with a bye and a played draw", () => {
+    expect(
+      parse(
+        seed(league(), [
+          match(),
+          match({
+            key: "m2",
+            position: 1,
+            a: NAMES[2],
+            b: NAMES[3],
+            result: "draw",
+            scoreA: 1,
+            scoreB: 1,
+          }),
+          match({ key: "m3", round: 2, a: NAMES[0], b: null, result: null }),
+          match({
+            key: "m4",
+            round: 2,
+            position: 1,
+            a: NAMES[1],
+            b: NAMES[2],
+            result: null,
+          }),
+        ]),
+      ),
+    ).toEqual([]);
+    expect(parse(seed(league({ entrants: undefined })))).toEqual([]);
+  });
+
+  it("takes a Swiss config and a seeded Close on a League, and a Head-to-head still takes exactly 2 Entrants", () => {
+    expect(
+      parse(
+        seed(
+          league({
+            leagueConfig: { pairing: "swiss", rounds: 3 },
+            scoreDirection: "higher",
+            scoreUnit: "pts",
+            closed: true,
+            closedAt: "2027-02-24T10:00:00-05:00",
+            closedByEmail: "demo-organizer@jahnelgroup.com",
+          }),
+        ),
+      ),
+    ).toEqual([]);
+    expect(
+      parse(
+        seed({
+          name: "Fixture H2H",
+          scoring: "individual",
+          format: "head-to-head",
+          entrants: NAMES.slice(0, 3),
+        }),
+      ),
+    ).not.toEqual([]);
+  });
+
+  it("refuses a League's config on another Format, an unknown or repeated Entrant, and too many Swiss rounds", () => {
+    expect(
+      parse(
+        seed({
+          name: "Fixture Placement",
+          scoring: "individual",
+          leagueConfig: { pairing: "swiss", rounds: 2 },
+        }),
+      ),
+    ).toContain(`${at}.leagueConfig: leagueConfig is only for a League`);
+    expect(
+      parse(seed(league({ entrants: [NAMES[0], "Nobody Atall"] }))),
+    ).toContain(`${at}.entrants.1: unknown Participant "Nobody Atall"`);
+    expect(parse(seed(league({ entrants: [NAMES[0], NAMES[0]] })))).toContain(
+      `${at}.entrants: a League's entrants are all different`,
+    );
+    expect(parse(seed(league({ entrants: [NAMES[0]] })))).not.toEqual([]);
+    expect(
+      parse(seed(league({ leagueConfig: { pairing: "swiss", rounds: 4 } }))),
+    ).toContain(
+      `${at}.leagueConfig.rounds: A Swiss League of 4 Entrants plays 1 to 3 rounds.`,
+    );
+  });
+
+  it("refuses a Match on a Competition that isn't a seeded League, or with an Entrant it doesn't have", () => {
+    expect(parse(seed(league(), [match({ competition: "Nobody" })]))).toContain(
+      'leagueMatches.0.competition: unknown Competition "Nobody"',
+    );
+    expect(
+      parse(seed(league(), [match({ competition: "HQ Attendance" })])).join(
+        "\n",
+      ),
+    ).toContain("isn't a league Competition");
+    expect(parse(seed(league(), [match({ b: "Eve Stone" })]))).toContain(
+      'leagueMatches.0.b: "Eve Stone" is not an Entrant of Fixture League',
+    );
+    expect(
+      parse(seed(league(), [match({ b: NAMES[0] })])).join("\n"),
+    ).toContain("plays itself");
+  });
+
+  it("refuses an Entrant twice in a round, a rematch, a bye with a result and a Score without a result", () => {
+    expect(
+      parse(
+        seed(league(), [
+          match(),
+          match({ key: "m2", position: 1, a: NAMES[1], b: NAMES[2] }),
+        ]),
+      ),
+    ).toContain("leagueMatches.1.a: Austin Gage plays twice in round 1");
+    expect(
+      parse(
+        seed(league(), [
+          match(),
+          match({ key: "m2", round: 2, a: NAMES[1], b: NAMES[0] }),
+        ]),
+      ),
+    ).toContain(
+      "leagueMatches.1.a: Austin Gage and Albert Hernandez already met in Fixture League",
+    );
+    expect(parse(seed(league(), [match({ b: null })]))).toContain(
+      "leagueMatches.0.result: a bye has no result",
+    );
+    expect(
+      parse(seed(league(), [match({ b: null, result: null, scoreA: 1 })])),
+    ).toContain("leagueMatches.0.scoreA: a bye has no Score");
+    expect(
+      parse(seed(league(), [match({ result: null, scoreA: 1 })])),
+    ).toContain("leagueMatches.0.scoreA: a Score needs a result");
+  });
+
+  it("refuses a duplicate key or position in a round", () => {
+    expect(
+      parse(
+        seed(league(), [
+          match(),
+          match({ position: 1, a: NAMES[2], b: NAMES[3] }),
+        ]),
+      ),
+    ).toContain('leagueMatches.1.key: duplicate League Match key "m1"');
+    expect(
+      parse(
+        seed(league(), [
+          match(),
+          match({ key: "m2", a: NAMES[2], b: NAMES[3] }),
+        ]),
+      ),
+    ).toContain(
+      "leagueMatches.1.position: round 1 position 0 is taken in Fixture League",
+    );
   });
 });

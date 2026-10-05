@@ -1,9 +1,12 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import {
+  closeBracket,
   createSquad,
   deleteSquad,
-  finalizeBracket,
+  moveMatchEntrant,
+  setMatchAdvance,
+  setRoundDefaults,
   updateSquad,
 } from "@/actions/brackets";
 
@@ -39,10 +42,17 @@ vi.mock("next/cache", () => ({ revalidatePath: vi.fn() }));
 const authorize = vi.hoisted(() => vi.fn(async () => authorized.current));
 vi.mock("@/auth/authorize", () => ({
   authorize,
-  postedCompetitionId: () => null,
+}));
+vi.mock("@/mutations/close", () => ({
+  closeCompetition: vi.fn(boom),
+  reopenCompetition: vi.fn(boom),
+}));
+vi.mock("@/mutations/bracket-edits", () => ({
+  setMatchAdvance: vi.fn(async () => ({ ok: true })),
+  moveMatchEntrant: vi.fn(async () => ({ ok: true })),
+  setRoundDefaults: vi.fn(async () => ({ ok: true })),
 }));
 vi.mock("@/mutations/brackets", () => ({
-  finalizeBracket: vi.fn(boom),
   createSquad: vi.fn(async () => ({ ok: true })),
   updateSquad: vi.fn(async () => ({ ok: true })),
   deleteSquad: vi.fn(async () => ({ ok: true })),
@@ -57,11 +67,59 @@ afterEach(() => {
 
 describe("Bracket actions", () => {
   it("return the generic error when the mutation throws", async () => {
-    await expect(finalizeBracket(ID)).resolves.toEqual({
+    await expect(closeBracket(ID)).resolves.toEqual({
       ok: false,
       error: "Something went wrong. Try again.",
     });
     expect(console.error).toHaveBeenCalled();
+  });
+});
+
+describe("Group Bracket tree edit actions", () => {
+  const MATCH = "66666666-6666-4666-8666-666666666666";
+  const ENTRANT = "77777777-7777-4777-8777-777777777777";
+
+  it("authorize as Generate does, refuse malformed input, and pass the parsed edit on", async () => {
+    authorized.current = { ...AUTHORIZED_OK };
+    const edits = await import("@/mutations/bracket-edits");
+    const ctx = (authorized.current as { ctx: unknown }).ctx;
+
+    await expect(
+      setMatchAdvance(ID, MATCH, { advanceCount: "2" }),
+    ).resolves.toEqual({
+      ok: false,
+      error: "Choose how many advance.",
+    });
+    await expect(
+      moveMatchEntrant(ID, { entrantId: ENTRANT, toMatchId: "nope" }),
+    ).resolves.toEqual({
+      ok: false,
+      error: "Choose the Match to move them to.",
+    });
+    expect(edits.setMatchAdvance).not.toHaveBeenCalled();
+    expect(edits.moveMatchEntrant).not.toHaveBeenCalled();
+
+    await setMatchAdvance(ID, MATCH, { advanceCount: 1 });
+    expect(edits.setMatchAdvance).toHaveBeenCalledWith(
+      ID,
+      MATCH,
+      { advanceCount: 1 },
+      ctx,
+    );
+    await setRoundDefaults(ID, {
+      round: 2,
+      entrantsPerMatch: 3,
+      advancePerMatch: 1,
+    });
+    expect(edits.setRoundDefaults).toHaveBeenCalledWith(
+      ID,
+      2,
+      { entrantsPerMatch: 3, advancePerMatch: 1 },
+      ctx,
+    );
+    for (const call of authorize.mock.calls.slice(-4)) {
+      expect(call).toEqual(["bracket.generate", "competition", ID]);
+    }
   });
 });
 

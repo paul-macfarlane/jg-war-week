@@ -1,7 +1,7 @@
 import { type Page, type TestInfo, expect, test } from "@playwright/test";
 
 import { openCompetitionPage } from "./competition-page";
-import { runQuery, xiTeamPointsBreakdown } from "./db";
+import { addE2eHost, runQuery, xiTeamPointsBreakdown } from "./db";
 import { E2E_BASE_URL } from "./env";
 import {
   E2E_HOST_EMAIL,
@@ -16,8 +16,8 @@ import { teamTotal } from "./standings";
 // inserted into the live XI demo with the e2e Host as its Host. The Host
 // records six Participants with Scores (Places fill from them, a tie at
 // 2nd), breaks the tie, edits another row's Score (the tie-break stays),
-// and Finalizes: the Standings move by exactly the
-// Teams' points, Recent results shows the Finalize, Reopen withdraws them,
+// and Closes: the Standings move by exactly the
+// Teams' points, Recent results shows the Close, Reopen withdraws them,
 // and a Participant is refused the sheet. The sheet is the run area of the
 // Competition's page (ticket 101). The Competition is deleted after
 // (its rows and Points Entries cascade), so XI is unchanged for other specs.
@@ -84,7 +84,7 @@ async function leaderboardTotals(page: Page) {
   };
 }
 
-test("r16 90 a Host records placements with Scores, breaks a tie and Finalizes: the Standings move, Recent results shows it, Reopen withdraws, a Participant is refused", async ({
+test("r16 90 a Host records placements with Scores, breaks a tie and Closes: the Standings move, Recent results shows it, Reopen withdraws, a Participant is refused", async ({
   browser,
   context,
   page,
@@ -103,10 +103,7 @@ test("r16 90 a Host records placements with Scores, breaks a tie and Finalizes: 
     baseURL: E2E_BASE_URL,
   });
   try {
-    await runQuery(
-      `insert into competition_host (competition_id, email) values ($1, $2)`,
-      [id, E2E_HOST_EMAIL],
-    );
+    await addE2eHost(id, E2E_HOST_EMAIL);
     const before = await breakdownTotals();
     await asHost(context);
     expect(await leaderboardTotals(page)).toEqual(before);
@@ -167,14 +164,14 @@ test("r16 90 a Host records placements with Scores, breaks a tie and Finalizes: 
       page.getByRole("textbox", { name: `Place for ${TIE_BROKEN}` }),
     ).toHaveValue("3");
 
-    await page.getByRole("button", { name: "Finalize", exact: true }).click();
+    await page.getByRole("button", { name: "Close", exact: true }).click();
     const confirm = page.getByRole("alertdialog", {
-      name: "Finalize this Competition?",
+      name: "Close this Competition?",
     });
-    await confirm.getByRole("button", { name: "Finalize" }).click();
-    await expect(page.getByText("Competition finalized")).toBeVisible();
-    await expect(page.getByText("Finalized: its Points Entries")).toBeVisible();
-    await shoot(page, testInfo, "sheet-finalized");
+    await confirm.getByRole("button", { name: "Close" }).click();
+    await expect(page.getByText("Competition closed")).toBeVisible();
+    await expect(page.getByText("Closed: its Points Entries")).toBeVisible();
+    await shoot(page, testInfo, "sheet-closed");
 
     // The Standings move by exactly the Teams' points, matching SQL.
     const after = await breakdownTotals();
@@ -184,7 +181,7 @@ test("r16 90 a Host records placements with Scores, breaks a tie and Finalizes: 
     });
     expect(await leaderboardTotals(page)).toEqual(after);
 
-    // Recent results shows the Finalize with its winner.
+    // Recent results shows the Close with its winner.
     await page.goto("/xi");
     const recent = page
       .locator("section")
@@ -192,19 +189,23 @@ test("r16 90 a Host records placements with Scores, breaks a tie and Finalizes: 
     const result = recent
       .getByRole("listitem")
       .filter({ has: page.getByRole("link", { name }) });
-    await expect(result.getByText("Finalized", { exact: true })).toBeVisible();
+    await expect(result.getByText("Closed", { exact: true })).toBeVisible();
     await expect(result.getByText(ROWS[0].name)).toBeVisible();
     await shoot(page, testInfo, "recent-results");
 
-    // The Participant page lists the Placements by place.
+    // The Participant page's results table lists the Placements by place:
+    // Rank, Score and the points Close wrote, the Winner first.
     await page.goto(`/xi/competitions/${id}`);
-    const placements = page.getByRole("region", { name: "Placements" });
-    const first = placements.getByRole("listitem").first();
-    await expect(first).toContainText("1st");
-    await expect(first).toContainText(ROWS[0].name);
-    await expect(first).toContainText("Score 50");
-    await expect(first).toContainText("10");
-    await expect(placements.getByRole("listitem")).toHaveCount(ROWS.length);
+    const results = page
+      .getByRole("region", { name: "Placements" })
+      .getByRole("table", { name: "Placement results" });
+    const first = results.locator('tr[data-slot="results-row"]').first();
+    await expect(first.getByRole("rowheader")).toContainText(ROWS[0].name);
+    await expect(first.getByRole("rowheader")).toContainText("Winner");
+    await expect(first.getByRole("cell")).toHaveText(["1", "50", "10"]);
+    await expect(results.locator('tr[data-slot="results-row"]')).toHaveCount(
+      ROWS.length,
+    );
     await shoot(page, testInfo, "participant-page");
 
     // Reopen withdraws the points.

@@ -33,11 +33,13 @@ const authorizeCheckIn = vi.hoisted(() =>
   vi.fn(async () => authorized.current),
 );
 vi.mock("@/auth/authorize", () => ({ authorize, authorizeCheckIn }));
+vi.mock("@/mutations/close", () => ({
+  closeCompetition: vi.fn(async () => ({ ok: true })),
+  reopenCompetition: vi.fn(async () => ({ ok: true })),
+}));
 vi.mock("@/mutations/participation", () => ({
   markParticipant: vi.fn(async () => ({ ok: true })),
   unmarkParticipant: vi.fn(async () => ({ ok: true })),
-  closeParticipation: vi.fn(async () => ({ ok: true })),
-  reopenParticipation: vi.fn(async () => ({ ok: true })),
   checkIn: vi.fn(async () => ({ ok: true })),
   checkOut: vi.fn(async () => ({ ok: true })),
 }));
@@ -64,13 +66,13 @@ describe("the Host actions", () => {
       "closeParticipation",
       "participation.close",
       () => closeParticipation(ID),
-      "closeParticipation",
+      "closeCompetition",
     ],
     [
       "reopenParticipation",
       "participation.reopen",
       () => reopenParticipation(ID),
-      "reopenParticipation",
+      "reopenCompetition",
     ],
   ];
 
@@ -78,7 +80,10 @@ describe("the Host actions", () => {
     "%s authorizes with %s on the Competition and writes in its War Week",
     async (_name, action, run, mutation) => {
       authorized.current = OK;
-      const mutations = await import("@/mutations/participation");
+      const mutations = {
+        ...(await import("@/mutations/participation")),
+        ...(await import("@/mutations/close")),
+      };
       await expect(run()).resolves.toEqual({ ok: true });
       expect(authorize).toHaveBeenCalledWith(action, "competition", ID);
       expect(
@@ -94,7 +99,10 @@ describe("the Host actions", () => {
     "%s: a refusal never reaches the mutation",
     async (_name, _action, run, mutation) => {
       authorized.current = REFUSED;
-      const mutations = await import("@/mutations/participation");
+      const mutations = {
+        ...(await import("@/mutations/participation")),
+        ...(await import("@/mutations/close")),
+      };
       await expect(run()).resolves.toEqual(REFUSED);
       expect(
         (mutations as unknown as Record<string, ReturnType<typeof vi.fn>>)[
@@ -114,7 +122,10 @@ describe("the Host actions", () => {
 
   it("reads malformed input as a refusal once authorized, never reaching the mutation", async () => {
     authorized.current = OK;
-    const mutations = await import("@/mutations/participation");
+    const mutations = {
+      ...(await import("@/mutations/participation")),
+      ...(await import("@/mutations/close")),
+    };
     expect(await markParticipant(ID, { participantId: "nope" })).toMatchObject({
       ok: false,
     });
@@ -125,7 +136,10 @@ describe("the Host actions", () => {
 describe("check in and out", () => {
   it("authorize with authorizeCheckIn, not the Host actions", async () => {
     authorized.current = OK;
-    const mutations = await import("@/mutations/participation");
+    const mutations = {
+      ...(await import("@/mutations/participation")),
+      ...(await import("@/mutations/close")),
+    };
     await expect(checkIn(ID)).resolves.toEqual({ ok: true });
     await expect(checkOut(ID)).resolves.toEqual({ ok: true });
     expect(authorizeCheckIn).toHaveBeenNthCalledWith(
@@ -145,7 +159,10 @@ describe("check in and out", () => {
 
   it("a refusal never reaches the mutation", async () => {
     authorized.current = { ok: false, error: "Check-in is off." };
-    const mutations = await import("@/mutations/participation");
+    const mutations = {
+      ...(await import("@/mutations/participation")),
+      ...(await import("@/mutations/close")),
+    };
     await expect(checkIn(ID)).resolves.toEqual(authorized.current);
     await expect(checkOut(ID)).resolves.toEqual(authorized.current);
     expect(mutations.checkIn).not.toHaveBeenCalled();

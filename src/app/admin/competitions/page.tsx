@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 
 import { AdminRefused, AdminShell } from "@/components/admin-shell";
 import { CompetitionsEditor } from "@/components/competitions-editor";
-import { getHostNames, getWarWeekCompetitionHosts } from "@/queries/organizers";
+import { getWarWeekCompetitionHosts } from "@/queries/organizers";
 import { getSetupCompetitions } from "@/queries/setup";
 
 import { loadAdminPage } from "../gate";
@@ -18,10 +18,9 @@ export default async function AdminCompetitionsPage() {
 
   const [allCompetitions, hosts] = await Promise.all([
     getSetupCompetitions(warWeek),
-    // Host emails are shown only to Organizers.
+    // Host names are shown only to Organizers.
     isOrganizer ? getWarWeekCompetitionHosts(warWeek.id) : undefined,
   ]);
-  const hostNames = hosts ? await getHostNames(hosts) : undefined;
   const competitions = allCompetitions.filter((c) => runs(c.id));
 
   return (
@@ -44,7 +43,6 @@ export default async function AdminCompetitionsPage() {
           warWeekId={warWeek.id}
           isOrganizer={isOrganizer}
           hosts={hosts}
-          hostNames={hostNames}
           competitions={competitions}
           mode={warWeek.mode}
           teamLabel={warWeek.teamLabel}

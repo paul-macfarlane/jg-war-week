@@ -23,7 +23,7 @@ you set them in your own `.env.local` or in the service's settings.
 | Vercel project                             | Preview deploys, production deploys, env vars, rollbacks                                      | Paul                           |
 | Neon project                               | The staging and production databases (you rarely touch them directly)                         | Paul                           |
 | Google Cloud OAuth client                  | Local sign-in: `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, and adding redirect URIs           | Paul                           |
-| Organizer list                             | `/admin` only opens for Organizers (and Hosts, for their Competitions)                        | Any Organizer, in-app          |
+| Organizer list                             | `/admin` only opens for Organizers (and Hosts, for their Competitions and the Guide)          | Any Organizer, in-app          |
 | Claude Code with the Atlas plugin          | The recommended way to make changes ([section 2](#2-set-up-claude-code))                      | You (Paul if the install fails) |
 
 Your local `.env.local` needs the variables named in `.env.example`:
@@ -76,23 +76,24 @@ before it says it's done.
 | Participant pages (home, leaderboard, schedule, teams, competitions, announcements, awards, FAQ) | `src/app/[edition]/`                    |
 | History page                               | `src/app/history/`                                                     |
 | Organizer screens                          | `src/app/admin/` (competitions, discretionary-points, schedule, roster, settings…)  |
-| Placement sheet, Score direction, Finalize / Reopen | `src/lib/placement/` (`score.ts`, `input.ts`), `src/lib/placement-rows.ts`, `src/mutations/placements.ts`, `src/queries/placements.ts`, `src/components/placement-sheet.tsx`, `placement-view.tsx` |
+| Placement sheet, Score direction, Close / Reopen | `src/lib/placement/` (`score.ts`, `input.ts`), `src/lib/placement-rows.ts`, `src/mutations/placements.ts`, `src/queries/placements.ts`, `src/components/placement-sheet.tsx`, `placement-view.tsx` |
 | Discretionary points                       | `src/mutations/discretionary-points.ts`, `src/queries/discretionary-points.ts`, `src/app/admin/discretionary-points/`, `src/components/discretionary-points-editor.tsx` |
 | Placement Points limit and list editor     | `placementLimit` in `src/lib/competitions.ts` (the one place; Brackets 4, every other Format no limit), `src/components/placement-points-rows.tsx` |
 | Server actions behind admin forms          | `src/actions/`                                                         |
 | Database reads / writes                    | `src/queries/`, `src/mutations/`                                       |
 | Rules with unit tests (standings, schedule, Finale, access…) | `src/lib/` (`*.test.ts` next to each file)           |
-| The Bracket engine (seeding, Rounds/Heats, advancing winners, Bracket → Points Entries) | `src/lib/bracket/` (`*.test.ts` next to each file) |
+| The Bracket engine (seeding, Rounds/Matches, advancing winners, Bracket → Points Entries) | `src/lib/bracket/` (`*.test.ts` next to each file) |
 | The admin Competition page (Settings on top, the Format's run area below) | `src/app/admin/competitions/[id]/page.tsx` and `run-area.tsx`, `src/components/competition-settings-form.tsx`, `src/lib/competition-page.ts`, `src/queries/competition-page.ts` |
 | Which settings lock, and the per-field save | `src/lib/competition-locks.ts` (the one lock table and its one-line reasons), `src/queries/competition-locks.ts`, `src/mutations/competition-settings.ts`, `src/lib/competition-settings.ts`, `src/lib/autosave.ts` |
-| The Hosts picker (roster by name, emails beneath) | `src/lib/host-options.ts`, `getHostCandidates` in `src/queries/roster.ts` |
+| The one Participant picker (avatar, name, Team; name-only search, no cap, no email in any option or payload) | `src/components/participant-picker.tsx` (on `entity-combobox.tsx`), `src/lib/participant-options.ts` (the option type and the name match, with its vitest); the Hosts picker's "Can't sign in" note in `src/lib/host-options.ts`, `getHostCandidates` in `src/queries/roster.ts` |
+| How a Participant's Team shows wherever they compete or score (name beside the name, color where tight; a ring on a pictured Avatar) | `src/components/participant-mark.tsx` (`TeamTag`), `src/components/entrant-mark.tsx`, `src/components/avatar.tsx` |
 | The description's plain-text to rich-text conversion for seeds | `src/lib/rich-text/from-plain-text.ts` |
 | Bracket builder and results screens                | the Bracket section of `src/components/competition-settings-form.tsx` and of the run area; `src/components/bracket-builder.tsx` |
 | The retired setup routes (308 to the Competition page) | `src/app/admin/competitions/[id]/{bracket,games,participation}/`, `src/app/admin/brackets/[id]/`, `src/app/admin/placements/[competitionId]/`: each a redirect page, proven by `retired-routes.test.ts` |
 | Participation (scoring, Check in rule)     | `src/lib/participation/` (`score.ts`, `check-in-rule.ts`, `input.ts`), `src/mutations/participation.ts`, `src/queries/participation.ts` |
 | Participation run area, and its Competition page parts | `src/components/participation-builder.tsx`, `participation-view.tsx`, `check-in-button.tsx` |
-| Award Categories (list, rename, archive, restore) | `src/lib/award-categories.ts`, `src/mutations/award-categories.ts`, `src/components/award-categories-editor.tsx` (on `/admin/awards`) |
-| Awards grouped by Category; a Category through the years | `src/app/[edition]/awards/`, `src/app/history/awards/[id]/`, `src/queries/award-category-history.ts`; the list on `/history` is `src/app/history/(list)/` |
+| Award presets (the names the Add Award form offers) and the name slug | `src/lib/award-names.ts` (the seven `FORMER_CATEGORY_NAMES`, `awardNameSlug`, `awardPresets`), `getAwardPresets` in `src/queries/awards.ts`, the Preset picker in `src/components/award-form.tsx` |
+| An Award name through the years | `src/app/[edition]/awards/` (names link to history), `src/app/history/awards/page.tsx` (every name) and `[slug]/page.tsx` (one name), `src/queries/award-history.ts`; the list on `/history` is `src/app/history/(list)/` |
 | The Competitions list's status (Not started, Underway, Closed, Done · Winner) | `src/lib/competition-status.ts` (the one rule, with `*.test.ts`; the list query only loads the facts) |
 | Database schema                            | `src/db/schema.ts`                                                     |
 | Migrations (generated, never hand-edited)  | `drizzle/`                                                             |
@@ -108,7 +109,7 @@ before it says it's done.
 | Smoke test                                 | `scripts/smoke/` (entry: `scripts/smoke/index.ts`)                     |
 | Browser flows (Playwright, `pnpm e2e`)     | `e2e/`, `playwright.config.ts`                                         |
 | Past wiki text for history                 | `old-wikis/2016.txt` … `old-wikis/2026.txt`                            |
-| CI, deployed migrations, seeding           | `.github/workflows/` (`ci.yml`, `migrate.yml`, `seed.yml`)             |
+| CI, deployed migrations, seeding           | `.github/workflows/` (`ci.yml`, `seed.yml`), `scripts/vercel-build.sh` |
 
 The words in code come from [`CONTEXT.md`](../CONTEXT.md). The ones you'll
 see most: **War Week** (one year), **Edition** (`xi`, used in URLs),
@@ -141,12 +142,17 @@ Every change, however small:
    `pnpm exec playwright install chromium`.
 5. **Open a PR into `staging`.** Ask Claude to "commit and open a PR into
    staging", or `gh pr create --base staging`. CI runs on the PR: lint,
-   types, tests, build, smoke and the Playwright flows against its own
-   Postgres, and a migration drift check that fails when
-   `src/db/schema.ts` changed without a `drizzle/` migration.
+   types, tests, build and smoke against its own Postgres, and a
+   migration drift check that fails when `src/db/schema.ts` changed
+   without a `drizzle/` migration. The Playwright flows don't run on a PR
+   into `staging` (they would add about 16 minutes); run `pnpm gate`
+   locally (step 4) instead.
 6. **Check the Vercel preview** linked on the PR.
-7. **Merge into `staging`.** The staging database migrates automatically.
-8. **Ship to production:** open a PR from `staging` into `main`, merge it.
+7. **Merge into `staging`.** Vercel's build migrates the staging database,
+   then deploys; a failed migration fails the deploy.
+8. **Ship to production:** open a PR from `staging` into `main`. Its CI
+   is the only one that runs the Playwright flows; if they fail, fix it on
+   a branch into `staging` first. Merge it once green.
    Production migrates and deploys. Check https://jg-war-week.vercel.app.
 
 ## Recipes
@@ -160,6 +166,24 @@ Each has a prompt you can paste into Claude. Replace the `<…>` parts.
 ```
 
 Words must follow `CONTEXT.md`. If Claude refuses a word, that's why.
+
+**The banned-term scan.** `src/lib/banned-terms.test.ts` (run by `pnpm test`)
+reads the string literals, template text and JSX text of every non-test
+`.ts`/`.tsx` file under `src/`, plus the property names of MCP output
+under `src/mcp/`, so UI copy and MCP output can't carry a
+banned word: **Heat** (say Match), **Champion** (Winner), **Finalize** and
+**Un-finalize** (Close, Closed, Reopen), **Game** (Match for a Bracket or
+Head-to-head or League, Attempt for Best score), plus Event, Member, ELO,
+Placeholder, Tournament, News and "admin" for a person. Other identifiers and
+comments aren't scanned, nor are `scripts/` and `drizzle/`. **Match** and **League**
+are no longer banned (League is a Format; League copy says chess, never
+"tournament" or "Elo", which stay banned). The `ALLOWLIST` at the top of the test (one
+file, one term, the exact literal, a reason) holds only the two Team score
+labels, **"Best member"** and **"Sum of members"** in
+`src/lib/best-score/config.ts`, allowed despite the banned **Member**; Heat,
+Game and Finalize have no exceptions in code. Add an entry only for a
+literal the spec itself names. A failing scan names the file, the term and
+the word to use instead.
 
 A change people can see also updates `/about` in the same PR: its copy
 (`src/app/about/page.tsx`, `src/lib/about.ts`: six key-feature cards, copy
@@ -224,13 +248,18 @@ redirect to their new homes.
   from the avatar **account menu** at the top right of every header.
 - **`/admin/schedule`**: the War Week's Days (with Day Themes and an
   optional short Day description) and each Day's Schedule Items on one
-  page. **`/admin/roster`**: Teams and Participants, with an Organizer-only
-  Import (paste from Google Sheets or upload a CSV, preview, then Import).
-  **`/admin/competitions`**: Competitions, with their Hosts. A row's **Edit**
+  page. **`/admin/roster`**: Teams and Participants, with Add Participant and an
+  Organizer-only Import (paste from Google Sheets or upload a CSV, preview,
+  then Import) at the top, and a search box that filters the list by name or
+  email ("N of M").
+  **`/admin/competitions`**: Competitions, with their Hosts (a Host sees only
+  the ones they host). A row's **Edit**
   opens the Competition's own page (see [Run a Competition from its
   page](#run-a-competition-from-its-page)).
 - **On a phone**, the admin sections are a bar fixed to the bottom of the
-  screen (Competitions, Discretionary points, Schedule, Announcements, More); More opens a
+  screen (labelled Competitions, Points, Schedule, News, More, in Inter whatever the
+  font preset; the accessible names, the side column and the More Sheet keep
+  "Discretionary points" and "Announcements"); More opens a
   Sheet with the other sections you can see and the edition switcher.
   Display, the way back to the War Week, Slack and Sign out are in the
   avatar account menu in the header. From `md` up it is the side column and
@@ -246,13 +275,13 @@ redirect to their new homes.
   Awards. A Team's row reads "Edit <Team Label> <name>". The Hosts field is
   in the Competition page's Settings and saves as you pick.
 - **You comes from the roster email only.** A signed-in person is "You" (the
-  highlight, Log a Game, reporting a Heat) only when their email matches a
+  highlight, Log a Match or Attempt, reporting a Match) only when their email matches a
   Participant's roster email; there is no "Which one is you?" pick. A
   Participant row without an email shows "No email: won't be linked when they
   sign in" on Roster.
 - **`/admin/organizers`**: the Organizer list (see
   [Add an Organizer or assign Hosts](#add-an-organizer-or-assign-hosts)).
-- **`/admin/discretionary-points`** (Organizers only: give, edit or delete points with no Competition, each with a required reason; the old `/admin/points` redirects here), **`/admin/finale`** (Run the Finale: the slide list and Awards layout, "Open Finale" at closing ceremonies, and "Finale: <Competition>" for each finalized Bracket),
+- **`/admin/discretionary-points`** (Organizers only: give, edit or delete points with no Competition, each with a required reason; the old `/admin/points` redirects here), **`/admin/finale`** (Run the Finale: the slide list, "Open Finale" at closing ceremonies),
   **`/admin/announcements`**, **`/admin/awards`**.
 
 To start next year's edition in the app:
@@ -260,7 +289,8 @@ To start next year's edition in the app:
 1. In `/admin/settings`, press **Create next War Week**. The edition, number
    and year are prefilled (XII, 12, next year); add the dates and Story
    Theme, and choose what to copy (settings are on; Competitions, with
-   their Hosts, and the FAQ are off). Organizers are global, so there's
+   no Hosts, and the FAQ are off: the new roster is empty, so add Hosts once it
+   exists). Organizers are global, so there's
    nothing to copy for them. It starts `upcoming`, and the admin
    switches to it so you can set it up while XI stays current.
 2. When XI is over, switch back to XI in the header's edition switcher and
@@ -268,9 +298,9 @@ To start next year's edition in the app:
    whoever is first in the Standings, "Tie: A & B" when two or more Teams
    or Participants tie for first, blank when nobody scored — and lets you
    add any highlights. There is no way to type a different Winner. XI moves
-   to the Archive. The confirm also names any Bracket that isn't finalized
-   and any open Head-to-head or Best score Competition with Games or `participation` Competition
-   with anyone marked, each linked to its Competition page. Finalize or close them first so their placings
+   to the Archive. The confirm also names any Bracket that isn't closed
+   and any open Head-to-head or Best score Competition with Matches or Attempts, or `participation` Competition
+   with anyone marked, each linked to its Competition page. Close them first so their placings
    count; it warns, it doesn't stop you.
 3. Switch to XII and press **Start War Week**. `/` and `/admin` now go to
    XII. Only one War Week can be live, so XI must end first.
@@ -297,19 +327,27 @@ signed in is a **Participant** (`CONTEXT.md`, "Access rules").
   one Organizer is left. The list is global: one list for every War Week.
 - **Assign Hosts**: the Hosts field in the Settings of each Competition's
   page (`/admin/competitions`, Edit), saved as you pick (Organizers only).
-  Search the roster by name: the email shows beneath, and a Participant with
-  no email, or one that isn't `@jahnelgroup.com`, is shown disabled with the
-  reason (fix it in Roster first). A Host needs
-  no Participant record. They get the Admin link and see only their Competitions in Admin: its Placements,
-  Bracket, Games, settings (the Hosts shown by name only, no emails) and linked Schedule Items, plus Announcements for
-  that War Week. Remove the email to take it away; it applies on their next
-  request. A Schedule Item's "host" text is only what the schedule shows;
-  it doesn't make anyone a Host.
+  A Host is a **Participant on that War Week's roster**: search the roster by
+  name (no email is shown). A Participant with no email can be picked; one
+  whose email isn't `@jahnelgroup.com` can be picked too and is marked "Can't
+  sign in". A Host gets access when they sign in with the email on their
+  roster entry, so add it in Roster if they have none; the email is matched
+  on each request, so changing a Participant's roster email moves their Host
+  access to whoever owns the new one. A Host gets the Admin link and sees
+  only the Competitions they host and the Guide: each Competition's page
+  (its Placements, Bracket, Matches and Attempts, settings; the Hosts shown
+  by name only, no emails). Schedule, Announcements and the Finale are
+  Organizer-only, and the server refuses a Host there. Remove the Participant
+  from the Hosts field to take access away; it applies on their next request.
+  A Schedule Item's "host" text is only what the schedule shows; it doesn't
+  make anyone a Host.
 - **A fresh database** gets its first Organizers from a seed's `organizers`
   list: a seed load adds any that are missing and never removes one, even
   with `--reset`. After that, manage them in the app. Hosts never come from
-  seeds; a plain reload leaves them alone, and `--reset` deletes them along
-  with the War Week's Competitions.
+  the seeds unless a seed Competition lists them (`hosts`: Participant display
+  names from that seed's roster, refused otherwise); a plain reload keeps any
+  Host an Organizer added, and `--reset` deletes them along with the War
+  Week's Competitions.
 - **Expand/contract.** `war_week.organizer_emails` and
   `competition.bracket_points` were dropped in migration 0013 once Epics B
   and E had run on `main` long enough that rolling back past them was no
@@ -340,7 +378,8 @@ staging. It is never on for production (ADR 0008).
     (`/admin/roster`), and it links as that Participant. With no roster row
     it is a signed-in person on no roster.
   - **Host:** give the alias to a roster Participant's email, then pick that
-    Participant in a Competition's Hosts field (`/admin/competitions`).
+    Participant in a Competition's Hosts field (`/admin/competitions`); no
+    other email is shown there.
   - **Organizer:** "inviting" is just adding the alias at
     `/admin/organizers`.
 - **Every page shows a "Test sign-in: <email>" banner** while you are in a
@@ -389,14 +428,19 @@ pnpm seed:demo:scale
 ```
 
 It loads every seed plus the XII scale demo (`seeds/demo/xii-scale.json`:
-100 made-up Participants, free-for-all, with a Finalized 100-row Placement),
+100 made-up Participants, free-for-all, with a Closed 100-row Placement),
 then runs the fixture (`src/seed/scale.ts`) through the app's own
 mutations for what the seed format can't hold: Hosts, a 64-Entrant Bracket
-with 20 Round 1 results, Participation ticks, Head-to-head and Best score
-Games. For Teams at scale, the normal XI demo already has 101 Participants. It refuses
+with 20 Round 1 results, Participation ticks, Head-to-head Matches and Best score
+Attempts. For Teams at scale, the normal XI demo already has 101 Participants. It refuses
 a database that is not local. Open `/xii`, its leaderboard and Competitions,
 the roster, a Placement sheet and the Bracket tree. Afterwards
 `pnpm seed:demo` puts the normal demo back.
+
+Deployed migrations now run in Vercel's build (`scripts/vercel-build.sh`),
+before the build and so before the deploy; `migrate.yml` is gone. In the
+rollout notes below, read "`migrate.yml`'s run is green" as "the Vercel
+deployment of that push is Ready".
 
 ### Rolling out R10 (migrations 0018 and 0019)
 
@@ -434,7 +478,8 @@ So R11 doesn't follow the usual expand-then-contract wait:
 Every Competition has one admin page, **`/admin/competitions/<id>`**: the
 Competitions list's **Edit** opens it, and **Add Competition** creates the
 Competition in a sheet, then opens it. Organizers use it for any Competition
-and a Host for their own; anyone else sees "Organizers and Hosts only."
+and a Host for their own; anyone else, and a Host opening another
+Competition's page, sees "Organizers and Hosts only."
 
 - **Settings** are on top and **autosave per field**: change a field and it
   saves ("Saved" by the Settings heading, no toast; a refusal shows under
@@ -442,34 +487,53 @@ and a Host for their own; anyone else sees "Organizers and Hosts only."
   **description** (the Announcement editor: headings, lists, links, images by
   URL, no upload), Group, **Hosts**, Format, scoring, Placement Points and the
   Format's own settings are all here.
-- **Hosts** are picked from the roster by name, with the email beneath. A
-  Participant with no email, or one that isn't `@jahnelgroup.com`, shows
-  disabled with the reason: fix it in Roster first. A Host sees the Hosts
-  read-only, by name, and no emails.
+- **Hosts** are picked from the roster by name, never showing an email. A
+  Participant with no email, or one that isn't `@jahnelgroup.com`, can be
+  picked (the latter is marked "Can't sign in"); a Host with no email gets
+  access once you add one in Roster. A Host sees the Hosts read-only, by
+  name, and no emails.
+- **Bracket admin** folds the Squads, Entrants and Seed Positions into one
+  closed "Entrants and Seed Positions (N)" collapsible once a Match has a
+  result (the lock reason stays visible); there is no Round 1 preview. The
+  Participant tree uses the full width from `md` up, and an Entrant gets a
+  "Jump to your Match" button (`currentMatchFor`).
 - **The run area** is below: Record placements (Placement), Entrants and
-  Bracket tree (Bracket), Entrants and Games with **Log a Game** and Edit and
-  Delete on each Game (Head-to-head, Best score), or Who took part
-  (Participation), with Finalize, Close and Reopen.
-- **Locks** (one table, `src/lib/competition-locks.ts`; the page disables a
+  Bracket tree (Bracket), Entrants and Matches with **Log a Match** (Head-to-head), Entrants and Attempts with **Log an Attempt** (Best score, Edit and Delete in each person's expanded row), or Who took part
+  (Participation), with Close and Reopen. Every Format uses the same two words: **Close** writes the points, **Reopen** withdraws them.
+- **Locks** (one table, `src/lib/competition-locks.ts`;
+  the page disables a
   locked field with a one-line reason and the server refuses the same change
-  with the same words):
+  with the same words). They come only from play having started or the
+  Competition being Closed; there are no scheduled closing times:
   - Never lock: name, description, Group, Hosts, Placement Points (and points
-    per Participant). A points change while the Competition is Finalized or
-    Closed applies at the next Finalize or Close.
+    per Participant), and the **Score unit** (a label). A points change while
+    the Competition is Closed applies at the next Close.
   - Lock once any result exists (an Entrant is one): Format, scoring, counts
-    toward team, Score direction, a Best score Competition's count and
-    direction. Until then the Format changes between any Formats.
-  - Lock once the Competition has a Game: a Head-to-head Competition's draws
-    and Best of, and a Head-to-head or Best score Competition's Entrants
-    open or fixed ("Locked once the Competition has a Game."). A Best of
-    needs its two fixed Entrants first, so Entrants alone don't lock it.
-  - Lock once a Heat Result exists: heat size, how many advance, the 3rd
-    place game, the Entrants, building the Bracket.
-  - Lock only while Finalized or Closed: self-enroll, Entrant limit, close
-    times, self-report, check-in.
-  - While Finalized or Closed everything but the never-locking row is locked
-    until you Reopen (Un-finalize a Bracket). There is no Reset bracket: to start a played Competition
+    toward team. **Score direction** locks per Format once play has started
+    there (a Placement row, a Match or Attempt, a Bracket Match result).
+  - Lock once the Competition has a Match or Attempt: a Head-to-head
+    Competition's draws and Best of, and a Best score Competition's Team score
+    ("Locked once the Competition has a Match or Attempt."). A Best of needs
+    its two Entrants first, so Entrants alone don't lock it.
+  - Lock once a Match result exists: the Bracket kind, Entrants per Match, how
+    many advance, the 3rd place match, the Entrants, building the Bracket.
+  - Lock only while Closed: self-enroll, Entrant limit, self-report, check-in
+    and a Best score Competition's **Max attempts** (which also can't go below
+    the most Attempts any one person already has).
+  - While Closed everything but the never-locking row is locked
+    until you Reopen it. There is no Reset bracket: to start a played Competition
     over, add a new one.
+- **Score direction and unit** (none, higher or lower is better, plus an
+  optional unit label of up to 20 characters) are in the Settings of
+  Placement, Bracket, Head-to-head and Best score (Best score: higher or lower
+  only; Participation has neither). With a direction, Places and Winners
+  follow the Scores (a Placement's Places, a Group or Head-to-head Match's
+  places or Winner), the Score column reads "Score (sec)", and anything you
+  set against the Scores shows "set by hand". One module computes it:
+  `src/lib/scoring.ts`.
+- **Self-report** ("Participants can log their own results") is one
+  switch, off by default, on Bracket, Head-to-head and Best score and never on
+  Placement (ADR 0011). See the Format sections below for what it allows.
 - **Description is rich text.** It shows in full on the Participant
   Competition page. Migration `0030` reset every existing description (see
   "How R18 reached staging and production"), and the seeds restore them: a
@@ -482,76 +546,100 @@ and a Host for their own; anyone else sees "Organizers and Hosts only."
 
 Organizer screens cover setting one up and running it. Under
 **Competitions**, tap **Add Competition** (it opens a Sheet) and choose its
-**Format**: "Bracket" ("A tournament: Entrants play Heats, Round after
+**Format**: "Bracket" ("A tournament: Entrants play Matches, Round after
 Round, to a final."). **Add Competition**, and you land on that
-Competition's page, whose Bracket section holds the setup. There, set the Bracket's **heat size**
-(Entrants per Heat) and **how many advance** from each Heat, or tap the
-"Head-to-head (single elimination)" preset (2 per Heat, 1 advancing, a
-straight 1v1 knockout, and what a new Bracket starts as); pick Entrants
-(all Teams, or specific Participants) and Generate; then record each Heat's
-result and Finalize to write its placings as Points Entries (Placement
+Competition's page, whose Bracket section holds the setup. There, choose the
+**Bracket kind** with the toggle: **Head-to-head** (2 per Match, 1 advancing,
+a straight 1v1 knockout, and what a new Bracket starts as; it alone has a 3rd
+place match) or **Group** (3 to 8 **Entrants per Match** and **how many
+advance** from each Match); pick Entrants
+(all Teams, or specific Participants) and Generate; then record each Match's
+result and Close to write its placings as Points Entries (Placement
 Points up to 4 places for a Bracket). No code needed for any of that. While
-a Bracket is finalized, its settings lock except the name, description,
+a Bracket is closed, its settings lock except the name, description,
 Group, Hosts and Placement Points ("Locked while the Competition is
-Finalized or Closed. Reopen or Un-finalize it first."). The Format can change, on the same
+Closed. Reopen it first."). The Format can change, on the same
 page, until the Competition has a result. There is no Reset bracket: once a
-Heat has a result the heat size, advancing, 3rd place game, Entrants and
+Match has a result the Bracket kind, sizes, 3rd place match, Entrants and
 building the Bracket are locked, and a mistake means a new Competition.
+(Fixing a result is different: see Edit a result below.)
 
-A head-to-head Bracket with at least 4 Entrants can have an optional **3rd
-place game**, a switch in the Bracket settings (off by default): the two
+A Head-to-head Bracket with at least 4 Entrants can have an optional **3rd
+place match**, a switch in the Bracket settings (off by default): the two
 semifinal losers play it beside the final, and it decides 3rd and 4th. It is
-locked once any Heat Result exists, like the heat size. Without it, both semifinal
-losers tie 3rd and there is no 4th. Places come only from the final (and the
-3rd place game), so a Bracket's Placement Points stop at 4 places; the
-champion is always the final's winner.
+locked once any Match result exists, like the Match size. Without it, only 1st and 2nd
+are placed: Close gives Placement Points to 1st and 2nd only, and the
+semifinal losers get none and aren't shown. Places come only from the final (and the
+3rd place match), so a Bracket's Placement Points stop at 4 places; the
+winner is always the final's winner.
 
 One **Bracket tree** serves everyone. It's what a Participant sees on the
 Competition page and what an Organizer or Host sees in the Competition page's Bracket
 section: a head-to-head
-Bracket shows its Rounds left to right joined by lines, a larger heat size
-one box per Heat with the advancers highlighted. There is no list view. On a
+Bracket shows its Rounds left to right joined by lines, a larger Match size
+one box per Match with the advancers highlighted. There is no list view. On a
 phone the tree scrolls sideways inside its own region, one Round after
 another, while the page itself stays put. Results fill in live as they're
-recorded. To record a Heat, tap **Record result** on it in the tree (an
+recorded. To record a Match, tap **Record result** on it in the tree (an
 outline **Edit** once it's recorded) from the admin page or, where the
-Competition allows self-report, from your own Heat on the public tree: a
+Competition allows self-report, from your own Match on the public tree: a
 dialog centered on a screen, a bottom sheet on a phone. Hosts can do it for
-their own Competitions. A Heat has no time or place and isn't on the
-schedule; a played Heat shows "Recorded <time>", when its result was
-saved. Once finalized, the Bracket has its own **Bracket Finale** at
-`/<edition>/finale/<competitionId>` for the projector, linked from its
-champion card, the results screen and `/admin/finale` ("Finale:
-<Competition>"). The rules are under "Bracket rules" and "Finale rules" in
+their own Competitions. A Match has no time or place and isn't on the
+schedule; a played Match shows "Recorded <time>", when its result was
+saved. A Bracket has no Finale of its own; the War Week Finale
+(`/<edition>/finale`) is the only one. The rules are under "Bracket rules" and "Finale rules" in
 `CONTEXT.md`.
 
-A head-to-head Bracket is a straight 1v1 knockout. A larger heat size plays
+A Head-to-head Bracket is a straight 1v1 knockout. A Group Bracket plays
 several Entrants at once, and Organizers tap the whole finishing order
-instead of just a winner once a Heat holds more than two.
+instead of just a winner once a Match holds more than two. With a Score
+direction set and every Entrant's Score typed, the places follow the Scores
+(equal Scores need your pick, shown as "set by hand").
+
+**Edit a Group Bracket.** After **Generate**, in the tree (until a Round has a
+result): set one Match's **advancing** count, **move an Entrant** to another
+Match of the same Round (sizes follow), or change a Round's defaults with
+**Edit <Round> settings**. Every edit re-projects the later Rounds from the
+summed advancers. A Match before the Final with no more Entrants than advance
+is a **bye** (never the Final). A setting that would send on as many as it
+received is refused. A Round with any result is **locked**.
+
+**Edit a result.** Only the latest result along a path changes. A Match whose
+result a later Match already used shows **Edit** and **Clear result**
+disabled with "A later Match already used this result. Change that Match
+first." (visible text, so it shows on a phone); the server refuses it too.
+Clear back from the latest result. In a Group Bracket a Match is editable
+only while no later Round has a result; otherwise Edit and Clear result are
+disabled with "A later round already has a result. Change that round
+first." Editing a finished Round's result while the next Round has no result
+is allowed; the next Round re-fills from the new advancers and anything you
+moved or set there is lost.
 
 A team Competition can enter **Squads** instead of whole Teams: in the
 Bracket section's Squads, **Add Squad** names a group of one Team's
 Participants (each Participant in one Squad per Competition), then
 "Entrants are: Squads" and **All Squads** make them the Entrants. Each
-Squad's Placement Points go to its Team when the Bracket is finalized, and
-Squads are always seeded at random. The **Self-report** switch in the Settings
-(off by default) lets a Participant whose roster email matches their
-sign-in report the result of their own Heat from "Your next Heat"
-(**Report result**) while it has no result; it counts at once. The results
-screen shows "Reported by <name>" on that Heat, and the Host or an
-Organizer can still change any result there (which clears the line). ADR
-0005 explains why this is the one Participant write.
+Squad's Placement Points go to its Team when the Bracket is closed, and
+Squads are always seeded at random. The **Participants can log their own
+results** switch in the Settings (off by default) lets a Participant whose
+roster email matches their sign-in report the result of their own Match from
+"Your next Match" (**Report result**); it counts at once, and the Match's
+players may edit it while the Competition is open. The results screen shows
+"Reported by <name>" on that Match, and the Host or an Organizer can still
+change any result there (which clears the line). ADR 0005 and ADR 0011
+explain the rule.
 
-(Placement, Head-to-head, Best score and Participation have their own engines under `src/lib/placement/`, `src/lib/games/` and `src/lib/participation/`.)
+(Placement, Head-to-head, Best score and Participation have their own engines under `src/lib/placement/`, `src/lib/series/`, `src/lib/best-score/` and `src/lib/participation/`.)
 
 Bracket behavior goes through `src/lib/bracket/formats.ts`, the one place
-that picks an engine from the Bracket's config (heat size and how many
-advance): 2 per Heat with 1 advancing runs the head-to-head engine in
-`engine.ts`, anything else the multi-Entrant engine in `heats.ts`. Both are
-a `FormatEngine` (building the Heats from Entrants, applying a Heat Result,
-and producing final placings, which points.ts and finalizeBracket turn into
+that picks an engine from the Bracket's config (its `kind`): Head-to-head runs
+the knockout engine in `engine.ts`, Group the flexible multi-Entrant engine in
+`groups.ts` (per-Round defaults, per-Match size and advancing, byes, Round
+lock). Both are
+a `FormatEngine` (building the Matches from Entrants, applying a Match result,
+and producing final placings, which points.ts and closeBracket turn into
 Points Entries). The display helpers in `src/lib/bracket/view.ts` (Round and
-Heat names, `nextHeatFor`) also branch on config. Bracket is one Format; to
+Match names, `nextMatchFor`) also branch on config. Bracket is one Format; to
 change how a Bracket plays, change its config or an engine, and describe the
 rules under "Bracket rules" in `CONTEXT.md`.
 
@@ -583,22 +671,24 @@ the order each time R12 reaches staging, and again on promotion to `main`:
 The Finale (`/<edition>/finale`) is a slideshow for the projector, not a
 playback: the presenter steps through it (→, Space or a click for next, ←
 back, Escape to the first slide) and nothing advances on its own. Its
-slides are the built-ins (Title, By the numbers, Awards, Champions,
+slides are the built-ins (Title, By the numbers, Awards, Winners,
 Standings countdown, Winner) plus any **Custom slides**. In `/admin/finale`
 an Organizer sees the slide list, moves a slide (drag, or ↑/↓), hides or
-shows it, adds a Custom slide (heading, rich-text body, optional background
-color; its text colors adjust to read on it) and edits or deletes it, and
-picks the Awards layout ("All on one slide" or "One slide per Category").
-Every change saves at once. Writes are Organizer-only: a Host sees the list
-but no controls. A slide with nothing to show is skipped, and with every
+shows it, and adds a Custom slide (heading, rich-text body, optional
+background color; its text colors adjust to read on it) and edits or deletes
+it. The Awards slide always reveals one Award per step; there is no layout
+setting. Every change saves at once. Only Organizers can open it: a Host can't open
+`/admin/finale`. A slide with nothing to show is skipped, and with every
 slide hidden the Finale says "Nothing to show yet." The rules are under
-"Finale rules" in `CONTEXT.md`.
+"Finale rules" in `CONTEXT.md`. The Standings countdown covers only the
+rows ranked 10th or better (ties at 10th included), then says "…and N more
+Participants scored" (Teams in a teams War Week); the leaderboard lists
+everyone (`finaleTopRows` in `src/lib/finale.ts`).
 
 Schema: slides live in the `finale_slide` table (unique on War Week, kind and
 heading, so each built-in is once per War Week and a Custom slide is unique
-by heading) and the layout in `war_week.finale_awards_layout`. A seed's
-optional `finaleSlides` list is synced like FAQ Items and its
-`finaleAwardsLayout` is insert-only (`CONTEXT.md`, "Seed idempotence rules").
+by heading). A seed's optional `finaleSlides` list is synced like FAQ Items
+(`CONTEXT.md`, "Seed idempotence rules").
 The demo seeds `seeds/demo/xi.json` and `xii.json` carry a list (the six
 built-ins plus a Custom "Thank you").
 
@@ -635,33 +725,37 @@ page, where the Host or an Organizer sets:
   (default 3, 2, 1; shown only for team scoring). There is no per-person
   team mode. A Participant on no Team can't take part in a team
   Competition.
-- **Self check-in** (off by default) with an optional close time: linked
-  Participants then see **Check in** on the Competition page. Check out
+- **Self check-in** (off by default): linked
+  Participants then see **Check in** on the Competition page until it is
+  Closed. Check out
   removes only their own check-in, never a tick you made. If you remove
   someone's check-in they can check in again while it's open; turn Self
-  check-in off or set a close time to stop that.
+  check-in off to stop that.
 - The took-part list: tick or untick anyone until Close.
-- **Close** / **Reopen**, behind a confirm, as for Games. Teams are counted
+- **Close** / **Reopen**, behind a confirm, as for a Head-to-head or Best score Competition. Teams are counted
   at Close, as they are then. The Format can change, and so can the scoring,
   until anyone is marked ("Locked once the Competition has a result."); a
   Competition with anyone marked can't be deleted.
 
 Who took part isn't seeded. A seed's `participation` Competition may set
-`participationPoints` (individual only), `selfCheckIn` and
-`checkInClosesAt`, but they are applied only when the Competition is first
+`participationPoints` (individual only) and `selfCheckIn`, but they are applied only when the Competition is first
 inserted, never on a reload.
 
-### Manage Award Categories
+### Manage Awards
 
-On `/admin/awards` (Organizers only) the **Categories** section adds, renames,
-archives and restores global Award Categories; there is no delete. An
-archived one stays on its past Awards but can't be picked for another. Give an
-Award a Category in the Award form's **Category** select ("None" is allowed).
-`/<edition>/awards` groups by Category, and `/history` and
-`/history/awards/<id>` show each Category through the years. A seed's Award
-`category` is a Category's **key** (the seven seeded: `war-week-mvp`,
-`billable-hours-champ`, `black-midnight`, `grow`, `grind`, `serve`,
-`inspire`), never its name, so a rename doesn't break a seed.
+On `/admin/awards` (Organizers only) **Add Award** opens the form. Its
+**Preset** picker offers every Award name already used in any War Week plus
+the seven that used to be Categories (War Week MVP, Billable Hours Champ,
+Black Midnight, Grow, Grind, Serve, Inspire); picking one fills the name and
+its most recent description, and both stay editable. A brand-new name works
+too. There are no Categories: the same name, ignoring case and punctuation, is what
+ties an Award together across years. `/<edition>/awards` lists the Awards,
+each name linking to `/history/awards/<slug>`, which shows that name by War
+Week, newest first (case and punctuation don't split a name). `/history` and
+`/history/awards` list every name. To make a historic Award group with
+another year's, spell it the same in its seed; the wikis' differing spellings
+were aligned once (the rename table is in `CONTEXT.md`, "Award preset and
+history rules").
 
 ### Record a Placement (the default Format)
 
@@ -671,37 +765,37 @@ as **Placement**), then open its page (Edit on its row): **Record placements**
 is its run area, below the Settings. Organizers and the Competition's Hosts can use it; a Participant only sees
 the result.
 
-- **Add rows** by search, or **Add everyone** (a Team Competition takes
-  Teams, an individual one Participants). Adding, removing and Add everyone
-  save at once. Give each row a **Place** and, if you have one, a **Score**;
+- **Add rows** by search (a Team Competition takes
+  Teams, an individual one Participants). Adding and removing
+  save at once. There is no Add everyone. Give each row a **Place** and, if you have one, a **Score**;
   Place and Score edits and the **Score direction** save with the one Save
   button.
-- **Score direction** (none, higher wins, lower wins) is in the page's
-  Settings, and locks once any row exists. With a direction, Places fill in from the Scores as you type and
+- **Score direction** (none, higher wins, lower wins) and **Score unit** are in the page's
+  Settings; the direction locks once any row exists, the unit never. With a direction, Places fill in from the Scores as you type and
   stay editable, for ties and judgement. Ties share a Place (1, 1, 3).
-- **Finalize** (behind a confirm) turns Places into points through the
+- **Close** (behind a confirm) turns Places into points through the
   Competition's Placement Points: tied rows each get that place's full
   points, rows with no Place and Places beyond the list earn nothing. It
   refuses a row with a Score but no Place ("Give every row with a Score a
   Place, or clear its Score."), naming the rows, and a sheet with nobody
   placed, and it is disabled while edits are unsaved. **Reopen** withdraws
-  the points; rows can't change while Finalized.
+  the points; rows can't change while Closed.
 - Changing the Format or scoring is refused once rows exist ("Locked once
   the Competition has a result.").
-- A Finalized Placement shows in the Standings, Recent results and the
-  Finale's Champions. The Participant's Competition page lists the
-  Placements (place, name, Score, points).
+- A Closed Placement shows in the Standings, Recent results and the
+  Finale's Winners. The Participant's Competition page shows the
+  Placements as a results table (see "Read a results table" below).
 
 ### Set Placement Points
 
 Each Competition's Placement Points are an open list, highest first, never
 increasing, each 0 or more, in the Competition page's Settings, where it saves as you edit. Add a place, remove any
-place, or use the **5·3·1** quick fill; the list is usable at 20 or more
+place; there is no quick fill, and the list is usable at 20 or more
 places on a phone. A Competition's top prize is its 1st place. The only
 limit is a Bracket's 5 places, set by `placementLimit` in
 `src/lib/competitions.ts` (the one place the rule lives; 4 since Epic R17).
-Placement Points never lock: changed while the Competition is Finalized or
-Closed, they apply at the next Finalize or Close.
+Placement Points never lock: changed while the Competition is Closed,
+they apply at the next Close.
 
 ### Give Discretionary points
 
@@ -716,67 +810,195 @@ and the Finale totals. Points a Competition generates are never edited
 here; Reopen the Competition instead. The old `/admin/points` URL
 redirects. ADR 0010 explains who may do what.
 
+### Read a results table
+
+Every ranked view on a Participant Competition page is one component
+(`ResultsTable`, built on the shadcn `Table`), so they all read alike:
+
+- **Columns:** Rank, Participant or Team, Score (with its unit, left out when
+  no row has a Score) and War Week points. Click or tap any header to
+  sort it (ascending, then descending); it opens sorted by Rank. Cells hold
+  values only. At 390px the points fold under the name; nothing is dropped.
+- **Winner:** the first place (every tied first place) carries a mark and
+  the word "Winner". No Winner is marked when nothing decides first place
+  (no points and no Score, or every row tied).
+- **Provisional points:** while a Competition isn't Closed, the points
+  header shows a "Provisional" badge; focus it, hover it or tap it for
+  "Points become final when the Competition is Closed." Close removes the
+  badge, and the points are then the generated Points Entries. The numbers
+  come from the same rule Close uses, so Close doesn't change them.
+- **Top finishers:** the block above the table (or the Bracket) lists every
+  place the Competition decides, each with its points, 1st as Winner. A
+  Bracket shows 1st and 2nd from the final, plus 3rd and 4th only with a 3rd
+  place match; without one only 1st and 2nd are placed (Close gives
+  Placement Points to 1st and 2nd only; semifinal losers get none and
+  aren't shown). A Group
+  final shows the final Match's order.
+- **Best score:** one row per person (or Team), from their best Attempt, so
+  nobody holds two places. "2 more attempts" under a row expands (keyboard
+  too) to the others. In team scoring a Team's row is its **Team score**:
+  **Best member** (its best single Attempt) or **Sum of members** (each
+  person's best added up). A Host, an Organizer or (self-report on) the person
+  edits or deletes an Attempt there. There is no separate list of Attempts.
+- **Head-to-head:** always two Entrants, so no leaderboard; the series view shows
+  the Matches in order with both Scores and the Winner (or Draw), the series
+  score ("2–1") and its Winner once decided, and each Entrant's Placement
+  Points (Provisional until Closed). A drawn series (every Match played
+  with no majority) says so and names no series Winner.
+- **Order and links:** the page reads back link, name and facts,
+  **description** (long ones collapse behind "Show more"), enroll button,
+  then the results. It has no Points Entries list; points are in the table.
+  Organizers and that Competition's Hosts see a **Manage** button to the
+  Competition's admin page, which the server decides with the same rules as
+  the admin page itself; from a past edition's Competition page it still
+  lands on that Competition's admin page, whichever War Week `/admin` shows.
+  In a free-for-all War Week the Individual/Team choice and the
+  "Individual" label are hidden on the Participant Competition page and
+  list, the admin New Competition form, the admin Competitions list and the
+  Competition page's Settings.
+- The same table is the Standings on `/<edition>/leaderboard`, with each
+  row's points breakdown in an expandable row.
+
 ### Run a Competition as Head-to-head or Best score
 
-For a showdown, a best of X, or a week-long ladder of casual games — no code
+For a showdown, a best of X, or a week-long ladder of casual play — no code
 needed. Under **Competitions**, tap **Add Competition** (it opens a
-Sheet) and choose its **Format**: **Head-to-head** (a winner, or a draw
-when allowed) or **Best score** (each Game records a score; best or total,
-higher or lower is better). **The Format can change until the
-Competition has a result** (a Game or an Entrant); after that, add a new
+Sheet) and choose its **Format**: **Head-to-head** (a series between two
+Entrants: a winner, or a draw when allowed) or **Best score** (each Attempt
+records a score; higher or lower is better). **The Format can change until the
+Competition has a result** (a Match, an Attempt or an Entrant); after that, add a new
 Competition to run it a different way. (One logged
-play is a **Game**; "Games" is no longer a Format.)
+play is a **Match** in Head-to-head and an **Attempt** in Best score.)
 
 **Add Competition**, and you land on that Competition's page, where the Host
 or an Organizer sets, in the Settings:
 
-- The Format's own settings (draws and Best of off/3/5/7 for
-  Head-to-head; count best or total, direction and a unit label for
-  Best score). Points for the places come from the Competition's
-  Placement Points, set in the same Settings. Each field saves as you change
-  it and shows the saved value when you return. Once a Game exists the
-  Head-to-head settings and the Entrants' open or fixed list are locked;
-  Best score's count and direction lock once any result (an Entrant
-  included) exists; the reason shows under them.
-- **Entrants**: open to everyone eligible, or a fixed list (pick Teams or
-  Participants, as for a Bracket). A Best of needs a fixed list of exactly
-  two Entrants.
-- **Participants can enroll**, with an optional limit and close time (see
-  [Let Participants enroll themselves](#let-participants-enroll-themselves)
-  below) — off, and unavailable, once the Competition is open to everyone
-  or has a Best of.
-- An optional **logging close time**, after which only the Host or an
-  Organizer can log, edit or delete a Game.
-- **Close** / **Reopen**, behind a confirm: Close turns the leaderboard's
-  places into Points Entries ("From head-to-head" or "From best score"), the same tie rule as finalizing a
-  Bracket; Reopen withdraws them. A closed Competition refuses every Game
-  write, even the Host's, until it's reopened.
+- **Head-to-head:** pick its **two Entrants** (Teams or Participants; always
+  exactly two, no enrollment), whether **draws** are allowed and the **Best
+  of** 1, 3, 5 or 7 (a new one is Best of 3). Draws and Best of lock once a
+  Match exists. Log a Match shows the two Entrants as two fixed rows, with no
+  player picker. The series is decided when one Entrant has a majority of the
+  wins; then **Log a Match** is disabled with the reason and the server
+  refuses a further Match, for Organizers and Hosts too. Editing or deleting a
+  Match recomputes it. With draws allowed a series can end drawn: every Match
+  played with no majority (win, Draw, Draw is drawn though the wins are
+  1–0). A drawn series has no Winner and both Entrants share the higher
+  place's full points at Close. **Close waits for a finished series**: it is
+  disabled, and the server refuses it, until the series is decided or drawn
+  ("Finish the series before closing."). Close used to be allowed on an
+  undecided series; it no longer is.
+- **Best score:** **Score direction** (higher or lower), **Score unit**,
+  **Max attempts per person** (blank for unlimited; the form shows "N attempts
+  left", and at 1 the button reads "Update your score" and edits the one
+  Attempt) and, in team scoring, **Team score** (Best member or Sum of
+  members). There is no Entrant list and no enrollment: any eligible
+  Participant (or Team member) logs. A Participant on no Team can't log into a
+  team Best score Competition.
+- **Score direction and unit** on a Head-to-head Competition make the
+  higher or lower Score win each Match (equal Scores are a Draw when allowed,
+  otherwise you pick, shown as "set by hand").
+- Points for the places come from the Competition's Placement Points, set in
+  the same Settings. Each field saves as you change it and shows the saved
+  value when you return; the reason shows under a locked one.
+- **Participants can log their own results** (off by default): with it on, a
+  linked Participant logs a Head-to-head Match as one of the two Entrants (or
+  on an Entrant Team) and a Best score Attempt as themselves. With it off,
+  only you and the Organizers log. Either way, anyone who could have logged a
+  result may edit or delete it while the Competition is open (ADR 0011).
+- **Close** / **Reopen**, behind a confirm: Close turns the places into
+  Points Entries ("From head-to-head" or "From best score"), the same tie
+  rule as closing a Bracket; Reopen withdraws them. A Closed Competition
+  refuses every Match and Attempt write, even the Host's, until it's reopened.
+  Nothing closes on a timer.
 
-Participants log, edit or delete Games straight from the Competition page; a
-Host or Organizer also does it from the admin page's **Entrants and Games**
-(**Log a Game**, Edit, Delete on each Game), with the same rules. A **Log a Game** card on the home page
+Participants log, edit or delete Matches and Attempts straight from the Competition page (when
+self-report is on); a Host or Organizer also does it from the admin page's
+run area (**Log a Match** or **Log an Attempt**, Edit, Delete), with the same
+rules. A **Log a Match** or **Log an Attempt** card on the home page
 lists every open Head-to-head or Best score Competition the signed-in Participant may log in
-right now, straight to the form. The leaderboard and Game log (newest
-first, with a "Mine" filter) live on the Competition page for everyone, in
-the Archive too once the War Week ends: a Head-to-head or Best score Competition left open
-when its War Week ends keeps taking Games until the Host closes it.
+right now, straight to the form. What the page shows is under "Read a results table" above, for everyone, in
+the Archive too once the War Week ends: a Competition left open
+when its War Week ends keeps taking results until the Host closes it.
+
+### Run a Competition as a League
+
+For a chess night, run it as a **League**: Entrants play each other one Match
+at a time, for match points (win 1, draw ½, loss 0). Under **Competitions**,
+**Add Competition**, choose the Format **League**, and you land on its page.
+In the Settings:
+
+- **Pairing:** **Round robin** (everyone plays everyone once; the default) or
+  **Swiss** (a set number of **rounds**, paired one at a time). Rounds, for
+  Swiss only: 1 to N−1 for N Entrants, blank for the default ⌈log₂ N⌉ (3 for
+  6 Entrants).
+- **Score direction** and **Score unit** (optional): with a direction, the
+  better Score wins and equal Scores are a draw; with none, the recorder picks
+  A won, Draw or B won.
+- **Participants can log their own results** and **Participants can enroll**
+  (both off by default), and the Entrant limit.
+- Pairing, rounds, Score direction and the Entrants lock once round 1 is
+  paired ("Locked once round 1 is paired."). Score unit never locks, and
+  self-report and enrollment lock only while Closed.
+
+Then in the run area:
+
+1. **Entrants.** Add Teams or Participants (by the scoring) with the
+   Participant picker, or let Participants enroll. There are no Squads.
+2. **Pair.** Round robin: **Pair rounds** makes every round at once (the
+   circle method; with an odd number, one Entrant sits out each round, worth
+   0). Swiss: **Pair round 1**, then **Pair next round** once every Match of
+   the round has a result (it groups by match points, never repeats a Match,
+   and gives an odd Entrant the bye, worth 1, to the lowest-ranked Entrant
+   without one). Round 1 uses a random Seed Position order.
+3. **Edit pairings** (per round) swaps two Entrants, either may be the bye or
+   sit-out, until a Match in that round has a result (a round robin: until
+   either affected Match does). The dialog **warns before saving** if the
+   swap repeats a pairing, in a round robin names the pairs that will then
+   never meet, and in Swiss names an Entrant who would have a second bye. It
+   is a warning, not a refusal.
+4. **Clear pairings** deletes every Match while none has a result, which
+   unlocks the settings and Entrants again, so a wrong Entrant list can be
+   fixed before play.
+5. **Record result** on each Match opens a dialog at 1440 and a bottom sheet
+   at 390: Scores and A won / Draw / B won (filled in and disabled when the
+   Scores decide it). Edit and Clear result follow. With self-report on, a
+   player in the Match (or on their Team) records it from the Participant
+   page and the other player can edit it; with it off, only you and the
+   Organizers record. A bye or sit-out never has a result. Corrections after
+   the next Swiss round is paired are allowed; pairings already made stand.
+6. **Close** only when the League is finished: every round paired (Swiss: all
+   N rounds) and every Match recorded. A Swiss League is also finished when
+   every played round is complete and no next round can be paired without a
+   repeat Match: Pair next round then reads "Every pairing would repeat a
+   Match. Close the League." and Close is open. Until then Close is disabled
+   with "Finish every Match before closing." naming the unplayed Matches and
+   rounds not yet paired, and the server refuses it. A League needs at least
+   2 Entrants to Close. Close writes Placement Points by final standing
+   ("From league"); **Reopen** withdraws them.
+
+The Participant page shows Top finishers once Closed, the results table (Rank,
+name, W, D, L, Match points, then **H2H** and **SB** in a round robin or
+**Buchholz** in Swiss, and War Week points, Provisional until Closed), **Your
+next Match** and the rounds. Ties break by head-to-head among the tied then
+Sonneborn-Berger (round robin) or Buchholz (Swiss); still level, the place is
+shared with full points. The XII demo has **Chess Round Robin** (finished and
+Closed) and **Chess Swiss** (round 3 under way).
 
 ### Let Participants enroll themselves
 
 The **"Participants can enroll"** switch (off by default) is on a
-Bracket's Settings and a fixed-list Head-to-head or Best score Competition's
-settings — never on a Placement or Participation Competition, an
-open-to-everyone Head-to-head or Best score Competition, or a
-Best of (the Host sets those two Entrants by hand). Turn it on, and
-optionally set an Entrant limit and a close time; enrollment also closes
-the moment the Bracket is built, or (for Games) the first Game is
-logged, or whenever the Host closes the Competition.
+**Bracket's** or **League's** Settings only — never on a Placement,
+Head-to-head, Best score or Participation Competition. Turn it on, and
+optionally set an Entrant limit; enrollment closes
+the moment the Bracket is built (or a League's round 1 is paired), when the limit is reached, or whenever the
+Host closes the Competition. There is no close time.
 
 In team scoring, any Participant on a Team enters or withdraws the whole
 Team. Once the Host has added any Squad to a team-scoring Bracket
 ("Squad: a pair or group from one Team, playing as one entrant"),
 Participants join or leave a Squad instead — their own Team's, up to 16
-Participants — and Team enrollment turns off. Withdrawing (or leaving a
+Participants — and Team enrollment turns off. A League has no Squads: a
+Participant or Team enters itself. Withdrawing (or leaving a
 Squad) works any time before enrollment closes; after that, only the Host
 or an Organizer removes an Entrant.
 
@@ -792,7 +1014,7 @@ The chain is schema → `pnpm db:generate` → migration in `drizzle/` →
 `pnpm db:migrate` locally → seed format and seed files → UI. Never hand-edit
 a migration. The one exception is a data step that the schema diff can't
 express (copying rows between tables, or inserting fixed reference rows
-such as the seeded Award Categories): create it with
+such as inserting fixed reference rows): create it with
 `pnpm db:generate --custom --name <what-it-copies>` so it gets its
 own journal entry, and write only that file.
 
@@ -928,14 +1150,15 @@ emails.
 are `get_current_war_week`, `get_leaderboard`, `get_schedule`,
 `get_announcements` (a video is its URL in the plain-text body),
 `get_awards`, `get_faq`, `list_history`, `get_history`, `get_bracket` (a
-Competition's Bracket by name, with its heat size, how many advance and
-whether it has a 3rd place game, each played Heat's recorded time, and a
+Competition's Bracket by name, with its kind, Match size, how many advance and
+whether it has a 3rd place match, each played Match's recorded time, its `winner` once the Bracket is Closed (`closed`, `matchSize`, `thirdPlaceMatch` and each Round's `matches` are the field names), and a
 Squad's `participants` by name; never who reported a result) and
-`get_games` (a Head-to-head or Best score Competition, by name: its Format and settings, leaderboard
-ranked by that Format and its Games newest first; never an email or who
+`get_league` (a League by name: Pairing, rounds, each Match with its result and Scores, and the standings with match points and tiebreaks; no emails; `get_bracket` and `get_games` on a League point to it) and
+`get_games` (a Head-to-head or Best score Competition, by name: its Format and settings (Score direction and unit, Best of, draws, Max attempts, Team score), leaderboard
+ranked by that Format and its `matches` (Head-to-head) or `attempts` (Best score) newest first, with `closed`; never an email or who
 logged one) and `get_participation` (a Competition run as Participation, by
 name: its settings, closed state, who took part by name and, in team
-scoring, each Team's headcount; never an email or who marked anyone), `get_placements` (a Placement Competition by name: Score direction, Placement Points, whether it's finalized and each row by place with name, Team, Score and points; no emails; `get_bracket` on a Placement points to it) and `get_discretionary_points` (the current War Week's Discretionary points by name and reason; no emails). `get_bracket` (`src/mcp/bracket.ts`) is the model for a tool
+scoring, each Team's headcount; never an email or who marked anyone), `get_placements` (a Placement Competition by name: Score direction, Placement Points, whether it's closed and each row by place with name, Team, Score and points; no emails; `get_bracket` on a Placement points to it) and `get_discretionary_points` (the current War Week's Discretionary points by name and reason; no emails). `get_bracket` (`src/mcp/bracket.ts`) is the model for a tool
 that looks something up by name and whitelists what it returns.
 
 ### Add or fix history
@@ -949,7 +1172,7 @@ Competiscore data is gone; `old-wikis/`, the live wiki pages (and the Drive
 folders they link to) and what you remember are the only sources. For
 Claude to read the wiki, sign in to it in the Claude Code browser first.
 Leave `seeds/demo/xi.json` alone unless a test needs different demo data. Load locally with `pnpm seed:load seeds/<edition>.json`, then check
-`/history` and `/<edition>`. `/history` and a Category page wear the
+`/history` and `/<edition>`. `/history` and an Award name page wear the
 current War Week's nav, tab bar, footer and theme (`src/app/history/layout.tsx`).
 
 ### How R16 reached staging and production (the reset)
@@ -958,7 +1181,7 @@ Epic R16 (the Competition model: Placement, Discretionary points, the new
 Formats) changed the schema with one migration (`drizzle/0028_*`) and
 **reset** the deployed data rather than converting it: neither database
 held real users' work worth keeping, and the seed JSON is where the old
-shapes were converted (finalized Placements by the old totals, XI's
+shapes were converted (closed Placements by the old totals, XI's
 Subjective Points as Discretionary points, demo XII's Step Challenge as a
 Placement with Scores). The migration only coerces old rows enough to
 apply. Use this as the procedure for any later reset:
@@ -989,26 +1212,26 @@ old-row shape. Fix it on a `fix/…` branch.
 
 Epic R17 (Brackets: one Bracket Format with a heat size and how many
 advance, a "Head-to-head (single elimination)" preset, an optional 3rd place
-game, no seeding by Standings, Forfeit or Heat time & place, and one Bracket
+match (then the "3rd place game", when Matches were Heats), no seeding by Standings, Forfeit or Heat time & place, and one Bracket
 tree for admin and Participants) changed the schema with one migration
 (`drizzle/0029_*`) and, as R16 did, **reset** the deployed data rather than
 converting it. The migration recreates `competition_format` with `bracket`
 in place of `single-elimination` and `heats`, gives every Bracket a full
 `bracket_config`, caps a Bracket's Placement Points at 4, and **deletes
-every Bracket's Heats and generated Points Entries**, so every Bracket
+every Bracket's Matches and generated Points Entries**, so every Bracket
 returns to not generated. The seed JSON is where the old shapes were
-converted (demo XII's Chess Heats is a Bracket of 4 per Heat with 2
+converted (demo XII's Chess Heats is a Bracket of 4 per Match with 2
 advancing). The procedure is R16's:
 
 1. **Staging.** After the PR merges into `staging` and `migrate.yml`'s run
    on that push is green, run the **Seed** workflow on `staging`, file
    blank (all seeds), **reset** ticked, `staging` typed in
    **confirm_reset**. Expected: green. Check: demo XII's Chess Heats opens
-   as a Bracket of 4 per Heat with the top 2 advancing; its builder offers
-   no 3rd place game; no Heat shows a time.
+   as a Bracket of 4 per Match with the top 2 advancing; its builder offers
+   no 3rd place match; no Match shows a time.
 2. **Production pre-check, before the `staging` → `main` PR merges.** In
    production Admin, check no Bracket an Organizer built should be kept (the
-   migration deletes every Heat and can't be undone). If one should, don't
+   migration deletes every Match and can't be undone). If one should, don't
    merge; ask Paul.
 3. **Production.** After the `main` merge's migrate run is green, run the
    Seed workflow **from `main`**, as for staging, on `production`. Check as
@@ -1045,12 +1268,83 @@ paragraphs. The procedure is R16's and R17's:
 If a migrate run fails, **don't reseed**: fix the migration on a `fix/…`
 branch.
 
+### How R21 reached staging and production (migrations 0031 and 0032)
+
+Epic R21 (Competition setup and logging: Close everywhere, no scheduled
+times, one self-report setting, score direction and unit, the Bracket kind
+and flexible Group Matches, Head-to-head as a two-Entrant series, Best score
+Attempt limits) changed the schema with **two hand-edited migrations**, the
+precedent of 0028 and 0029 (the one exception to "never hand-edit a
+migration": `drizzle-kit generate` asks interactively about renames):
+
+- `drizzle/0031_*` is **pure renames** (`heat` → `bracket_match`, `game` →
+  `series_match` and so on; `finalized_at` → `closed_at`,
+  `generated_by_bracket` → `generated`). Row-preserving by construction.
+- `drizzle/0032_*` **reshapes**: it splits `game` into `series_match` and
+  `attempt`, adds `score_unit`, `series_config`, `best_score_config`,
+  `max_attempts` and `bracket_match.advance_count`, converts `bracket_config`
+  to the new shape, turns Bracket Match Scores numeric, and drops
+  `logging_closes_at`, `enroll_closes_at`, `check_in_closes_at`,
+  `entrants_open` and `game_config`. Some rows cannot convert and are
+  **dropped or nulled**: a Head-to-head's Entrants beyond the two who played
+  (or beyond the first two), its Matches among more than two players or past
+  seven, Best score Attempts with no score or Host-logged in team scoring, a
+  Best score Competition's Entrants, and a Match Score that is not a number.
+  Everything dropped is deliberate; the report lists it first.
+
+**Before the production Migrate, run the report.** It is read-only, prints
+names and counts only (never an email), and must run **while the database is
+still at 0031**, before `migrate.yml` runs 0032:
+
+```bash
+pnpm tsx scripts/r21-migration-report.ts
+```
+
+Paul runs it with his own credentials against staging, then production (agents
+never read `.env*`), and pastes the output in the PR. If it lists anything an
+Organizer wants kept, don't migrate; ask Paul. Then, as for R16 to R18:
+
+1. **Staging.** After the PR merges into `staging` and `migrate.yml`'s run is
+   green, run the **Seed** workflow on `staging`, file blank (all seeds),
+   **reset** ticked, `staging` typed in **confirm_reset**. Check:
+   `/xii/competitions` renders, a Head-to-head's `get_games` answers over MCP,
+   and the Bracket page answers 200.
+2. **Production pre-check** before the `staging` → `main` PR merges: the report
+   above, plus a look in Admin for anything an Organizer entered that should
+   be kept.
+3. **Production.** After the `main` merge's migrate run is green, run the Seed
+   workflow **from `main`**, as for staging.
+
+The app errors between the deploy and the Migrate job (the tables are
+renamed), so confirm **Migrate** succeeded before checking the new deployment,
+and **a Vercel rollback past this deploy is unsafe**: it would run the old
+code against the new tables. If a migrate run fails, **don't reseed**: fix the
+migration on a `fix/…` branch.
+
+### Rolling out R23 (migration 0034)
+
+Epic R23 (League: round robin and Swiss) changed the schema with **one
+additive migration**, `drizzle/0034_*`: a `league` value on the Format enum,
+the `league_result` type, `competition.league_config`, the `league_match`
+table and its CHECKs, and `competition_self_enroll_bracket_only` widened to
+admit a League. It converts and drops nothing, so there is no report script.
+After the PR merges into `staging`, 0034 applies on its own (the deploy
+migrates; nothing to run by hand). Once it has, run **`seed.yml`**
+(file blank, all seeds) so the XII demo gains **Chess Round Robin** and
+**Chess Swiss**. Check: `/xii/competitions` lists both, both pages answer 200
+and `get_league` answers over MCP. Repeat for production after the `main`
+merge. **Roll back only after deleting every League Competition**: an older
+deploy has no Format branch for a `league` Competition and would error on it.
+This release also changes Head-to-head: Close now waits for a decided or
+drawn series.
+
 ## Guardrails
 
 - **Never open, cat or paste `.env*` files**, into Claude or anywhere else.
   Claude is told the same; use `.env.example` for variable names.
 - **Migrations reach deployed databases only through the deploy path**
-  (merge to `staging` / `main`, `migrate.yml`). Never run `pnpm db:migrate`
+  (merge to `staging` / `main`; Vercel's build migrates before it builds).
+  Never run `pnpm db:migrate`
   against Neon by hand.
 - **Never use `--reset`** on a War Week organizers are running; it deletes
   their points, Awards and Announcements. Against a non-local database it

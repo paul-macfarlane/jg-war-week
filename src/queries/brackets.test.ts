@@ -294,47 +294,47 @@ describe.skipIf(!isLocalDatabase)("Bracket queries", () => {
     });
   });
 
-  it("names each self-reported Heat's reporter, never their email", async () => {
+  it("names each self-reported Match's reporter, never their email", async () => {
     await inRolledBackTransaction(async (tx) => {
       const { generateBracket } = await import("@/mutations/brackets");
-      const { getHeatReporters, loadBracket } =
+      const { getMatchReporters, loadBracket } =
         await import("@/queries/brackets");
       const f = await fixture(tx);
       await generateBracket(f.chessId, { rng: rngZero }, f.ctx, tx);
       await generateBracket(f.relayId, { rng: rngZero }, f.ctx, tx);
-      const [chessHeat] = (await loadBracket(f.chessId, tx)).heats;
-      const [relayHeat] = (await loadBracket(f.relayId, tx)).heats;
+      const [chessMatch] = (await loadBracket(f.chessId, tx)).matches;
+      const [relayMatch] = (await loadBracket(f.relayId, tx)).matches;
 
-      expect(await getHeatReporters(f.chessId, tx)).toEqual({});
+      expect(await getMatchReporters(f.chessId, tx)).toEqual({});
       await tx
-        .update(f.schema.heat)
+        .update(f.schema.bracketMatch)
         .set({
           reportedByEmail: "ashley@jahnelgroup.com",
           reportedByParticipantId: f.p("Ashley Schuliger"),
         })
-        .where(eq(f.schema.heat.id, chessHeat.id));
-      expect(await getHeatReporters(f.chessId, tx)).toEqual({
-        [chessHeat.id]: "Ashley Schuliger",
+        .where(eq(f.schema.bracketMatch.id, chessMatch.id));
+      expect(await getMatchReporters(f.chessId, tx)).toEqual({
+        [chessMatch.id]: "Ashley Schuliger",
       });
 
       // A deleted reporter's Participant: the email stays for audit only.
       await tx
-        .update(f.schema.heat)
+        .update(f.schema.bracketMatch)
         .set({
           reportedByEmail: "graham@jahnelgroup.com",
           reportedByParticipantId: f.p("Graham Macbeth"),
         })
-        .where(eq(f.schema.heat.id, relayHeat.id));
+        .where(eq(f.schema.bracketMatch.id, relayMatch.id));
       await tx
         .delete(f.schema.participant)
         .where(eq(f.schema.participant.id, f.p("Graham Macbeth")));
-      const reporters = await getHeatReporters(f.relayId, tx);
-      expect(reporters).toEqual({ [relayHeat.id]: "a Participant" });
+      const reporters = await getMatchReporters(f.relayId, tx);
+      expect(reporters).toEqual({ [relayMatch.id]: "a Participant" });
       expect(JSON.stringify(reporters)).not.toContain("@");
     });
   });
 
-  it("never returns an email from any Bracket query, even from a self-reported Heat", async () => {
+  it("never returns an email from any Bracket query, even from a self-reported Match", async () => {
     await inRolledBackTransaction(async (tx) => {
       const { generateBracket } = await import("@/mutations/brackets");
       const queries = await import("@/queries/brackets");
@@ -343,12 +343,12 @@ describe.skipIf(!isLocalDatabase)("Bracket queries", () => {
         await generateBracket(id, { rng: rngZero }, f.ctx, tx);
       }
       await tx
-        .update(f.schema.heat)
+        .update(f.schema.bracketMatch)
         .set({
           reportedByEmail: "ashley@jahnelgroup.com",
           reportedByParticipantId: f.p("Ashley Schuliger"),
         })
-        .where(eq(f.schema.heat.competitionId, f.cypherId));
+        .where(eq(f.schema.bracketMatch.competitionId, f.cypherId));
 
       const shapes: unknown[] = [];
       for (const id of [f.cypherId, f.relayId, f.chessId]) {
@@ -358,18 +358,15 @@ describe.skipIf(!isLocalDatabase)("Bracket queries", () => {
           await queries.getBracket(id, tx),
           await queries.getSquads(id, tx),
           await queries.getParticipantSquadIds(id, tx),
-          await queries.getHeatReporters(id, tx),
+          await queries.getMatchReporters(id, tx),
         );
       }
-      shapes.push(
-        await queries.getBracketCompetitions({ id: f.warWeekId }, tx),
-        await queries.getParticipantTeamIds({ id: f.warWeekId }, tx),
-      );
+      shapes.push(await queries.getParticipantTeamIds({ id: f.warWeekId }, tx));
       expect(JSON.stringify(shapes)).toContain("Ashley Schuliger");
       for (const rows of shapes) {
         expect(JSON.stringify(rows)).not.toContain("@");
       }
-      // A loaded Bracket's Heats carry no reporter at all.
+      // A loaded Bracket's Matches carry no reporter at all.
       const bracket = await queries.loadBracket(f.cypherId, tx);
       expect(JSON.stringify(bracket).toLowerCase()).not.toContain("report");
     });

@@ -1,8 +1,8 @@
 import { z } from "zod";
 
 import type { Competition, PointsEntry } from "@/db/schema";
-import { isGameFormat } from "@/lib/enums";
-import { gameFormatLabel } from "@/lib/games/config";
+import { isLoggedFormat } from "@/lib/enums";
+import { loggedFormatLabel } from "@/lib/logged-results";
 import { WAR_WEEK_TIME_ZONE } from "@/lib/schedule";
 
 /** A points value as typed: an optional minus, digits, optional decimals. */
@@ -57,26 +57,30 @@ export function pointsEntryTarget(
 /**
  * The ledger's mark on a generated Points Entry: its Competition's Format
  * says whether a Bracket, a Head-to-head or Best score or a `participation` Competition wrote
- * it; a Games Format's note names the Format.
+ * it; a Head-to-head or Best score note names the Format.
  */
 export function generatedNote(format: Competition["format"]): string {
-  if (isGameFormat(format))
-    return `From ${gameFormatLabel(format).toLowerCase()}`;
+  if (isLoggedFormat(format))
+    return `From ${loggedFormatLabel(format).toLowerCase()}`;
   if (format === "participation") return "From participation";
   if (format === "placement") return "From placement";
+  if (format === "league") return "From league";
   return "From bracket";
 }
 
 /** Why a generated Points Entry can't be edited or deleted in the ledger. */
 export function generatedRefusal(format: Competition["format"]): string {
-  if (isGameFormat(format)) {
-    return `This Points Entry comes from a ${gameFormatLabel(format)} Competition. Change it there.`;
+  if (isLoggedFormat(format)) {
+    return `This Points Entry comes from a ${loggedFormatLabel(format)} Competition. Change it there.`;
   }
   if (format === "participation") {
     return "This Points Entry comes from a Participation Competition. Change it there.";
   }
   if (format === "placement") {
     return "This Points Entry comes from a Placement. Change it there.";
+  }
+  if (format === "league") {
+    return "This Points Entry comes from a League. Change it there.";
   }
   return "This Points Entry comes from a bracket. Change it there.";
 }

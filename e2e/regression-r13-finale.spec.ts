@@ -33,7 +33,7 @@ test("72-AC2: an Organizer moves the Standings slide and hides one, and the Fina
       "Title",
       "By the numbers",
       "Awards",
-      "Champions",
+      "Winners",
       "Standings countdown",
       "Winner",
     ]);
@@ -49,7 +49,7 @@ test("72-AC2: an Organizer moves the Standings slide and hides one, and the Fina
       "Title",
       "By the numbers",
       "Awards",
-      "Champions",
+      "Winners",
       "Winner",
     ]);
 
@@ -63,7 +63,7 @@ test("72-AC2: an Organizer moves the Standings slide and hides one, and the Fina
       "By the numbers",
       "Awards",
       "Winner",
-      "Champions",
+      "Winners",
     ]);
 
   await page.getByRole("button", { name: 'Hide "By the numbers"' }).click();
@@ -75,7 +75,7 @@ test("72-AC2: an Organizer moves the Standings slide and hides one, and the Fina
       "By the numbers (hidden)",
       "Awards",
       "Winner",
-      "Champions",
+      "Winners",
     ]);
   await expect(
     page.getByRole("button", { name: 'Show "By the numbers"' }),
@@ -107,8 +107,8 @@ test("72-AC2: an Organizer moves the Standings slide and hides one, and the Fina
     path: testInfo.outputPath("finale-standings-1440x900.png"),
   });
 
-  // Champions (last in this order) shows only once something on XI is
-  // finalized (another spec may have finalized a Bracket); otherwise the
+  // Winners (last in this order) shows only once something on XI is
+  // closed (another spec may have closed a Bracket); otherwise the
   // Finale skips it (ticket 73).
   const played: string[] = ["standings"];
   while ((await stage.getAttribute("data-finale-slide")) !== "winner") {
@@ -123,13 +123,13 @@ test("72-AC2: an Organizer moves the Standings slide and hides one, and the Fina
   expect(played).toEqual(["standings", "title", "awards", "winner"]);
   const winnerIndex = played.length - 1;
   await page.keyboard.press("ArrowRight");
-  const champions =
+  const winners =
     (await stage.getAttribute("data-finale-slide-index")) !==
     String(winnerIndex);
-  if (champions) {
-    await expect(stage).toHaveAttribute("data-finale-slide", "champions");
+  if (winners) {
+    await expect(stage).toHaveAttribute("data-finale-slide", "winners");
   }
-  const last = String(champions ? winnerIndex + 1 : winnerIndex);
+  const last = String(winners ? winnerIndex + 1 : winnerIndex);
 
   // Next on the last slide does nothing; ← goes back; Escape to the first.
   await page.keyboard.press("ArrowRight");
@@ -137,7 +137,7 @@ test("72-AC2: an Organizer moves the Standings slide and hides one, and the Fina
   await page.keyboard.press("ArrowLeft");
   await expect(stage).toHaveAttribute(
     "data-finale-slide",
-    champions ? "winner" : "awards",
+    winners ? "winner" : "awards",
   );
   await page.keyboard.press("Escape");
   await expect(stage).toHaveAttribute("data-finale-slide", "standings");

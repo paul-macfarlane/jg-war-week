@@ -1,7 +1,8 @@
 # ADR 0006: Participants write their own play
 
-- Status: accepted (built in Epic R3, work package regression-r3)
+- Status: accepted (built in Epic R3, work package regression-r3); superseded in part by ADR 0011
 - Date: 2026-09-28
+- Superseded in part by ADR 0011 (One self-report setting): its self-report rules for logging a Game (now the one "Participants can log their own results" switch, off by default) and the "only the logger" edit rule (now anyone who could have logged it, while open). Enrollment stands, for Bracket only.
 - Extends: ADR 0005 (Self-report stays as decided; it is no longer the only Participant write)
 
 ## Context

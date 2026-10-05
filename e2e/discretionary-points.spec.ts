@@ -1,6 +1,6 @@
 import { expect, test } from "@playwright/test";
 
-import { runQuery, xiCompetitionId } from "./db";
+import { addE2eHost, removeE2eHost, runQuery, xiCompetitionId } from "./db";
 import { fillDiscretionary, openGiveForm } from "./discretionary";
 import { E2E_HOST_EMAIL, asHost, asOrganizer } from "./session";
 import { teamTotal } from "./standings";
@@ -124,11 +124,7 @@ test("a Host gets the refusal page and no nav link for Discretionary points", as
 }) => {
   const competitionId = await xiCompetitionId("Pool");
   try {
-    await runQuery(
-      `insert into competition_host (competition_id, email) values ($1, $2)
-       on conflict do nothing`,
-      [competitionId, E2E_HOST_EMAIL],
-    );
+    await addE2eHost(competitionId, E2E_HOST_EMAIL);
     await asHost(context);
     await page.goto("/admin/discretionary-points");
     await expect(
@@ -143,10 +139,7 @@ test("a Host gets the refusal page and no nav link for Discretionary points", as
       page.getByRole("link", { name: "Discretionary points" }),
     ).toHaveCount(0);
   } finally {
-    await runQuery(
-      `delete from competition_host where competition_id = $1 and email = $2`,
-      [competitionId, E2E_HOST_EMAIL],
-    );
+    await removeE2eHost(competitionId, E2E_HOST_EMAIL);
   }
 });
 

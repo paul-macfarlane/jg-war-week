@@ -1,18 +1,18 @@
 import { type SQL, and, count, eq, inArray } from "drizzle-orm";
-import { type AnyPgColumn, type PgTable, alias } from "drizzle-orm/pg-core";
+import { type AnyPgColumn, type PgTable } from "drizzle-orm/pg-core";
 
 import { DBOrTx, db } from "@/db";
 import {
   type Competition,
   WarWeek,
+  attempt,
   competition,
   entrant,
-  game,
-  participant,
+  leagueMatch,
   participation,
   placement,
   pointsEntry,
-  team,
+  seriesMatch,
 } from "@/db/schema";
 import { hasResults } from "@/lib/bracket/formats";
 import { isBracketFormat } from "@/lib/bracket/view";
@@ -21,17 +21,16 @@ import {
   type CompetitionStatus,
   bracketRoundInPlay,
   competitionStatus,
+  leagueRoundInPlay,
 } from "@/lib/competition-status";
 import {
-  type CompetitionLedger,
   type CompetitionListItem,
-  buildCompetitionLedger,
   groupCompetitions,
 } from "@/lib/competitions";
+import { leagueConfigOf } from "@/lib/league/config";
 import { finalWinners } from "@/lib/recent-results";
 import { isUuid } from "@/lib/uuid";
 import { loadBrackets } from "@/queries/brackets";
-import { participantNameSql, withProfile } from "@/queries/profile-join";
 import { resultEntryQuery, toResultEntry } from "@/queries/recent-results";
 
 const competitionColumns = {
@@ -85,8 +84,8 @@ export type CompetitionListRow = CompetitionListItem & {
  * Loads a War Week's Competitions, grouped by `groupCompetitions`, each
  * with its status (`competitionStatus`). The facts come in one batch per
  * War Week, never a query per Competition: what each has entered (as
- * `hasResult` reads it), the Brackets' Heats, and the generated Points
- * Entries of the finalized ones, whose winners `finalWinners` names.
+ * `hasResult` reads it), the Brackets' Matches, and the generated Points
+ * Entries of the closed ones, whose winners `finalWinners` names.
  */
 export async function getCompetitions(
   warWeek: Pick<WarWeek, "id">,
@@ -95,13 +94,15 @@ export async function getCompetitions(
   const rows = await dbOrTx
     .select({
       ...competitionColumns,
-      finalizedAt: competition.finalizedAt,
+      closedAt: competition.closedAt,
       bracketConfig: competition.bracketConfig,
+      leagueConfig: competition.leagueConfig,
     })
     .from(competition)
     .where(eq(competition.warWeekId, warWeek.id));
   const ids = rows.map((c) => c.id);
-  const finalizedIds = rows.flatMap((c) => (c.finalizedAt ? [c.id] : []));
+  const leagueIds = rows.flatMap((c) => (c.format === "league" ? [c.id] : []));
+  const closedIds = rows.flatMap((c) => (c.closedAt ? [c.id] : []));
 
   /** How many rows of `table` each Competition has, by Competition id. */
   const countsBy = async (
@@ -120,35 +121,51 @@ export async function getCompetitions(
 
   const [
     entrants,
-    games,
+    matches,
+    attempts,
     placements,
     checkIns,
     generated,
     brackets,
     generatedEntries,
+    leagueMatches,
   ] = await Promise.all([
     countsBy(entrant, entrant.competitionId),
-    countsBy(game, game.competitionId),
+    countsBy(seriesMatch, seriesMatch.competitionId),
+    countsBy(attempt, attempt.competitionId),
     countsBy(placement, placement.competitionId),
     countsBy(participation, participation.competitionId),
     countsBy(
       pointsEntry,
       pointsEntry.competitionId,
-      eq(pointsEntry.generatedByBracket, true),
+      eq(pointsEntry.generated, true),
     ),
     loadBrackets(
       rows.filter((c) => isBracketFormat(c.format)),
       dbOrTx,
     ),
-    finalizedIds.length > 0
+    closedIds.length > 0
       ? resultEntryQuery(dbOrTx).where(
           and(
-            inArray(pointsEntry.competitionId, finalizedIds),
-            eq(pointsEntry.generatedByBracket, true),
+            inArray(pointsEntry.competitionId, closedIds),
+            eq(pointsEntry.generated, true),
           ),
         )
       : Promise.resolve([]),
+    leagueIds.length > 0
+      ? dbOrTx
+          .select({
+            competitionId: leagueMatch.competitionId,
+            round: leagueMatch.round,
+            b: leagueMatch.entrantBId,
+            result: leagueMatch.result,
+          })
+          .from(leagueMatch)
+          .where(inArray(leagueMatch.competitionId, leagueIds))
+      : Promise.resolve([]),
   ]);
+  const leagueMatchesOf = (id: string) =>
+    leagueMatches.filter((m) => m.competitionId === id);
 
   const winnersOf = new Map(
     finalWinners(rows, generatedEntries.map(toResultEntry)).map((final) => [
@@ -160,6 +177,7 @@ export async function getCompetitions(
 
   const listed = rows.map((row): CompetitionListRow => {
     const bracket = brackets.get(row.id);
+    const league = row.format === "league" ? leagueMatchesOf(row.id) : [];
     return {
       id: row.id,
       name: row.name,
@@ -171,18 +189,28 @@ export async function getCompetitions(
       status: competitionStatus({
         format: row.format,
         scoring: row.scoring,
-        finalized: row.finalizedAt !== null,
+        closed: row.closedAt !== null,
         hasResult: hasResult({
           entrants: entrants.get(row.id) ?? 0,
-          games: games.get(row.id) ?? 0,
+          logged: (matches.get(row.id) ?? 0) + (attempts.get(row.id) ?? 0),
           placements: placements.get(row.id) ?? 0,
           checkIns: checkIns.get(row.id) ?? 0,
-          // Only Brackets have Heats, and `loadBrackets` has them.
-          heats: bracket?.heats.length ?? 0,
-          heatResult: bracket ? hasResults(bracket) : false,
+          // Only Brackets have Matches, and `loadBrackets` has them.
+          matches: bracket?.matches.length ?? 0,
+          matchResult: bracket ? hasResults(bracket) : false,
+          leagueMatches: league.length,
+          leagueResult: league.some((m) => m.result !== null),
           generatedPointsEntries: generated.get(row.id) ?? 0,
         }),
         bracketRound: bracket ? bracketRoundInPlay(bracket) : null,
+        leagueRound:
+          row.format === "league"
+            ? leagueRoundInPlay(
+                leagueConfigOf(row),
+                entrants.get(row.id) ?? 0,
+                league,
+              )
+            : null,
         winners: winnersOf.get(row.id) ?? [],
       }),
     };
@@ -190,73 +218,20 @@ export async function getCompetitions(
   return groupCompetitions(listed);
 }
 
-const participantTeam = alias(team, "participant_team");
-
-/** A left-joined Team's columns, or null when the join found no Team. */
-function toLedgerTeam(name: string | null, color: string | null) {
-  return name !== null && color !== null ? { name, color } : null;
-}
-
 /**
- * Loads one Competition of a War Week and its ledger. Returns `undefined`
- * when `id` is not a Competition of this War Week.
+ * Loads one Competition of a War Week. Returns `undefined` when `id` is not
+ * a Competition of this War Week.
  */
-export async function getCompetitionWithLedger(
+export async function getCompetition(
   warWeek: Pick<WarWeek, "id">,
   id: string,
   dbOrTx: DBOrTx = db,
-): Promise<
-  { competition: CompetitionListItem; ledger: CompetitionLedger } | undefined
-> {
+): Promise<CompetitionListItem | undefined> {
   if (!isUuid(id)) return undefined;
-
   const [found] = await dbOrTx
     .select(competitionColumns)
     .from(competition)
     .where(and(eq(competition.id, id), eq(competition.warWeekId, warWeek.id)))
     .limit(1);
-  if (!found) return undefined;
-
-  const rows = await withProfile(
-    dbOrTx
-      .select({
-        id: pointsEntry.id,
-        points: pointsEntry.points,
-        note: pointsEntry.note,
-        enteredAt: pointsEntry.enteredAt,
-        teamName: team.name,
-        teamColor: team.color,
-        participantName: participantNameSql(),
-        participantTeamName: participantTeam.name,
-        participantTeamColor: participantTeam.color,
-      })
-      .from(pointsEntry)
-      .leftJoin(team, eq(team.id, pointsEntry.teamId))
-      .leftJoin(participant, eq(participant.id, pointsEntry.participantId))
-      .leftJoin(participantTeam, eq(participantTeam.id, participant.teamId))
-      .$dynamic(),
-  ).where(eq(pointsEntry.competitionId, found.id));
-
-  return {
-    competition: found,
-    ledger: buildCompetitionLedger({
-      rows: rows.map((row) => ({
-        id: row.id,
-        points: row.points,
-        note: row.note,
-        enteredAt: row.enteredAt,
-        team: toLedgerTeam(row.teamName, row.teamColor),
-        participant:
-          row.participantName !== null
-            ? {
-                displayName: row.participantName,
-                team: toLedgerTeam(
-                  row.participantTeamName,
-                  row.participantTeamColor,
-                ),
-              }
-            : null,
-      })),
-    }),
-  };
+  return found;
 }

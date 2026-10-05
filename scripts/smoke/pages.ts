@@ -26,12 +26,12 @@ function expectedXiCounts(): Record<string, number> {
     readFileSync(path.resolve(process.cwd(), DEMO_SEED), "utf-8"),
   );
   const count = (list: unknown[] | undefined) => list?.length ?? 0;
-  // A Finalize writes one generated Points Entry per Placement row whose
+  // A Close writes one generated Points Entry per Placement row whose
   // place is within the Competition's Placement Points list (zero-point
   // entries included), on top of the Discretionary points.
   const pointsListLength = new Map<string, number>(
     seed.competitions
-      .filter((c: { finalized?: boolean }) => c.finalized)
+      .filter((c: { closed?: boolean }) => c.closed)
       .map((c: { name: string; placementPoints?: number[] }) => [
         c.name,
         c.placementPoints?.length ?? 0,
@@ -52,7 +52,14 @@ function expectedXiCounts(): Record<string, number> {
     team: count(seed.teams),
     participant: count(seed.participants),
     competition: count(seed.competitions),
+    // A Head-to-head's two seeded Entrants (Bouncy Pong's).
+    entrant: seed.competitions.reduce(
+      (sum: number, c: { entrants?: unknown[] }) => sum + count(c.entrants),
+      0,
+    ),
     placement: count(seed.placements),
+    // The XI demo holds no League.
+    league_match: count(seed.leagueMatches),
     points_entry: generated + count(seed.discretionaryPoints),
     award: count(seed.awards),
     announcement: count(seed.announcements),
@@ -71,8 +78,12 @@ const XI_COUNT_QUERIES: Record<string, string> = {
     "select count(*) from participant p join war_week w on w.id = p.war_week_id where w.edition = 'xi'",
   competition:
     "select count(*) from competition c join war_week w on w.id = c.war_week_id where w.edition = 'xi'",
+  entrant:
+    "select count(*) from entrant e join competition c on c.id = e.competition_id join war_week w on w.id = c.war_week_id where w.edition = 'xi'",
   placement:
     "select count(*) from placement p join competition c on c.id = p.competition_id join war_week w on w.id = c.war_week_id where w.edition = 'xi'",
+  league_match:
+    "select count(*) from league_match m join competition c on c.id = m.competition_id join war_week w on w.id = c.war_week_id where w.edition = 'xi'",
   points_entry:
     "select count(*) from points_entry e join war_week w on w.id = e.war_week_id where w.edition = 'xi'",
   award:
@@ -427,6 +438,49 @@ export async function assertParticipationColumnsConstraint() {
   );
 }
 
+/** The R21 Format CHECKs: each refuses what the model forbids. */
+export async function assertFormatColumnsConstraints() {
+  const xi = "from war_week w where w.edition = 'xi'";
+  await assertCheckRefuses(
+    "the database rejects a Head-to-head with no series config",
+    "competition_series_config_head_to_head",
+    `insert into competition (war_week_id, name, format, scoring)
+     select w.id, 'Smoke bad series', 'head-to-head', 'individual' ${xi}`,
+  );
+  await assertCheckRefuses(
+    "the database rejects a series config on a Placement Competition",
+    "competition_series_config_head_to_head",
+    `insert into competition (war_week_id, name, format, scoring, series_config)
+     select w.id, 'Smoke bad series', 'placement', 'individual',
+       '{"drawsAllowed":false,"bestOf":3}' ${xi}`,
+  );
+  await assertCheckRefuses(
+    "the database rejects a Best score Competition with no Score direction",
+    "competition_score_direction_by_format",
+    `insert into competition (war_week_id, name, format, scoring, score_direction)
+     select w.id, 'Smoke bad best score', 'best-score', 'individual', 'none' ${xi}`,
+  );
+  await assertCheckRefuses(
+    "the database rejects a Best score config on a Placement Competition",
+    "competition_best_score_config_best_score",
+    `insert into competition (war_week_id, name, format, scoring, best_score_config)
+     select w.id, 'Smoke bad best score', 'placement', 'individual',
+       '{"teamScore":"best-member"}' ${xi}`,
+  );
+  await assertCheckRefuses(
+    "the database rejects Max attempts below 1",
+    "competition_max_attempts",
+    `insert into competition (war_week_id, name, format, scoring, score_direction, max_attempts)
+     select w.id, 'Smoke bad best score', 'best-score', 'individual', 'higher', 0 ${xi}`,
+  );
+  await assertCheckRefuses(
+    "the database rejects enrollment on anything but a Bracket",
+    "competition_self_enroll_bracket_only",
+    `insert into competition (war_week_id, name, format, scoring, self_enroll)
+     select w.id, 'Smoke bad enroll', 'placement', 'individual', true ${xi}`,
+  );
+}
+
 export async function assertPlacementPointsSeeded() {
   const check =
     "the XI seed loads 5/3/1 Placement Points for Catan and the lone-winner 3 for Beast Mode";
@@ -598,14 +652,14 @@ export async function assertCompetitionDetail() {
   const url = `${BASE_URL}/xi/competitions/${id}`;
 
   const shownCheck =
-    "GET /xi/competitions/[id] shows the Competition and shows its Placement and the Points Entries it generated";
+    "GET /xi/competitions/[id] shows the Competition and shows its Placement and no Points Entries section";
   try {
     const res = await signedInFetch(url);
     const body = await res.text();
     const checks = {
       name: body.includes("Winning the Day Challenge"),
       target: body.includes("Dani Milliken"),
-      entries: body.includes("Points Entries"),
+      noEntriesSection: !body.includes("Points Entries"),
     };
     if (res.status === 200 && Object.values(checks).every(Boolean)) {
       ok(shownCheck);

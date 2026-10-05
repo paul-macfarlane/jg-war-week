@@ -17,7 +17,7 @@ import {
 import { getOpenUnscoredCompetitions } from "@/queries/open-unscored-competitions";
 import { getSetupDays, getSetupTeams } from "@/queries/setup";
 import { getStandings } from "@/queries/standings";
-import { getUnfinalizedBrackets } from "@/queries/unfinalized-brackets";
+import { getUnclosedBrackets } from "@/queries/unclosed-brackets";
 import { getWarWeeks } from "@/queries/war-weeks";
 
 import { loadAdminPage } from "../gate";
@@ -43,13 +43,13 @@ export default async function AdminSettingsPage() {
   if (!allowed) return <AdminRefused warWeek={warWeek} email={email} />;
 
   const isLive = warWeek.status === "live";
-  const [days, teams, existing, standings, unfinalizedBrackets, openGames] =
+  const [days, teams, existing, standings, unclosedBrackets, openUnscored] =
     await Promise.all([
       getSetupDays(warWeek),
       getSetupTeams(warWeek),
       getWarWeeks(),
       isLive ? getStandings(warWeek) : undefined,
-      isLive ? getUnfinalizedBrackets(warWeek) : [],
+      isLive ? getUnclosedBrackets(warWeek) : [],
       isLive ? getOpenUnscoredCompetitions(warWeek) : [],
     ]);
   const suggestedWinner = standings
@@ -91,8 +91,8 @@ export default async function AdminSettingsPage() {
               status={warWeek.status}
               suggestedWinner={suggestedWinner}
               highlights={warWeek.highlights}
-              unfinalizedBrackets={unfinalizedBrackets.map((c) => c.name)}
-              openUnscoredCompetitions={openGames}
+              unclosedBrackets={unclosedBrackets.map((c) => c.name)}
+              openUnscoredCompetitions={openUnscored}
             />
             <Link
               href="#create-next-war-week"

@@ -25,12 +25,11 @@ vi.mock("@/auth/authorize", () => ({
     target: { warWeek: { id: WAR_WEEK, edition: "xi" } },
     ctx: { warWeekId: WAR_WEEK, actorEmail: "organizer@jahnelgroup.com" },
   })),
-  postedCompetitionId: () => null,
 }));
 vi.mock("next/headers", () => ({ cookies: vi.fn() }));
 vi.mock("@/auth/actor", () => ({
-  ADMIN_EDITION_COOKIE: "admin_edition",
   getActor: vi.fn(),
+  setAdminEditionCookie: vi.fn(),
 }));
 vi.mock("@/auth/server", () => ({ getSessionEmail: vi.fn() }));
 vi.mock("@/queries/war-weeks", () => ({

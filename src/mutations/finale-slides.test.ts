@@ -76,7 +76,7 @@ describe.skipIf(!isLocalDatabase)("Finale slide mutations", () => {
         "Title",
         "By the numbers",
         "Awards",
-        "Champions",
+        "Winners",
         "Winner",
       ]);
       expect(slides.every((s) => s.id !== null)).toBe(true);
@@ -97,7 +97,7 @@ describe.skipIf(!isLocalDatabase)("Finale slide mutations", () => {
         "By the numbers",
         "Title",
         "Awards",
-        "Champions",
+        "Winners",
         "Winner",
         "Standings countdown",
       ]);
@@ -117,7 +117,7 @@ describe.skipIf(!isLocalDatabase)("Finale slide mutations", () => {
         "Title",
         "(By the numbers)",
         "Awards",
-        "Champions",
+        "Winners",
         "Standings countdown",
         "Winner",
       ]);
@@ -147,7 +147,7 @@ describe.skipIf(!isLocalDatabase)("Finale slide mutations", () => {
         "Title",
         "By the numbers",
         "(Awards)",
-        "Champions",
+        "Winners",
         "Winner",
       ]);
       expect(slides.every((s) => s.id !== null)).toBe(true);
@@ -171,7 +171,7 @@ describe.skipIf(!isLocalDatabase)("Finale slide mutations", () => {
         "Title",
         "By the numbers",
         "Awards",
-        "Champions",
+        "Winners",
         "(Winner)",
       ]);
       expect(await sortOrdersOf(f.home, tx)).toEqual([0, 1, 2, 3, 4, 5]);
@@ -209,7 +209,7 @@ describe.skipIf(!isLocalDatabase)("Finale slide mutations", () => {
         "Title",
         "By the numbers",
         "Awards",
-        "Champions",
+        "Winners",
         "Standings countdown",
         "Winner",
       ]);
@@ -224,33 +224,6 @@ describe.skipIf(!isLocalDatabase)("Finale slide mutations", () => {
       expect(
         await setFinaleSlideHidden({ id: elsewhere.id }, true, f.ctx, tx),
       ).toEqual(missing);
-    });
-  });
-
-  it("sets the War Week's Awards layout, and only that War Week's", async () => {
-    await inRolledBackTransaction(async (tx) => {
-      const { setFinaleAwardsLayout } =
-        await import("@/mutations/finale-slides");
-      const { eq } = await import("drizzle-orm");
-      const f = await fixture(tx);
-      const layoutOf = async (id: string) =>
-        (
-          await tx
-            .select({ layout: f.schema.warWeek.finaleAwardsLayout })
-            .from(f.schema.warWeek)
-            .where(eq(f.schema.warWeek.id, id))
-        )[0].layout;
-
-      expect(await layoutOf(f.home)).toBe("one-slide");
-      expect(await setFinaleAwardsLayout("per-category", f.ctx, tx)).toEqual({
-        ok: true,
-      });
-      expect(await layoutOf(f.home)).toBe("per-category");
-      expect(await layoutOf(f.other)).toBe("one-slide");
-      expect(await setFinaleAwardsLayout("one-slide", f.ctx, tx)).toEqual({
-        ok: true,
-      });
-      expect(await layoutOf(f.home)).toBe("one-slide");
     });
   });
 });
@@ -285,7 +258,7 @@ describe.skipIf(!isLocalDatabase)("Custom Finale slide mutations", () => {
         "Title",
         "By the numbers",
         "Awards",
-        "Champions",
+        "Winners",
         "Thank you",
         "Standings countdown",
         "Winner",
@@ -439,7 +412,7 @@ describe.skipIf(!isLocalDatabase)("Custom Finale slide mutations", () => {
         "Title",
         "By the numbers",
         "Awards",
-        "Champions",
+        "Winners",
         "Standings countdown",
         "Winner",
       ]);
@@ -474,7 +447,7 @@ describe.skipIf(!isLocalDatabase)("Custom Finale slide mutations", () => {
         "By the numbers",
         "Awards",
         "B",
-        "Champions",
+        "Winners",
         "Standings countdown",
         "Winner",
       ]);
@@ -507,7 +480,7 @@ describe.skipIf(!isLocalDatabase)("Custom Finale slide mutations", () => {
         "Title",
         "By the numbers",
         "Awards",
-        "Champions",
+        "Winners",
         "B",
         "C",
         "Standings countdown",

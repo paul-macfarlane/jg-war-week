@@ -102,7 +102,7 @@ async function fixture(tx: DBTx) {
       description: ONE_V_ONE,
       placementPoints: [10, 5],
       scoring: "team",
-      competitionGroup: "Board games",
+      competitionGroup: "Tabletop",
     })
     .returning();
   await tx.insert(schema.pointsEntry).values({
@@ -458,8 +458,8 @@ describe.skipIf(!isLocalDatabase)("Start, End and Reopen", () => {
       // The action's check sees nothing scored...
       expect(await getScoredCounts(empty.id, tx)).toEqual({
         pointsEntries: 0,
-        heatResults: 0,
-        games: 0,
+        matchResults: 0,
+        logged: 0,
       });
       // ...then a Points Entry lands before the mutation locks the row.
       await tx.insert(schema.pointsEntry).values({
@@ -478,7 +478,7 @@ describe.skipIf(!isLocalDatabase)("Start, End and Reopen", () => {
     });
   });
 
-  it("refuses Unstart once a Heat has a result, or a Game is logged", async () => {
+  it("refuses Unstart once a Match has a result, or a Match or Attempt is logged", async () => {
     await inRolledBackTransaction(async (tx) => {
       const { unstartWarWeek } = await import("@/mutations/war-week-lifecycle");
       const { schema, byId } = await fixture(tx);
@@ -497,32 +497,39 @@ describe.skipIf(!isLocalDatabase)("Start, End and Reopen", () => {
           scoring: "team",
         })
         .returning();
-      const [heat] = await tx
-        .insert(schema.heat)
-        .values({ competitionId: cup.id, round: 1, position: 1 })
+      const [match] = await tx
+        .insert(schema.bracketMatch)
+        .values({
+          competitionId: cup.id,
+          round: 1,
+          position: 1,
+          advanceCount: 1,
+        })
         .returning();
-      // A pending Heat isn't a result.
+      // A pending Match isn't a result.
       expect(await unstartWarWeek(ctxOf(live.id), tx)).toEqual({ ok: true });
       await tx
         .update(schema.warWeek)
         .set({ status: "live" })
         .where(eq(schema.warWeek.id, live.id));
       await tx
-        .update(schema.heat)
+        .update(schema.bracketMatch)
         .set({ status: "played" })
-        .where(eq(schema.heat.id, heat.id));
+        .where(eq(schema.bracketMatch.id, match.id));
       expect(await unstartWarWeek(ctxOf(live.id), tx)).toEqual({
         ok: false,
-        error: "A Heat has a result; Unstart isn't available.",
+        error: "A Match has a result; Unstart isn't available.",
       });
-      await tx.delete(schema.heat).where(eq(schema.heat.id, heat.id));
-      await tx.insert(schema.game).values({
+      await tx
+        .delete(schema.bracketMatch)
+        .where(eq(schema.bracketMatch.id, match.id));
+      await tx.insert(schema.seriesMatch).values({
         competitionId: cup.id,
         loggedByEmail: "lead@jahnelgroup.com",
       });
       expect(await unstartWarWeek(ctxOf(live.id), tx)).toEqual({
         ok: false,
-        error: "A Game has been logged; Unstart isn't available.",
+        error: "A Match or Attempt has been logged; Unstart isn't available.",
       });
       expect((await byId(live.id)).status).toBe("live");
     });
@@ -711,7 +718,7 @@ describe.skipIf(!isLocalDatabase)("createNextWarWeek", () => {
         placementPoints: [10, 5],
         scoring: "team",
         countsTowardTeam: false,
-        competitionGroup: "Board games",
+        competitionGroup: "Tabletop",
       });
       expect(competitions[0].id).not.toBe(chess.id);
       const entries = await tx
@@ -781,34 +788,23 @@ describe.skipIf(!isLocalDatabase)("createNextWarWeek", () => {
     });
   });
 
-  it("copies each Competition's Hosts with the Competitions", async () => {
+  it("copies no Hosts with the Competitions", async () => {
     await inRolledBackTransaction(async (tx) => {
       const { createNextWarWeek } =
         await import("@/mutations/war-week-lifecycle");
-      const getCompetitionHosts = async (
-        competitionId: string,
-        dbTx: typeof tx,
-      ) => {
-        const { competitionHost } = await import("@/db/schema");
-        const { eq: eqHost } = await import("drizzle-orm");
-        const rows = await dbTx
-          .select({ email: competitionHost.email })
-          .from(competitionHost)
-          .where(eqHost(competitionHost.competitionId, competitionId))
-          .orderBy(competitionHost.email);
-        return rows.map((row) => row.email);
-      };
       const { live, chess, schema } = await fixture(tx);
       const { and, eq } = await import("drizzle-orm");
-      const [relay] = await tx
-        .insert(schema.competition)
-        .values({ warWeekId: live.id, name: "Relay", scoring: "team" })
+      const [tony] = await tx
+        .insert(schema.participant)
+        .values({
+          warWeekId: live.id,
+          displayName: "Tony",
+          email: "tony@jahnelgroup.com",
+        })
         .returning();
-      await tx.insert(schema.competitionHost).values([
-        { competitionId: chess.id, email: "tony@jahnelgroup.com" },
-        { competitionId: chess.id, email: "tom@jahnelgroup.com" },
-        { competitionId: relay.id, email: "amy@jahnelgroup.com" },
-      ]);
+      await tx
+        .insert(schema.competitionHost)
+        .values({ competitionId: chess.id, participantId: tony.id });
 
       await createNextWarWeek(
         next({ copyCompetitions: true }),
@@ -819,60 +815,27 @@ describe.skipIf(!isLocalDatabase)("createNextWarWeek", () => {
         .select({ id: schema.warWeek.id })
         .from(schema.warWeek)
         .where(eq(schema.warWeek.edition, "tii"));
-      const copyOf = async (name: string) => {
-        const [row] = await tx
-          .select({ id: schema.competition.id })
-          .from(schema.competition)
-          .where(
-            and(
-              eq(schema.competition.warWeekId, created.id),
-              eq(schema.competition.name, name),
-            ),
-          );
-        return row.id;
-      };
-      expect(await getCompetitionHosts(await copyOf("Chess"), tx)).toEqual([
-        "tom@jahnelgroup.com",
-        "tony@jahnelgroup.com",
-      ]);
-      expect(await getCompetitionHosts(await copyOf("Relay"), tx)).toEqual([
-        "amy@jahnelgroup.com",
-      ]);
-      // The source keeps its own Hosts.
-      expect(await getCompetitionHosts(chess.id, tx)).toEqual([
-        "tom@jahnelgroup.com",
-        "tony@jahnelgroup.com",
-      ]);
-    });
-  });
-
-  it("copies no Hosts when Competitions aren't copied", async () => {
-    await inRolledBackTransaction(async (tx) => {
-      const { createNextWarWeek } =
-        await import("@/mutations/war-week-lifecycle");
-      const { live, chess, schema } = await fixture(tx);
-      const { eq } = await import("drizzle-orm");
-      await tx
-        .insert(schema.competitionHost)
-        .values({ competitionId: chess.id, email: "tony@jahnelgroup.com" });
-
-      await createNextWarWeek(next(), ctxOf(live.id), tx);
-      const [created] = await tx
-        .select({ id: schema.warWeek.id })
-        .from(schema.warWeek)
-        .where(eq(schema.warWeek.edition, "tii"));
-      const competitionIds = (
-        await tx
-          .select({ id: schema.competition.id })
-          .from(schema.competition)
-          .where(eq(schema.competition.warWeekId, created.id))
-      ).map((c) => c.id);
-      expect(competitionIds).toEqual([]);
-      const hosts = await tx
+      const [copy] = await tx
+        .select({ id: schema.competition.id })
+        .from(schema.competition)
+        .where(
+          and(
+            eq(schema.competition.warWeekId, created.id),
+            eq(schema.competition.name, "Chess"),
+          ),
+        );
+      // The Competition is copied, with no Hosts; the source keeps its own.
+      expect(copy).toBeDefined();
+      const copyHosts = await tx
         .select()
         .from(schema.competitionHost)
-        .where(eq(schema.competitionHost.email, "tony@jahnelgroup.com"));
-      expect(hosts.map((h) => h.competitionId)).toEqual([chess.id]);
+        .where(eq(schema.competitionHost.competitionId, copy.id));
+      expect(copyHosts).toEqual([]);
+      const sourceHosts = await tx
+        .select()
+        .from(schema.competitionHost)
+        .where(eq(schema.competitionHost.competitionId, chess.id));
+      expect(sourceHosts.map((h) => h.participantId)).toEqual([tony.id]);
     });
   });
 

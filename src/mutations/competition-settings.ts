@@ -1,14 +1,11 @@
-import { and, eq, sql } from "drizzle-orm";
+import { and, count, eq, sql } from "drizzle-orm";
 
 import { DBOrTx, db } from "@/db";
-import { type Competition, competition } from "@/db/schema";
+import { type Competition, attempt, competition } from "@/db/schema";
 import { can } from "@/lib/access";
+import { maxAttemptsError } from "@/lib/best-score/log-rule";
 import { settingLockReason } from "@/lib/competition-locks";
 import type { CompetitionSettingChange } from "@/lib/competition-settings";
-import { type GameFormat, isGameFormat } from "@/lib/enums";
-import { gamesConfigOf, gamesConfigSchema } from "@/lib/games/config";
-import type { GamesSettingsInput } from "@/lib/games/input";
-import { NOT_GAMES } from "@/lib/games/log-rule";
 import { NOT_PARTICIPATION } from "@/lib/participation/check-in-rule";
 import type { CompetitionValues } from "@/lib/setup";
 import {
@@ -20,9 +17,10 @@ import {
   setCompetitionFormat,
 } from "@/mutations/brackets";
 import { setSelfEnroll } from "@/mutations/enrollment";
-import { setGamesSettings } from "@/mutations/games";
-import { setSelfReport } from "@/mutations/heat-reports";
+import { NOT_A_LEAGUE } from "@/mutations/league";
+import { setSelfReport } from "@/mutations/match-reports";
 import { setParticipationSettings } from "@/mutations/participation";
+import { setSeriesConfig } from "@/mutations/series";
 import { setCompetitionHosts, updateCompetition } from "@/mutations/setup";
 import type { MutationContext, MutationResult } from "@/mutations/types";
 import { getCompetitionLockFacts } from "@/queries/competition-locks";
@@ -30,8 +28,11 @@ import { getHostedCompetitions, isOrganizerEmail } from "@/queries/organizers";
 
 const COUNTS_TOWARD_TEAM_INDIVIDUAL_ONLY =
   "Only an individual Competition can count toward the Team.";
-const NOT_PLACEMENT_DIRECTION =
-  "Only a Placement Competition has a Score direction.";
+const NO_PARTICIPATION_DIRECTION =
+  "A Participation Competition has no Score direction.";
+const BEST_SCORE_NEEDS_DIRECTION =
+  "A Best score Competition's Score is higher or lower is better.";
+const NOT_BEST_SCORE = "This Competition isn't run as Best score.";
 const INDIVIDUAL_PARTICIPATION_ONLY =
   "Only an individual Participation Competition takes points per Participant.";
 const INDIVIDUAL_NO_PLACEMENT_POINTS =
@@ -117,26 +118,6 @@ function setupValues(found: Competition): CompetitionValues {
   };
 }
 
-/** A Head-to-head or Best score Competition's settings as stored. */
-function gamesSettings(
-  found: Competition & { format: GameFormat },
-): GamesSettingsInput {
-  return {
-    gameConfig: gamesConfigOf(found),
-    entrantsOpen: found.entrantsOpen,
-    loggingClosesAt: found.loggingClosesAt,
-    selfEnroll: found.selfEnroll,
-    entrantLimit: found.entrantLimit,
-    enrollClosesAt: found.enrollClosesAt,
-  };
-}
-
-function isGames(
-  found: Competition,
-): found is Competition & { format: GameFormat } {
-  return isGameFormat(found.format);
-}
-
 /** Writes one unlocked setting the actor may save. */
 async function write(
   tx: DBOrTx,
@@ -147,31 +128,20 @@ async function write(
   const id = found.id;
   const setup = (values: Partial<CompetitionValues>) =>
     updateCompetition(id, { ...setupValues(found), ...values }, ctx, tx);
-  const games = (values: Partial<GamesSettingsInput>) =>
-    isGames(found)
-      ? setGamesSettings(id, { ...gamesSettings(found), ...values }, ctx, tx)
-      : Promise.resolve(refuse(NOT_GAMES));
   const enroll = (
-    values: Partial<{
-      on: boolean;
-      entrantLimit: number | null;
-      enrollClosesAt: Date | null;
-    }>,
+    values: Partial<{ on: boolean; entrantLimit: number | null }>,
   ) =>
     setSelfEnroll(
       id,
       {
         on: found.selfEnroll,
         entrantLimit: found.entrantLimit,
-        enrollClosesAt: found.enrollClosesAt,
         ...values,
       },
       ctx,
       tx,
     );
-  const checkIn = (
-    values: Partial<{ selfCheckIn: boolean; checkInClosesAt: Date | null }>,
-  ) =>
+  const checkIn = (values: Partial<{ selfCheckIn: boolean }>) =>
     found.format === "participation"
       ? setParticipationSettings(
           id,
@@ -179,7 +149,6 @@ async function write(
             participationPoints: found.participationPoints,
             placementPoints: found.placementPoints,
             selfCheckIn: found.selfCheckIn,
-            checkInClosesAt: found.checkInClosesAt,
             ...values,
           },
           ctx,
@@ -239,18 +208,30 @@ async function write(
         tx,
       );
     case "scoreDirection":
-      if (found.format !== "placement") return refuse(NOT_PLACEMENT_DIRECTION);
+      // The CHECK `competition_score_direction_by_format`, as refusals.
+      if (found.format === "participation") {
+        return refuse(NO_PARTICIPATION_DIRECTION);
+      }
+      if (found.format === "best-score" && change.value === "none") {
+        return refuse(BEST_SCORE_NEEDS_DIRECTION);
+      }
       return set({ scoreDirection: change.value });
-    case "gameConfig": {
-      if (!isGames(found)) return refuse(NOT_GAMES);
-      const config = gamesConfigSchema(found.format).safeParse(change.value);
-      if (!config.success) return refuse(config.error.issues[0].message);
-      return games({ gameConfig: config.data });
-    }
-    case "entrantsOpen":
-      return games({ entrantsOpen: change.value });
-    case "loggingClosesAt":
-      return games({ loggingClosesAt: change.value });
+    case "scoreUnit":
+      return set({ scoreUnit: change.value });
+    case "leagueConfig":
+      if (found.format !== "league") return refuse(NOT_A_LEAGUE);
+      // A round robin's rounds are always null (the parser sets it).
+      return set({
+        leagueConfig:
+          change.value.pairing === "round-robin"
+            ? { pairing: "round-robin", rounds: null }
+            : change.value,
+      });
+    case "seriesConfig":
+      return setSeriesConfig(id, change.value, ctx, tx);
+    case "bestScoreConfig":
+      if (found.format !== "best-score") return refuse(NOT_BEST_SCORE);
+      return set({ bestScoreConfig: change.value });
     case "entrants":
       return replaceEntrants(id, change.value, ctx, tx);
     case "bracket":
@@ -259,13 +240,22 @@ async function write(
       return enroll({ on: change.value });
     case "entrantLimit":
       return enroll({ entrantLimit: change.value });
-    case "enrollClosesAt":
-      return enroll({ enrollClosesAt: change.value });
     case "selfReport":
       return setSelfReport(id, { on: change.value }, ctx, tx);
     case "selfCheckIn":
       return checkIn({ selfCheckIn: change.value });
-    case "checkInClosesAt":
-      return checkIn({ checkInClosesAt: change.value });
+    case "maxAttempts": {
+      if (found.format !== "best-score") return refuse(NOT_BEST_SCORE);
+      const [most] = await tx
+        .select({ n: count() })
+        .from(attempt)
+        .where(eq(attempt.competitionId, id))
+        .groupBy(attempt.participantId)
+        .orderBy(sql`count(*) desc`)
+        .limit(1);
+      const refusal = maxAttemptsError(change.value, most?.n ?? 0);
+      if (refusal) return refuse(refusal);
+      return set({ maxAttempts: change.value });
+    }
   }
 }

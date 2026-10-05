@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo } from "react";
+import { type ReactNode, useMemo } from "react";
 
 import { FormValueInput } from "@/components/form-value-input";
 import {
@@ -28,6 +28,8 @@ export type EntityComboboxItem = {
   keywords?: string;
   /** Shown but not selectable. */
   disabled?: boolean;
+  /** Shown before the label in the list (an Avatar, a color dot). */
+  lead?: ReactNode;
 };
 
 type CommonProps = {
@@ -42,6 +44,8 @@ type CommonProps = {
   "aria-label"?: string;
   /** Marks the control invalid when its field shows an error. */
   "aria-invalid"?: boolean;
+  /** Replaces the default match (label, detail, keywords) for a picker with its own search rule. */
+  filter?: (item: EntityComboboxItem, query: string) => boolean;
 };
 
 type SingleProps = CommonProps & {
@@ -85,9 +89,12 @@ function isSameItem(a: EntityComboboxItem, b: EntityComboboxItem) {
 function EntityComboboxItemRow({ item }: { item: EntityComboboxItem }) {
   return (
     <>
-      <span>{item.label}</span>
+      {item.lead}
+      <span className="min-w-0 truncate">{item.label}</span>
       {item.detail && (
-        <span className="text-muted-foreground text-xs">{item.detail}</span>
+        <span className="text-muted-foreground max-w-[45%] shrink-0 truncate text-xs">
+          {item.detail}
+        </span>
       )}
     </>
   );
@@ -111,6 +118,7 @@ export function EntityCombobox(props: EntityComboboxProps) {
     id,
     "aria-label": ariaLabel,
     "aria-invalid": ariaInvalid,
+    filter = fitsQuery,
   } = props;
   const itemsById = useMemo(
     () => new Map(items.map((item) => [item.id, item])),
@@ -135,7 +143,7 @@ export function EntityCombobox(props: EntityComboboxProps) {
         isItemEqualToValue={isSameItem}
         itemToStringLabel={(item) => item.label}
         itemToStringValue={(item) => item.id}
-        filter={fitsQuery}
+        filter={filter}
         disabled={disabled}
         required={required}
       >
@@ -193,7 +201,7 @@ export function EntityCombobox(props: EntityComboboxProps) {
       isItemEqualToValue={isSameItem}
       itemToStringLabel={(item) => item.label}
       itemToStringValue={(item) => item.id}
-      filter={fitsQuery}
+      filter={filter}
       disabled={disabled}
       required={required}
     >

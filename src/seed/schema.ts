@@ -2,7 +2,7 @@ import { z } from "zod";
 
 import { announcementTitleSchema } from "@/lib/announcements";
 import { AWARD_DESCRIPTION_MAX, AWARD_NAME_MAX } from "@/lib/awards";
-import { FINALE_AWARDS_LAYOUTS, WAR_WEEK_STATUSES } from "@/lib/enums";
+import { LEAGUE_RESULTS, WAR_WEEK_STATUSES } from "@/lib/enums";
 import { finaleSlideSeedSchema } from "@/lib/finale-slides";
 import { jgEmailSchema } from "@/lib/jg-email";
 import { MAX_SCORE } from "@/lib/placement/input";
@@ -92,6 +92,32 @@ export const placementSeedSchema = z
 
 export type PlacementSeed = z.infer<typeof placementSeedSchema>;
 
+/**
+ * One League Match (CONTEXT.md, League): a round's pairing of two Entrants
+ * of a League, or an Entrant alone (`b` null: a bye or sit-out), with its
+ * result when played. The loader inserts a League's Matches only while it
+ * has no Entrant and no Match, so an Organizer's pairings are never
+ * overwritten.
+ */
+export const leagueMatchSeedSchema = z.object({
+  key: seedKey,
+  /** A League's name from this seed. */
+  competition: z.string().min(1).max(120),
+  round: z.number().int().min(1),
+  /** The Match's order in its round, from 0. */
+  position: z.number().int().min(0),
+  /** An Entrant's name (a Participant's display name or a Team's name). */
+  a: z.string().min(1).max(120),
+  b: z.string().min(1).max(120).nullable(),
+  result: z.enum(LEAGUE_RESULTS).nullish(),
+  scoreA: z.number().min(-MAX_SCORE).max(MAX_SCORE).nullish(),
+  scoreB: z.number().min(-MAX_SCORE).max(MAX_SCORE).nullish(),
+  /** When it was recorded; omitted: the League's `closedAt`, else the load time. */
+  recordedAt: z.iso.datetime({ offset: true }).optional(),
+});
+
+export type LeagueMatchSeed = z.infer<typeof leagueMatchSeedSchema>;
+
 export const awardSeedSchema = z
   .object({
     key: seedKey,
@@ -101,8 +127,6 @@ export const awardSeedSchema = z
     team: z.string().min(1).max(80).nullish(),
     /** Participant display names from this seed. */
     participants: z.array(z.string().min(1).max(120)).default([]),
-    /** An Award Category's key (not its name, which an Organizer may rename). */
-    category: seedKey.nullish(),
   })
   .refine((a) => a.team != null || a.participants.length > 0, {
     message: "an Award needs at least one recipient (a team or participants)",
@@ -155,16 +179,15 @@ export const warWeekSeedSchema = z
     pointsEntries: z
       .never({
         error:
-          "pointsEntries is gone; use placements (with finalized) or discretionaryPoints",
+          "pointsEntries is gone; use placements (with closed) or discretionaryPoints",
       })
       .optional(),
     discretionaryPoints: z.array(discretionaryPointsSeedSchema).default([]),
     placements: z.array(placementSeedSchema).default([]),
+    leagueMatches: z.array(leagueMatchSeedSchema).default([]),
     awards: z.array(awardSeedSchema).default([]),
     announcements: z.array(announcementSeedSchema).default([]),
     faqItems: z.array(faqItemSeedSchema).default([]),
-    /** Set when the War Week is first inserted, never on a reload. */
-    finaleAwardsLayout: z.enum(FINALE_AWARDS_LAYOUTS).optional(),
     /**
      * The Finale's slides in order. Absent: a load leaves the saved list
      * alone (CONTEXT.md, "Seed idempotence rules").
@@ -247,6 +270,13 @@ export const warWeekSeedSchema = z
       "Discretionary points key",
     );
     unique("placements", seed.placements, (p) => p.key, "key", "Placement key");
+    unique(
+      "leagueMatches",
+      seed.leagueMatches,
+      (m) => m.key,
+      "key",
+      "League Match key",
+    );
     unique("awards", seed.awards, (a) => a.key, "key", "Award key");
     unique(
       "announcements",
@@ -317,6 +347,26 @@ export const warWeekSeedSchema = z
       }
     });
 
+    seed.competitions.forEach((c, index) => {
+      (c.hosts ?? []).forEach((name, hostIndex) => {
+        if (!participants.has(name)) {
+          issue(
+            ["competitions", index, "hosts", hostIndex],
+            `Host "${name}" is not on this War Week's roster`,
+          );
+        }
+      });
+      (c.entrants ?? []).forEach((name, entrantIndex) => {
+        const known = c.scoring === "team" ? teams : participants;
+        if (!known.has(name)) {
+          issue(
+            ["competitions", index, "entrants", entrantIndex],
+            `unknown ${c.scoring === "team" ? "Team" : "Participant"} "${name}"`,
+          );
+        }
+      });
+    });
+
     seed.placements.forEach((row, index) => {
       const path = ["placements", index];
       const comp = competitions.get(row.competition);
@@ -353,6 +403,76 @@ export const warWeekSeedSchema = z
             `unknown Participant "${row.participant}"`,
           );
         }
+      }
+    });
+
+    // Each League's Matches: its own Entrants, each once a round, no
+    // rematch, no result on a bye, a Score only with a result.
+    const slots = new Set<string>();
+    const meetings = new Set<string>();
+    const playing = new Set<string>();
+    seed.leagueMatches.forEach((m, index) => {
+      const path = ["leagueMatches", index];
+      const comp = competitions.get(m.competition);
+      if (!comp) {
+        issue(
+          [...path, "competition"],
+          `unknown Competition "${m.competition}"`,
+        );
+        return;
+      }
+      if (comp.format !== "league") {
+        issue(
+          [...path, "competition"],
+          `${comp.name} isn't a league Competition`,
+        );
+        return;
+      }
+      const entrants = new Set(comp.entrants ?? []);
+      for (const side of ["a", "b"] as const) {
+        const name = m[side];
+        if (name != null && !entrants.has(name)) {
+          issue([...path, side], `"${name}" is not an Entrant of ${comp.name}`);
+        }
+      }
+      if (m.b === m.a) issue([...path, "b"], `${m.a} plays itself`);
+      const slot = `${m.competition}\0${m.round}\0${m.position}`;
+      if (slots.has(slot)) {
+        issue(
+          [...path, "position"],
+          `round ${m.round} position ${m.position} is taken in ${comp.name}`,
+        );
+      }
+      slots.add(slot);
+      for (const name of [m.a, m.b]) {
+        if (name == null) continue;
+        const key = `${m.competition}\0${m.round}\0${name}`;
+        if (playing.has(key)) {
+          issue(
+            [...path, name === m.a ? "a" : "b"],
+            `${name} plays twice in round ${m.round}`,
+          );
+        }
+        playing.add(key);
+      }
+      if (m.b !== null && m.b !== m.a) {
+        const pair = [m.a, m.b].sort().join("\0");
+        const key = `${m.competition}\0${pair}`;
+        if (meetings.has(key)) {
+          issue(
+            [...path, "a"],
+            `${m.a} and ${m.b} already met in ${comp.name}`,
+          );
+        }
+        meetings.add(key);
+      }
+      if (m.b === null) {
+        if (m.result != null) issue([...path, "result"], "a bye has no result");
+        if (m.scoreA != null || m.scoreB != null) {
+          issue([...path, "scoreA"], "a bye has no Score");
+        }
+      } else if (m.result == null && (m.scoreA != null || m.scoreB != null)) {
+        issue([...path, "scoreA"], "a Score needs a result");
       }
     });
 
