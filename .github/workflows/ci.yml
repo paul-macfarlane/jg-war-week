@@ -3,8 +3,8 @@ name: CI
 on:
   pull_request:
     types: [opened, synchronize, reopened]
-  push:
-    branches: [staging, main]
+  # No push trigger: staging and main change only by merging a PR that
+  # already ran these checks, and a run after the merge to main is too late.
   # Manual runs, e.g. to prove the drift check on a throwaway branch.
   workflow_dispatch:
 
@@ -78,8 +78,7 @@ jobs:
       # with the End War Week warning, Finale, Archive, forms, theme) in
       # Chromium over the same build and Postgres service.
       # e2e runs only on PRs into main (staging -> main, before production):
-      # a PR into staging and a push to staging or main run only the checks
-      # above. A browser regression on staging fails the next staging -> main
+      # a PR into staging runs only the checks above. A browser regression on staging fails the next staging -> main
       # PR, so fix it there before shipping.
       - if: github.event_name == 'pull_request' && github.base_ref == 'main'
         run: pnpm exec playwright install --with-deps chromium
