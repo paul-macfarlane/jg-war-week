@@ -356,6 +356,8 @@ function EditPairingsBody({
     m.b === null ? [m.a] : [m.a, m.b],
   );
   const options = inRound.map((id) => ({ value: id, label: nameOf(id) }));
+  // Nothing chosen reads as words, not the select's empty value.
+  const choose = { value: "", label: "Choose an Entrant" };
   const lines =
     x && y && x !== y
       ? swapWarningLines(
@@ -411,7 +413,7 @@ function EditPairingsBody({
           <OptionSelect
             id="swap-first"
             aria-label="Swap"
-            options={options.filter((o) => o.value !== y)}
+            options={[choose, ...options.filter((o) => o.value !== y)]}
             value={x}
             onValueChange={setX}
           />
@@ -421,7 +423,7 @@ function EditPairingsBody({
           <OptionSelect
             id="swap-second"
             aria-label="With"
-            options={options.filter((o) => o.value !== x)}
+            options={[choose, ...options.filter((o) => o.value !== x)]}
             value={y}
             onValueChange={setY}
           />

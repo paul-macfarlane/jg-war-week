@@ -32,7 +32,10 @@ describe("scoresText", () => {
       "Scores 21–18.5 kg",
     );
     expect(scoresText({ scoreA: 3, scoreB: null, unit: null })).toBe(
-      "Scores 3––",
+      "Scores 3–?",
+    );
+    expect(scoresText({ scoreA: null, scoreB: 4, unit: "kg" })).toBe(
+      "Scores ?–4 kg",
     );
     expect(scoresText({ scoreA: null, scoreB: null, unit: "kg" })).toBeNull();
   });

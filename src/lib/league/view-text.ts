@@ -31,7 +31,7 @@ export function matchLine({
     : `${aName} ${RESULT_TEXT[result]} ${bName}`;
 }
 
-/** "Scores 21–18 kg"; null when the Match has no Score. */
+/** "Scores 21–18 kg"; a missing Score reads "?" ("Scores 3–?"); null when the Match has no Score. */
 export function scoresText({
   scoreA,
   scoreB,
@@ -44,7 +44,7 @@ export function scoresText({
   if (scoreA === null && scoreB === null) return null;
   const show = (score: number | null) =>
     score === null
-      ? "–"
+      ? "?"
       : score.toLocaleString("en-US", { maximumFractionDigits: 3 });
   const trimmed = unit?.trim();
   return `Scores ${show(scoreA)}–${show(scoreB)}${trimmed ? ` ${trimmed}` : ""}`;
