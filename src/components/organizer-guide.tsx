@@ -25,7 +25,7 @@ export function OrganizerGuide({
       "Give points to a Team or Participant with a reason and no Competition behind them; edit or delete them in the ledger.",
     Schedule:
       "The War Week's Days with their Day Themes and short descriptions, and each Day's Schedule Items.",
-    Roster: `${teamLabel}s, Participants and ${leaderTitle}s, with Import from a sheet or CSV.`,
+    Roster: `${teamLabel}s, Participants and ${leaderTitle}s, with Import from a sheet or CSV and a search by name or email.`,
     Announcements: "Post, pin and edit Announcements.",
     Awards: `Give Awards to a ${teamLower} or to Participants, and add one from a preset name.`,
     FAQ: "FAQ Items and their order on the public FAQ.",
@@ -85,9 +85,10 @@ export function OrganizerGuide({
         </ul>
         <p className="text-foreground/70">
           On a phone, Competitions, Discretionary points, Schedule and
-          Announcements are tabs on the bar at the bottom of the screen; the
-          rest are under More, with the edition switcher. Display, Back to War
-          Week and Sign out are in the account menu (your initials, top right).
+          Announcements are tabs (with shortened labels) on the bar at the
+          bottom of the screen; the rest are under More, with the edition
+          switcher. Display, Back to War Week and Sign out are in the account
+          menu (your initials, top right).
         </p>
         <p className="text-foreground/70">
           A Host sees only the Competitions they host and the Guide; the other
@@ -226,12 +227,15 @@ export function OrganizerGuide({
           finishing order gives places 1 to 4. Nothing goes past 4th, and nobody
           else is placed. On the same page, pick Entrants — all {teamLower}s, or
           specific Participants — and Generate the Bracket (Seed Positions are
-          random; Re-roll before any Match is played to try again). Below it is
-          the Bracket&apos;s tree, the same one Participants see. In a Group
-          Bracket, Edit on each Round heading sets that Round&apos;s defaults
-          (Match size and how many advance), how many advance from one Match,
-          and moves an Entrant to another Match of the Round. A Round locks once
-          it has a result. Press Record result on a Match in the tree (Edit once
+          random; Re-roll before any Match is played to try again). Once a Match
+          has a result, the Entrants and Seed Positions fold away under
+          &quot;Entrants and Seed Positions&quot;. Below it is the
+          Bracket&apos;s tree, the same one Participants see (an Entrant gets a
+          &quot;Jump to your Match&quot; button on it). In a Group Bracket, Edit
+          on each Round heading sets that Round&apos;s defaults (Match size and
+          how many advance), how many advance from one Match, and moves an
+          Entrant to another Match of the Round. A Round locks once it has a
+          result. Press Record result on a Match in the tree (Edit once
           it&apos;s recorded) to enter it: its Winner, or for a bigger Match its
           Entrants in finishing order, with scores, in a dialog centered on a
           screen or a bottom sheet on a phone; the tree shows when each Match
@@ -326,11 +330,12 @@ export function OrganizerGuide({
           right arrow, Space or a click (the left arrow goes back, Escape
           returns to the first slide). Nothing moves on its own. The slides are
           Title, By the numbers, Awards, Winners, the Standings countdown (last
-          place to first) and Winner; the countdown plays when you arrive on it,
-          and Replay runs it again. On the Finale page you can reorder or hide
-          the slides, add your own Custom slides (only Organizers open this
-          page). The Awards slide reveals one Award per step. The Finale never
-          changes the Standings, it only plays them.
+          place to first, for the top 10 only, then how many more scored) and
+          Winner; the countdown plays when you arrive on it, and Replay runs it
+          again. On the Finale page you can reorder or hide the slides, add your
+          own Custom slides (only Organizers open this page). The Awards slide
+          reveals one Award per step. The Finale never changes the Standings, it
+          only plays them.
         </p>
       </section>
 

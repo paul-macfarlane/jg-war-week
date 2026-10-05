@@ -204,6 +204,10 @@ test.describe("100 Participants in the XII scale demo", () => {
         await expect(
           page.getByRole("heading", { name: "Entrants and Bracket" }),
         ).toBeVisible();
+        // R24 D2: with results, Entrants and Seed Positions fold under a trigger.
+        await page
+          .getByRole("button", { name: "Entrants and Seed Positions (64)" })
+          .click();
         await expect(page.getByText("(64 chosen)")).toBeVisible();
       });
 
@@ -325,6 +329,20 @@ test.describe("100 Participants in the XII scale demo", () => {
         await expect(page.getByRole("button", { name: "Replay" })).toBeVisible({
           timeout: 30_000,
         });
+        // Only rows ranked 10th or better count down; the rest are a line.
+        const ranks = await page
+          .getByRole("main")
+          .getByRole("listitem")
+          .evaluateAll((items) =>
+            items.map((li) =>
+              Number((li.textContent ?? "").trim().split(/\D/)[0]),
+            ),
+          );
+        expect(ranks[0]).toBe(1);
+        expect(Math.max(...ranks)).toBeLessThanOrEqual(10);
+        await expect(page.locator("[data-finale-more]")).toContainText(
+          "more Participant",
+        );
       });
     } finally {
       await context.close();

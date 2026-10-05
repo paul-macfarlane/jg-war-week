@@ -197,6 +197,7 @@ export function BracketTree({
   scoreDirection = "none",
   primaryColor,
   youEntrantId = null,
+  highlightedMatchId = null,
   recordableMatchIds = [],
   lockedMatchIds = [],
   onRecord,
@@ -212,6 +213,8 @@ export function BracketTree({
   scoreDirection?: ScoreDirection;
   primaryColor: string;
   youEntrantId?: string | null;
+  /** A Match to ring (Jump to your Match), or null. */
+  highlightedMatchId?: string | null;
   /** The Matches the viewer may record now; each shows Record result or Edit. */
   recordableMatchIds?: readonly string[];
   /** Decided Matches the viewer would edit, but whose result is locked (`resultLockReason`). */
@@ -240,6 +243,7 @@ export function BracketTree({
       ? formatRecordedAt(source.recordedAt)
       : "";
     const reporter = reporters[match.id];
+    const highlighted = match.id === highlightedMatchId;
     const lockReason =
       source && locked.has(match.id) && !recordable.has(match.id)
         ? resultLockReason(bracket, source)
@@ -256,10 +260,16 @@ export function BracketTree({
         <div
           role="group"
           aria-label={match.name}
-          className={`text-card-foreground relative flex w-full min-w-0 flex-col gap-1 rounded-lg p-2 ring-1 ${
-            match.thirdPlace
-              ? "bg-muted/40 ring-foreground/5 opacity-90"
-              : "bg-card ring-foreground/10"
+          data-match-id={match.id}
+          tabIndex={-1}
+          data-highlighted={highlighted ? "" : undefined}
+          aria-current={highlighted ? "true" : undefined}
+          className={`text-card-foreground relative flex w-full min-w-0 flex-col gap-1 rounded-lg p-2 ${
+            highlighted
+              ? "bg-card ring-primary ring-4"
+              : match.thirdPlace
+                ? "bg-muted/40 ring-foreground/5 opacity-90 ring-1"
+                : "bg-card ring-foreground/10 ring-1"
           }`}
         >
           <span className="text-foreground/60 px-1.5 text-xs font-medium">

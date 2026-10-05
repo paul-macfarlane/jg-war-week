@@ -34,6 +34,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import type { WarWeek } from "@/db/schema";
+import { filterRoster, rosterCountText } from "@/lib/roster-filter";
 import type { ParticipantInput, TeamInput } from "@/lib/setup";
 import { teamSwatches } from "@/lib/theme";
 import type { SetupParticipant, SetupTeam } from "@/queries/setup";
@@ -398,8 +399,9 @@ export function TeamsEditor({
 }
 
 /**
- * The roster: every Participant, each with Edit (a Sheet) and Delete, then
- * "Add Participant" and "Import" (from a spreadsheet).
+ * The roster: "Add Participant" and "Import" (from a spreadsheet) on top, a
+ * search by name or email, then every Participant with Edit (a Sheet) and
+ * Delete.
  */
 export function RosterEditor({
   warWeekId,
@@ -428,13 +430,48 @@ export function RosterEditor({
     tagSuggestions,
   };
   const teamName = new Map(teams.map((team) => [team.id, team.name]));
+  const [query, setQuery] = useState("");
+  const shown = filterRoster(participants, query);
   return (
     <div {...SETUP_EDITOR} className="flex flex-col gap-3">
+      <div className="flex flex-wrap items-start gap-2">
+        <SetupAddButton
+          label="Add Participant"
+          form={(close) => <ParticipantForm {...formProps} onSaved={close} />}
+        />
+        <RosterImport
+          warWeekId={warWeekId}
+          participants={participants}
+          teams={teams}
+          mode={mode}
+          teamLabel={teamLabel}
+          leaderTitle={leaderTitle}
+        />
+      </div>
+      {participants.length > 0 && (
+        <div className="flex flex-col gap-1">
+          <Input
+            type="search"
+            aria-label="Search the roster"
+            placeholder="Search by name or email"
+            className="h-11 sm:h-9 sm:max-w-xs"
+            value={query}
+            onChange={(event) => setQuery(event.target.value)}
+          />
+          <p
+            role="status"
+            data-slot="roster-count"
+            className="text-foreground/70 text-sm"
+          >
+            {rosterCountText(shown.length, participants.length, query)}
+          </p>
+        </div>
+      )}
       {participants.length === 0 ? (
         <p className="text-foreground/70 text-sm">No Participants yet.</p>
       ) : (
         <ul aria-label="Roster">
-          {participants.map((p) => (
+          {shown.map((p) => (
             <SetupListRow
               key={p.id}
               id={p.id}
@@ -468,20 +505,6 @@ export function RosterEditor({
           ))}
         </ul>
       )}
-      <div className="flex flex-wrap items-start gap-2">
-        <SetupAddButton
-          label="Add Participant"
-          form={(close) => <ParticipantForm {...formProps} onSaved={close} />}
-        />
-        <RosterImport
-          warWeekId={warWeekId}
-          participants={participants}
-          teams={teams}
-          mode={mode}
-          teamLabel={teamLabel}
-          leaderTitle={leaderTitle}
-        />
-      </div>
     </div>
   );
 }

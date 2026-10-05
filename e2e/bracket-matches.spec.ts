@@ -157,9 +157,18 @@ test("a Bracket of 4 per Match is built, run and Closed into Points Entries, its
   await page.getByRole("button", { name: "Generate" }).click();
   await expect(page.getByText("Bracket generated")).toBeVisible();
 
-  const preview = page.getByRole("region", { name: "Preview" });
-  await expect(preview.getByText("Round 1 Match 1")).toBeVisible();
-  await expect(preview.getByText("Round 1 Match 2")).toBeVisible();
+  // The tree shows the Round 1 pairings (the builder has no Preview of them).
+  await expect(page.getByRole("region", { name: "Preview" })).toHaveCount(0);
+  const tree = page.locator("[data-bracket-tree]");
+  await expect(
+    tree.getByRole("button", { name: "Record result for Round 1 Match 1" }),
+  ).toBeVisible();
+  await expect(
+    tree.getByRole("button", { name: "Record result for Round 1 Match 2" }),
+  ).toBeVisible();
+  for (const name of ENTRANTS) {
+    await expect(tree.getByText(name).first()).toBeVisible();
+  }
 
   await checkViewports(page, testInfo, "builder");
 

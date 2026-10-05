@@ -23,14 +23,16 @@ import {
 import type { AdminEdition } from "@/lib/access";
 import { type AdminSection, adminNavFor } from "@/lib/admin-sections";
 
+// Inter whatever the War Week's font preset: a monospace preset's wide
+// labels would overflow the five tabs.
 const TAB_CLASS =
-  "flex h-full flex-col items-center justify-center gap-1 px-1 text-center text-xs leading-tight";
+  "font-[family-name:var(--font-preset-sans)] flex h-full flex-col items-center justify-center gap-1 px-1 text-center text-xs leading-tight";
 
 /**
  * Below `md`: the admin's fixed bottom section bar, for one-thumb use. Four
- * tabs and a More tab whose Sheet holds the viewer's other sections, the
- * edition switcher. Display, the way back and the account are in the
- * header's account menu.
+ * tabs (Competitions, Points, Schedule, News) and a More tab whose Sheet
+ * holds the viewer's other sections and the edition switcher. Display, the
+ * way back and the account are in the header's account menu.
  * Its height is the admin root's `--admin-bar-height`. Highlights from
  * `current`, the page's own section, not the pathname.
  */
@@ -69,7 +71,7 @@ export function AdminBottomBar({
       className="border-border bg-background fixed inset-x-0 bottom-0 z-50 border-t pb-[env(safe-area-inset-bottom)] md:hidden"
     >
       <ul className="flex h-(--admin-bar-height) items-stretch justify-around">
-        {tabs.map(({ label, href, icon, current: active }) => (
+        {tabs.map(({ label, tabLabel, href, icon, current: active }) => (
           <li key={href} className="flex-1">
             <Link
               href={href}
@@ -77,7 +79,10 @@ export function AdminBottomBar({
               className={tabClassName(active)}
             >
               <AdminSectionIcon icon={icon} className="size-5" />
-              {label}
+              {tabLabel}
+              {tabLabel !== label && (
+                <span className="sr-only">{` (${label})`}</span>
+              )}
             </Link>
           </li>
         ))}

@@ -77,7 +77,8 @@ line that no longer matches the app is a bug in this file.
   flat nav, Competitions, Discretionary points, Schedule, Roster,
   Announcements, Awards, FAQ, Finale, Settings, Organizers, Guide (a Host
   sees only Competitions and Guide); the phone bar
-  is Competitions, Discretionary points, Schedule, Announcements, More. The avatar button
+  reads Competitions, Points, Schedule, News, More (the short labels read
+  in full to assistive tech). The avatar button
   (**Account menu**) at the top right of both headers holds the account.
 - **Run order:** Public Pages, then Admin as an Organizer (it links the
   Participant account and assigns the Host the later sections use), then
@@ -180,10 +181,15 @@ on the matching War Week page.
 - [ ] **Flat admin nav.** At 1440 the side nav lists Competitions,
       Discretionary points, Schedule, Roster, Announcements, Awards, FAQ,
       Finale, Settings, Organizers, Guide, in that order, current page
-      highlighted. At 390 the bottom bar is Competitions, Discretionary
-      points, Schedule, Announcements, More, and More's Sheet holds the other
-      six plus the edition switcher; More is highlighted on a page that lives
-      in it (e.g. Settings).
+      highlighted. At 390 the bottom bar reads Competitions, Points,
+      Schedule, News, More (the short labels for Discretionary points and
+      Announcements, set in Inter in both Display font presets: check it with
+      each at 390, no label wrapping or clipped), while the tabs' accessible
+      names stay "Discretionary points" and "Announcements"; More's Sheet
+      holds the other six plus the edition switcher and spells them out in
+      full; More is highlighted on a page that lives in it (e.g. Settings).
+      The side column at 1440 still reads "Discretionary points" and
+      "Announcements".
 - [ ] **Old Setup URLs redirect.** `/admin/setup` and `/admin/setup/war-week`
       land on `/admin/settings`; `/admin/setup/days` and
       `/admin/setup/schedule` on `/admin/schedule`; `/admin/setup/teams` on
@@ -240,6 +246,12 @@ on the matching War Week page.
       Delete button and confirm. When every date already has a Day (the XI
       demo), widen the War Week's dates by one in settings first and
       restore them after.
+- [ ] **Roster: search.** On `/admin/roster` at 1440 and 390, Add
+      Participant and Import (Organizer) sit at the top, above the list. The
+      search box filters the list by name or email (case-insensitive, no
+      cap) and shows "N of M"; a query that matches no one shows "No one
+      matches '<q>'"; clearing it brings everyone back. In the 100-Participant
+      scale demo, a part of a name or an email finds the person.
 - [ ] **Roster: add, link, edit, delete.** On `/admin/roster`, add a
       Participant (on a Team, *(teams)*); edit an existing Participant's email to
       `e2e-participant@jahnelgroup.com` (this is the linked Participant the
@@ -363,6 +375,23 @@ on the matching War Week page.
       placed: Close gives Placement Points to 1st and 2nd only (the semifinal
       losers get none), and Top finishers shows 1st and 2nd only (a semifinal loser is neither placed nor shown).
       A Group Bracket shows the final Match's order.
+- [ ] **Bracket admin: Entrants and Seed Positions fold.** At 1440 and 390,
+      on a Bracket's admin page there is no Round 1 Preview list. While
+      no Match has a result the Squads, Entrants and Seed Positions show
+      open as before. Once any Match has a result they fold into one closed
+      "Entrants and Seed Positions (N)" collapsible, opened by keyboard, and
+      the lock reason stays visible above it. The seeded Ping Pong already
+      has results, so it only shows the folded state: check the unlocked
+      state on a new Bracket. On the 64-Entrant scale Bracket at 1440 the
+      page is about 7,700 px tall (was about 12,000), and never scrolls
+      sideways.
+- [ ] **Bracket tree: full width and Jump to your Match.** From 768 up the
+      Participant page's tree uses the full width of the page (not a narrow
+      column); at 390 it scrolls sideways only in its own "Rounds" region.
+      As an Entrant, "Jump to your Match" scrolls to and highlights your next
+      unplayed Match; once you're out, or the Bracket is Closed, it goes to
+      your last played one. A signed-in Participant who isn't an Entrant
+      (and any Organizer or Host not entered) sees no Jump button.
 - [ ] **Bracket tree: one tree, admin and Participant.** Open the same
       Bracket on its admin Competition page and on its public Competition page: both
       show the one tree (Rounds left to right at 1440), with no List toggle
@@ -720,7 +749,7 @@ that nothing personal shows (no You highlight, no Log a Match or Log an Attempt)
       section anywhere on the page.
 - [ ] **Scale: 100 Participants.** Run `pnpm seed:demo:scale`, then
       `pnpm seed:demo` when done. At both viewports: the admin roster lists all
-      100 Participants and `/xii/leaderboard` everyone with points, with no
+      100 Participants (the search box finds one by name or email) and `/xii/leaderboard` everyone with points, with no
       sideways scroll; a
       Placement sheet lists its rows with names wrapping (not truncating)
       at 390; the 64-Entrant Bracket tree scrolls sideways only in its own
@@ -845,7 +874,12 @@ that nothing personal shows (no You highlight, no Log a Match or Log an Attempt)
       ties together, totals counting up from 0, within 8 s (`FINALE_MAX_MS`;
       time it in the page, from the → press to `[data-finale="done"]`: a
       frame or two over 8000 ms is the animation clock, Playwright's own
-      waits add more), ending in the same order as the Leaderboard. → while
+      waits add more), ending in the same order as the Leaderboard. Only rows
+      ranked 10th or better count down (ties at 10th included), then a line
+      "...and N more Participants scored" (Teams in a teams War Week), which
+      counts only left-out rows that have points and is hidden at 0; the
+      Leaderboard still lists everyone. Check it in the 100-Participant scale
+      demo (the line shows) and in the XI demo (no line when 10 or fewer). → while
       it plays jumps to its final state; Replay plays it again and doesn't
       advance. Arriving by ← shows the final state. With
       `prefers-reduced-motion` every slide shows its final state on arrival

@@ -51,8 +51,6 @@ function savedEntrants(count: number): BracketEntrant[] {
   }));
 }
 
-const DISABLED = /\sdisabled=""/;
-
 describe("BracketBuilder", () => {
   it("shows the Squad help text under the Squads heading", () => {
     const html = renderToStaticMarkup(<BracketBuilder {...baseProps} />);
@@ -91,7 +89,7 @@ describe("BracketBuilder", () => {
     expect(html).toContain("Re-roll");
   });
 
-  it("locks the Entrants and Generate with the reason once a Match has a result", () => {
+  it("shows the lock reason and folds Entrants and Seed Positions into a closed trigger with the count once a Match has a result", () => {
     const html = renderToStaticMarkup(
       <BracketBuilder
         {...baseProps}
@@ -100,9 +98,37 @@ describe("BracketBuilder", () => {
       />,
     );
     expect(html).toContain(LOCKED_BY_MATCH_RESULT);
-    const generate = html.match(
-      /<button[^>]*>(?:(?!<\/button>).)*Generate<\/button>/,
+    expect(html).toContain("Entrants and Seed Positions (4)");
+    const trigger = html.match(
+      /<button[^>]*>Entrants and Seed Positions \(4\)/,
     )![0];
-    expect(generate).toMatch(DISABLED);
+    expect(trigger).toContain('aria-expanded="false"');
+    expect(html).not.toContain("Seed Positions</h2>");
+    expect(html).not.toContain("Generate");
+  });
+
+  it("shows Entrants and Seed Positions expanded, with no trigger, while unlocked", () => {
+    const html = renderToStaticMarkup(
+      <BracketBuilder {...baseProps} entrants={savedEntrants(4)} />,
+    );
+    expect(html).toContain("Seed Positions</h2>");
+    expect(html).toContain("Generate");
+    expect(html).not.toContain("Entrants and Seed Positions (");
+  });
+
+  it("has no Round 1 Preview", () => {
+    const bracket = generate(
+      DEFAULT_BRACKET_CONFIG,
+      savedEntrants(4),
+      (round, position) => `r${round}h${position}`,
+    );
+    const html = renderToStaticMarkup(
+      <BracketBuilder
+        {...baseProps}
+        entrants={savedEntrants(4)}
+        bracket={bracket}
+      />,
+    );
+    expect(html).not.toContain("Preview");
   });
 });
