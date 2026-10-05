@@ -36,10 +36,13 @@ import {
   PROVISIONAL_TEXT,
   type ResultsColumn,
   type ResultsSort,
+  type ResultsStat,
   ariaSortFor,
+  foldedStatsText,
   nextResultsSort,
   showsScore,
   sortResults,
+  statText,
   winnerKeys,
 } from "@/lib/results-table";
 import { scoreLabel } from "@/lib/scoring";
@@ -81,6 +84,8 @@ export type ResultsTableRow = {
   /** A line under the name: a Participant's Team. */
   detail?: ReactNode;
   score?: number | null;
+  /** The table's `stats` values for this row, by stat id (null: none). */
+  stats?: Record<string, number | string | null>;
   /** War Week points; null when the row earns none. */
   points: number | null;
   /**
@@ -169,6 +174,7 @@ export function ResultsTable({
   scoreUnit,
   pointsHeader = "War Week points",
   provisional = false,
+  stats = [],
 }: {
   rows: ResultsTableRow[];
   /** The table's accessible name. */
@@ -180,6 +186,12 @@ export function ResultsTable({
   pointsHeader?: string;
   /** Points not final yet: the points header shows the Provisional badge. */
   provisional?: boolean;
+  /**
+   * Extra stat columns after the name (a League's W, D, L, Match points,
+   * tiebreaks), each sortable. A `fold` stat folds below `sm` into one line
+   * under the name; the others stay columns.
+   */
+  stats?: ResultsStat[];
 }) {
   const [sort, setSort] = useState<ResultsSort>(DEFAULT_RESULTS_SORT);
   const [expanded, setExpanded] = useState<ReadonlySet<string>>(new Set());
@@ -196,7 +208,7 @@ export function ResultsTable({
 
   const withScore = showsScore(rows);
   const winners = winnerKeys(rows);
-  const columnCount = withScore ? 4 : 3;
+  const columnCount = (withScore ? 4 : 3) + stats.length;
   const scoreHeader = scoreLabel({ unit: scoreUnit ?? null });
   const pointsSort = (end: boolean) => (
     <span
@@ -242,6 +254,22 @@ export function ResultsTable({
               </SortButton>
             </TableHead>
           ) : null}
+          {stats.map((stat) => (
+            <TableHead
+              key={stat.id}
+              aria-sort={ariaSortFor(sort, `stat:${stat.id}`)}
+              className={`h-auto py-1 text-right whitespace-normal ${stat.fold ? "hidden sm:table-cell" : "w-20 sm:w-auto"}`}
+            >
+              <SortButton
+                column={`stat:${stat.id}`}
+                sort={sort}
+                onSort={onSort}
+                end
+              >
+                {stat.header}
+              </SortButton>
+            </TableHead>
+          ))}
           <TableHead
             aria-sort={ariaSortFor(sort, "points")}
             className="hidden h-auto py-1 text-right sm:table-cell"
@@ -293,6 +321,15 @@ export function ResultsTable({
                           {row.detail}
                         </span>
                       ) : null}
+                      {stats.some((stat) => stat.fold) &&
+                      foldedStatsText(stats, row.stats) ? (
+                        <span
+                          data-slot="results-stats-folded"
+                          className="text-foreground/70 text-xs tabular-nums sm:hidden"
+                        >
+                          {foldedStatsText(stats, row.stats)}
+                        </span>
+                      ) : null}
                       <span
                         data-slot="results-points-folded"
                         className="text-xs font-semibold tabular-nums sm:hidden"
@@ -340,6 +377,15 @@ export function ResultsTable({
                       : formatScore(row.score)}
                   </TableCell>
                 ) : null}
+                {stats.map((stat) => (
+                  <TableCell
+                    key={stat.id}
+                    data-slot={`results-stat-${stat.id}`}
+                    className={`text-right align-top tabular-nums ${stat.fold ? "hidden sm:table-cell" : ""}`}
+                  >
+                    {statText(stat, row.stats?.[stat.id])}
+                  </TableCell>
+                ))}
                 <TableCell
                   data-slot="results-points"
                   className="hidden text-right align-top font-semibold tabular-nums sm:table-cell"

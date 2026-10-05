@@ -1,6 +1,8 @@
 import { AdminLoggedResults } from "@/components/admin-logged-results";
 import { BracketAdmin } from "@/components/bracket-admin";
 import { BracketBuilder } from "@/components/bracket-builder";
+import { LeagueBuilder } from "@/components/league-builder";
+import { LeagueRounds } from "@/components/league-rounds";
 import { LoggedResultsBuilder } from "@/components/logged-results-builder";
 import { ParticipationBuilder } from "@/components/participation-builder";
 import { PlacementSheet } from "@/components/placement-sheet";
@@ -18,6 +20,7 @@ import {
   getMatchReporters,
   getSquads,
 } from "@/queries/brackets";
+import { getLeagueView } from "@/queries/league";
 import { getLoggedResultsView } from "@/queries/logged-results";
 import { getParticipationView } from "@/queries/participation";
 import {
@@ -30,7 +33,6 @@ import { getTargetOptions } from "@/queries/target-options";
 export function runAreaTitle(format: Competition["format"]): string {
   if (format === "placement") return "Record placements";
   if (format === "participation") return "Who took part";
-  // R23: S3 confirms the League run area's heading.
   if (format === "league") return "Entrants and rounds";
   if (format === "best-score") return resultNoun(format).many;
   if (isLoggedFormat(format)) return `Entrants and ${resultNoun(format).many}`;
@@ -42,7 +44,7 @@ export function runAreaTitle(format: Competition["format"]): string {
  * Settings: Record placements (Placement); the Entrants and the Bracket
  * tree with Close (Bracket); the two Entrants and Close (Head-to-head);
  * the Attempts and Close (Best score); who took part and Close
- * (Participation). Each loads its own
+ * (Participation); the Entrants, rounds and Close (League). Each loads its own
  * data; a write that the lock table covers (Entrants, building the
  * Bracket) goes through the per-field save. Names only, never an email.
  */
@@ -178,8 +180,48 @@ export async function CompetitionRunArea({
   }
 
   if (competition.format === "league") {
-    // R23: S3 renders the League builder and rounds here.
-    return null;
+    const [view, options] = await Promise.all([
+      getLeagueView(id, email),
+      getTargetOptions(warWeek),
+    ]);
+    if (!view) return null;
+    return (
+      <div className="flex flex-col gap-10">
+        <LeagueBuilder
+          competition={{
+            id,
+            scoring: view.competition.scoring,
+            closed: view.competition.closed,
+            placementPoints: view.competition.placementPoints,
+          }}
+          entrants={view.entrants.map(({ teamId, participantId }) => ({
+            teamId,
+            participantId,
+          }))}
+          offers={view.offers}
+          roundsPaired={view.roundsPaired}
+          roundsTotal={view.roundsTotal}
+          teams={options.teams}
+          participants={options.participants}
+          entrantsLock={entrantsLock}
+          teamLabel={warWeek.teamLabel}
+        />
+        {view.rounds.length > 0 && (
+          <LeagueRounds
+            competitionId={id}
+            scoring={view.competition.scoring}
+            pairing={view.competition.config.pairing}
+            scoreDirection={view.competition.scoreDirection}
+            scoreUnit={view.competition.scoreUnit}
+            entrants={view.entrants}
+            rounds={view.rounds}
+            runs={view.runs}
+            linked={view.linked}
+            now={new Date()}
+          />
+        )}
+      </div>
+    );
   }
 
   const [view, options, squads, reporters] = await Promise.all([
