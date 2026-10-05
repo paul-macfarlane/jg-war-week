@@ -1,5 +1,6 @@
 "use client";
 
+import { ChevronDown } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import { toast } from "sonner";
@@ -12,11 +13,14 @@ import { OptionSelect } from "@/components/option-select";
 import { ResponsiveSheetDialog } from "@/components/responsive-sheet-dialog";
 import { SquadForm } from "@/components/squad-form";
 import { Button } from "@/components/ui/button";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
 import { Field, FieldLabel } from "@/components/ui/field";
-import { isBye } from "@/lib/bracket/formats";
 import { type EntrantKind, squadLabel } from "@/lib/bracket/squads";
 import type { Bracket } from "@/lib/bracket/types";
-import { groupRounds, matchName } from "@/lib/bracket/view";
 import { optionsFromTargets } from "@/lib/participant-options";
 import type { MutationResult } from "@/mutations/types";
 import type { BracketEntrant, SquadRow } from "@/queries/brackets";
@@ -51,11 +55,12 @@ function squadDetail(squad: SquadRow): string {
 /**
  * A Bracket's Entrants, in its Competition page's run area: a team
  * Competition's Squads, the Entrants ("All Teams", "All Squads" or picked
- * ones for team scoring, picked Participants for individual), their Seed
- * Positions with Generate / Re-roll, and a preview of Round 1. Its settings
+ * ones for team scoring, picked Participants for individual) and their Seed
+ * Positions with Generate / Re-roll. Its settings
  * (match size, self-report, enrollment) are in the page's Settings. Saving
  * Entrants and Generate go through the per-field save, so once a Match has
- * a result they're locked (`entrantsLock`, shown with its reason).
+ * a result they're locked (`entrantsLock`, shown with its reason), and the
+ * Entrants and Seed Positions then fold into one closed Collapsible.
  */
 export function BracketBuilder({
   competition,
@@ -154,9 +159,203 @@ export function BracketBuilder({
       .filter((squad) => squad.id !== editing?.id)
       .flatMap((squad) => squad.participants.map((p) => [p.id, squad.name])),
   );
-  const firstRound = groupRounds(bracket)[0];
-  const labelOf = (entrantId: string | null) =>
-    entrants.find((e) => e.id === entrantId)?.label ?? "Unknown";
+
+  const sections = (
+    <>
+      {isTeam && (
+        <section className="flex flex-col gap-3" aria-label="Squads">
+          <h2 className="text-lg font-semibold">Squads</h2>
+          <p className="text-foreground/70 text-sm">
+            A Squad is a named group of Participants from one {teamLabel},
+            entered as one Entrant. Its Placement Points go to its {teamLabel}.
+          </p>
+          <p className="text-foreground/60 text-xs">
+            Squad: a pair or group from one Team, playing as one entrant
+          </p>
+          {squads.length === 0 ? (
+            <p className="text-foreground/70 text-sm">No Squads yet.</p>
+          ) : (
+            <ul className="flex flex-col gap-2">
+              {squads.map((squad) => (
+                <li
+                  key={squad.id}
+                  className="flex min-w-0 flex-wrap items-center gap-2 text-sm"
+                >
+                  <span
+                    aria-hidden
+                    className="size-3 shrink-0 rounded-full"
+                    style={{
+                      backgroundColor: squad.teamColor ?? "transparent",
+                    }}
+                  />
+                  <span className="min-w-0 flex-1 break-words">
+                    {squadLabel(squad)}
+                  </span>
+                  <span className="flex gap-2">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="lg"
+                      className="min-h-11 sm:min-h-9"
+                      disabled={pending || locked}
+                      aria-label={`Edit ${squad.name}`}
+                      onClick={() => setSquadSheet(squad)}
+                    >
+                      Edit
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="lg"
+                      className="min-h-11 sm:min-h-9"
+                      disabled={pending || locked}
+                      aria-label={`Delete ${squad.name}`}
+                      onClick={() => setDeleting(squad)}
+                    >
+                      Delete
+                    </Button>
+                  </span>
+                </li>
+              ))}
+            </ul>
+          )}
+          <Button
+            type="button"
+            variant="outline"
+            size="lg"
+            className="min-h-11 w-fit"
+            disabled={pending || locked}
+            onClick={() => setSquadSheet("new")}
+          >
+            Add Squad
+          </Button>
+        </section>
+      )}
+
+      <EntrantsPicker
+        id="bracket-entrants"
+        description={
+          <>
+            {!isTeam
+              ? "An individual Competition, so its Entrants are Participants."
+              : bySquads
+                ? `A ${teamLabel} Competition entering Squads; each Squad's points go to its ${teamLabel}.`
+                : `A ${teamLabel} Competition, so its Entrants are ${teamLabel}s.`}{" "}
+            Saving new Entrants clears the Bracket.
+          </>
+        }
+        kind={kind}
+        kindLabel={teamLabel}
+        options={items}
+        participantOptions={participantOptions}
+        selected={selected}
+        onChange={setSelected}
+        onSave={() =>
+          runAction({
+            run: () =>
+              saveCompetitionSetting(competition.id, {
+                field: "entrants",
+                value: { kind, targetIds: selected },
+              }),
+            success: "Entrants saved",
+          })
+        }
+        disabled={pending || locked}
+        saveDisabled={!dirty}
+        note={
+          <>
+            {showKind && (
+              <Field className="max-w-xs">
+                <FieldLabel htmlFor="bracket-entrant-kind">
+                  Entrants are
+                </FieldLabel>
+                <OptionSelect
+                  id="bracket-entrant-kind"
+                  options={[
+                    { value: "team", label: `${teamLabel}s` },
+                    { value: "squad", label: "Squads" },
+                  ]}
+                  value={kind}
+                  disabled={pending || locked}
+                  onValueChange={changeKind}
+                />
+              </Field>
+            )}
+            {isTeam && (
+              <Button
+                type="button"
+                variant="outline"
+                size="lg"
+                className="min-h-11 w-fit"
+                disabled={pending || locked}
+                onClick={() =>
+                  setSelected((bySquads ? squads : teams).map((t) => t.id))
+                }
+              >
+                {bySquads ? "All Squads" : `All ${teamLabel}s`}
+              </Button>
+            )}
+          </>
+        }
+      />
+
+      <section className="flex flex-col gap-3" aria-label="Seed Positions">
+        <h2 className="text-lg font-semibold">Seed Positions</h2>
+        <p className="text-foreground/70 text-sm">
+          Seed Positions are drawn at random; Re-roll draws them again. Top Seed
+          Positions get any byes.
+        </p>
+        {entrants.length === 0 ? (
+          <p className="text-foreground/70 text-sm">No Entrants saved yet.</p>
+        ) : (
+          <ol className="flex flex-col gap-1">
+            {entrants.map((e) => (
+              <li
+                key={e.id}
+                className="flex min-h-8 min-w-0 items-center gap-2 text-sm"
+              >
+                <span className="text-foreground/60 w-6 text-right tabular-nums">
+                  {e.seedPosition}
+                </span>
+                <span
+                  aria-hidden
+                  className="size-3 shrink-0 rounded-full"
+                  style={{ backgroundColor: e.color ?? "transparent" }}
+                />
+                <span className="truncate">{e.label}</span>
+              </li>
+            ))}
+          </ol>
+        )}
+        {dirty && (
+          <p className="text-foreground/70 text-sm">
+            Save the Entrants before generating.
+          </p>
+        )}
+        <div className="flex flex-wrap gap-2">
+          <Button
+            type="button"
+            size="lg"
+            variant={generated ? "outline" : "default"}
+            className="min-h-11 w-fit"
+            disabled={pending || locked || dirty || entrants.length < 2}
+            onClick={() =>
+              runAction({
+                run: () =>
+                  saveCompetitionSetting(competition.id, {
+                    field: "bracket",
+                    value: null,
+                  }),
+                success: generated ? "Bracket re-rolled" : "Bracket generated",
+              })
+            }
+          >
+            {generated ? "Re-roll" : "Generate"}
+          </Button>
+        </div>
+      </section>
+    </>
+  );
 
   return (
     <div className="flex flex-col gap-8">
@@ -169,234 +368,30 @@ export function BracketBuilder({
         </p>
       )}
 
-      {
-        <>
-          {isTeam && (
-            <section className="flex flex-col gap-3" aria-label="Squads">
-              <h2 className="text-lg font-semibold">Squads</h2>
-              <p className="text-foreground/70 text-sm">
-                A Squad is a named group of Participants from one {teamLabel},
-                entered as one Entrant. Its Placement Points go to its{" "}
-                {teamLabel}.
-              </p>
-              <p className="text-foreground/60 text-xs">
-                Squad: a pair or group from one Team, playing as one entrant
-              </p>
-              {squads.length === 0 ? (
-                <p className="text-foreground/70 text-sm">No Squads yet.</p>
-              ) : (
-                <ul className="flex flex-col gap-2">
-                  {squads.map((squad) => (
-                    <li
-                      key={squad.id}
-                      className="flex min-w-0 flex-wrap items-center gap-2 text-sm"
-                    >
-                      <span
-                        aria-hidden
-                        className="size-3 shrink-0 rounded-full"
-                        style={{
-                          backgroundColor: squad.teamColor ?? "transparent",
-                        }}
-                      />
-                      <span className="min-w-0 flex-1 break-words">
-                        {squadLabel(squad)}
-                      </span>
-                      <span className="flex gap-2">
-                        <Button
-                          type="button"
-                          variant="outline"
-                          size="lg"
-                          className="min-h-11 sm:min-h-9"
-                          disabled={pending || locked}
-                          aria-label={`Edit ${squad.name}`}
-                          onClick={() => setSquadSheet(squad)}
-                        >
-                          Edit
-                        </Button>
-                        <Button
-                          type="button"
-                          variant="outline"
-                          size="lg"
-                          className="min-h-11 sm:min-h-9"
-                          disabled={pending || locked}
-                          aria-label={`Delete ${squad.name}`}
-                          onClick={() => setDeleting(squad)}
-                        >
-                          Delete
-                        </Button>
-                      </span>
-                    </li>
-                  ))}
-                </ul>
-              )}
+      {locked ? (
+        <Collapsible className="flex flex-col gap-3">
+          <CollapsibleTrigger
+            render={
               <Button
-                type="button"
                 variant="outline"
                 size="lg"
-                className="min-h-11 w-fit"
-                disabled={pending || locked}
-                onClick={() => setSquadSheet("new")}
-              >
-                Add Squad
-              </Button>
-            </section>
-          )}
-
-          <EntrantsPicker
-            id="bracket-entrants"
-            description={
-              <>
-                {!isTeam
-                  ? "An individual Competition, so its Entrants are Participants."
-                  : bySquads
-                    ? `A ${teamLabel} Competition entering Squads; each Squad's points go to its ${teamLabel}.`
-                    : `A ${teamLabel} Competition, so its Entrants are ${teamLabel}s.`}{" "}
-                Saving new Entrants clears the Bracket.
-              </>
+                className="group min-h-11 w-fit"
+              />
             }
-            kind={kind}
-            kindLabel={teamLabel}
-            options={items}
-            participantOptions={participantOptions}
-            selected={selected}
-            onChange={setSelected}
-            onSave={() =>
-              runAction({
-                run: () =>
-                  saveCompetitionSetting(competition.id, {
-                    field: "entrants",
-                    value: { kind, targetIds: selected },
-                  }),
-                success: "Entrants saved",
-              })
-            }
-            disabled={pending || locked}
-            saveDisabled={!dirty}
-            note={
-              <>
-                {showKind && (
-                  <Field className="max-w-xs">
-                    <FieldLabel htmlFor="bracket-entrant-kind">
-                      Entrants are
-                    </FieldLabel>
-                    <OptionSelect
-                      id="bracket-entrant-kind"
-                      options={[
-                        { value: "team", label: `${teamLabel}s` },
-                        { value: "squad", label: "Squads" },
-                      ]}
-                      value={kind}
-                      disabled={pending || locked}
-                      onValueChange={changeKind}
-                    />
-                  </Field>
-                )}
-                {isTeam && (
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="lg"
-                    className="min-h-11 w-fit"
-                    disabled={pending || locked}
-                    onClick={() =>
-                      setSelected((bySquads ? squads : teams).map((t) => t.id))
-                    }
-                  >
-                    {bySquads ? "All Squads" : `All ${teamLabel}s`}
-                  </Button>
-                )}
-              </>
-            }
-          />
-
-          <section className="flex flex-col gap-3" aria-label="Seed Positions">
-            <h2 className="text-lg font-semibold">Seed Positions</h2>
-            <p className="text-foreground/70 text-sm">
-              Seed Positions are drawn at random; Re-roll draws them again. Top
-              Seed Positions get any byes.
-            </p>
-            {entrants.length === 0 ? (
-              <p className="text-foreground/70 text-sm">
-                No Entrants saved yet.
-              </p>
-            ) : (
-              <ol className="flex flex-col gap-1">
-                {entrants.map((e) => (
-                  <li
-                    key={e.id}
-                    className="flex min-h-8 min-w-0 items-center gap-2 text-sm"
-                  >
-                    <span className="text-foreground/60 w-6 text-right tabular-nums">
-                      {e.seedPosition}
-                    </span>
-                    <span
-                      aria-hidden
-                      className="size-3 shrink-0 rounded-full"
-                      style={{ backgroundColor: e.color ?? "transparent" }}
-                    />
-                    <span className="truncate">{e.label}</span>
-                  </li>
-                ))}
-              </ol>
-            )}
-            {dirty && (
-              <p className="text-foreground/70 text-sm">
-                Save the Entrants before generating.
-              </p>
-            )}
-            <div className="flex flex-wrap gap-2">
-              <Button
-                type="button"
-                size="lg"
-                variant={generated ? "outline" : "default"}
-                className="min-h-11 w-fit"
-                disabled={pending || locked || dirty || entrants.length < 2}
-                onClick={() =>
-                  runAction({
-                    run: () =>
-                      saveCompetitionSetting(competition.id, {
-                        field: "bracket",
-                        value: null,
-                      }),
-                    success: generated
-                      ? "Bracket re-rolled"
-                      : "Bracket generated",
-                  })
-                }
-              >
-                {generated ? "Re-roll" : "Generate"}
-              </Button>
-            </div>
-          </section>
-
-          {firstRound && (
-            <section className="flex flex-col gap-3" aria-label="Preview">
-              <h2 className="text-lg font-semibold">
-                Preview · {firstRound.name}
-              </h2>
-              <ul className="flex flex-col gap-2 text-sm">
-                {firstRound.matches.map((match) => {
-                  const names = match.slots
-                    .filter((s) => s.entrantId !== null)
-                    .map((s) => labelOf(s.entrantId));
-                  return (
-                    <li key={match.id} className="flex min-w-0 flex-col">
-                      <span className="text-foreground/60 text-xs font-medium">
-                        {matchName(bracket, match)}
-                      </span>
-                      <span className="break-words">
-                        {isBye(bracket, match)
-                          ? `${names.join(", ")} · Bye — advances`
-                          : names.join(" vs ")}
-                      </span>
-                    </li>
-                  );
-                })}
-              </ul>
-            </section>
-          )}
-        </>
-      }
+          >
+            Entrants and Seed Positions ({entrants.length})
+            <ChevronDown
+              aria-hidden
+              className="group-data-[panel-open]:rotate-180"
+            />
+          </CollapsibleTrigger>
+          <CollapsibleContent className="flex flex-col gap-8 pt-3">
+            {sections}
+          </CollapsibleContent>
+        </Collapsible>
+      ) : (
+        sections
+      )}
 
       <ResponsiveSheetDialog
         open={squadSheet !== null}
