@@ -27,6 +27,8 @@ import {
   SCORE_DIRECTIONS,
   type ScoreDirection,
 } from "@/lib/enums";
+import type { LeagueConfig } from "@/lib/league/config";
+import { leagueConfigSchema } from "@/lib/league/config-schema";
 import { participationPointsSchema } from "@/lib/participation/input";
 import { parsePlacementPointsText } from "@/lib/placement-points";
 import type { Parsed } from "@/lib/result";
@@ -66,6 +68,8 @@ export type CompetitionSettingChange =
   | { field: "seriesConfig"; value: SeriesConfig }
   | { field: "bestScoreConfig"; value: BestScoreConfig }
   | { field: "bracketConfig"; value: BracketConfig }
+  /** A League's Pairing and, Swiss only, its rounds (null for the default). */
+  | { field: "leagueConfig"; value: LeagueConfig }
   | {
       field: "entrants";
       value: { targetIds: string[]; kind?: EntrantKind };
@@ -114,6 +118,23 @@ function optionalText(
     return refusedAt(field, `The ${label} is at most ${max} characters.`);
   }
   return { ok: true, value: text || null };
+}
+
+/**
+ * A posted League config as the schema reads it: a blank or numeric-text
+ * rounds becomes null or a number, and a round robin always saves
+ * `rounds: null` (switching from Swiss drops its rounds in the same save).
+ */
+function leagueConfigInput(value: unknown): unknown {
+  if (typeof value !== "object" || value === null) return value;
+  const config = value as Record<string, unknown>;
+  if (config.pairing === "round-robin") return { ...config, rounds: null };
+  const { rounds } = config;
+  if (rounds === "" || rounds === undefined) return { ...config, rounds: null };
+  if (typeof rounds === "string" && /^\s*\d+\s*$/.test(rounds)) {
+    return { ...config, rounds: Number(rounds) };
+  }
+  return config;
 }
 
 function ok<T extends CompetitionSettingChange>(change: T): Parsed<T> {
@@ -226,6 +247,12 @@ export function parseCompetitionSetting(
     }
     case "bracketConfig": {
       const parsed = bracketConfigSchema.safeParse(value);
+      return parsed.success
+        ? ok({ field, value: parsed.data })
+        : refusedAt(field, parsed.error.issues[0].message);
+    }
+    case "leagueConfig": {
+      const parsed = leagueConfigSchema.safeParse(leagueConfigInput(value));
       return parsed.success
         ? ok({ field, value: parsed.data })
         : refusedAt(field, parsed.error.issues[0].message);

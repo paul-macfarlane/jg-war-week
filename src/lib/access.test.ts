@@ -19,6 +19,7 @@ import {
   ENROLL_OFF,
   type EnrollFacet,
 } from "@/lib/bracket/enroll-rule";
+import { BYE_NO_RESULT, type LeagueRecordFacet } from "@/lib/league/rules";
 import {
   ALREADY_CHECKED_IN,
   CHECK_IN_OFF,
@@ -639,6 +640,158 @@ describe("can: logging, editing and deleting a Head-to-head Match (ADR 0011)", (
 
   it("never lets a player close or reopen it", () => {
     for (const action of [
+      "results.close",
+      "results.reopen",
+    ] as WarWeekAction[]) {
+      expect(can(ACTORS.participant, action, target()), action).toBe(NOT_HOST);
+    }
+  });
+});
+
+describe("can: a League's pairings (spec R23)", () => {
+  it.each(
+    cases([
+      ["league.pair", { warWeekId: XI, competitionId: CATAN }, catanHostOr()],
+    ]),
+  )("%s", (_, action, target, actor, expected) => {
+    expect(can(ACTORS[actor], action, target)).toBe(expected);
+  });
+});
+
+describe("can: recording and clearing a League Match's result (spec R23, decision 8)", () => {
+  const ME = "participant-me";
+  const RIVAL = "participant-rival";
+  const THIRD = "participant-third";
+  const ADMIN = "Organizers and Hosts only.";
+  const player = (participantId: string) => ({ teamId: null, participantId });
+  const writes = ["league.record", "league.clear"] as const;
+
+  /** Open, individual, self-report on; I play Rival in this Match. */
+  const facet = (over: Partial<LeagueRecordFacet> = {}): LeagueRecordFacet => ({
+    runs: false,
+    closed: false,
+    selfReport: true,
+    linked: { participantId: ME, teamId: null },
+    scoring: "individual",
+    match: { a: player(ME), b: player(RIVAL) },
+    ...over,
+  });
+  const target = (over: Partial<LeagueRecordFacet> = {}) => ({
+    warWeekId: XI,
+    competitionId: CATAN,
+    leagueRecord: facet(over),
+  });
+
+  it("with self-report on, lets a player in the Match record and clear it", () => {
+    for (const action of writes) {
+      expect(can(ACTORS.participant, action, target()), action).toBeNull();
+    }
+  });
+
+  it("refuses a Participant who isn't in the Match, and an unlinked one", () => {
+    const others = { a: player(RIVAL), b: player(THIRD) };
+    for (const action of writes) {
+      expect(
+        can(ACTORS.participant, action, target({ match: others })),
+        action,
+      ).toBe(NOT_A_PLAYER);
+      expect(
+        can(ACTORS.participant, action, target({ linked: null })),
+        action,
+      ).toBe(NOT_LINKED);
+    }
+  });
+
+  it("in team scoring, lets anyone on a player Team record", () => {
+    const red = { teamId: "red", participantId: null };
+    const blue = { teamId: "blue", participantId: null };
+    const teamFacet = {
+      scoring: "team" as const,
+      match: { a: red, b: blue },
+    };
+    expect(
+      can(
+        ACTORS.participant,
+        "league.record",
+        target({ ...teamFacet, linked: { participantId: ME, teamId: "red" } }),
+      ),
+    ).toBeNull();
+    expect(
+      can(
+        ACTORS.participant,
+        "league.record",
+        target({ ...teamFacet, linked: { participantId: ME, teamId: "gold" } }),
+      ),
+    ).toBe(NOT_A_PLAYER);
+  });
+
+  it("with self-report off, refuses a player", () => {
+    for (const action of writes) {
+      expect(
+        can(ACTORS.participant, action, target({ selfReport: false })),
+        action,
+      ).toBe(SELF_REPORT_OFF);
+    }
+  });
+
+  it("lets a Host or Organizer who runs it record any Match, with self-report off", () => {
+    for (const actor of [ACTORS.organizer, ACTORS.host]) {
+      for (const action of writes) {
+        expect(
+          can(
+            actor,
+            action,
+            target({
+              runs: true,
+              linked: null,
+              selfReport: false,
+              match: { a: player(RIVAL), b: player(THIRD) },
+            }),
+          ),
+          action,
+        ).toBeNull();
+      }
+    }
+  });
+
+  it("binds everyone while Closed, for a Match that isn't there, and on a bye", () => {
+    for (const actor of [ACTORS.organizer, ACTORS.host, ACTORS.participant]) {
+      for (const action of writes) {
+        expect(can(actor, action, target({ runs: true, closed: true }))).toBe(
+          COMPETITION_CLOSED,
+        );
+        expect(can(actor, action, target({ runs: true, match: null }))).toBe(
+          "That Match no longer exists.",
+        );
+        expect(
+          can(
+            actor,
+            action,
+            target({ runs: true, match: { a: player(ME), b: null } }),
+          ),
+        ).toBe(BYE_NO_RESULT);
+      }
+    }
+  });
+
+  it("binds an Organizer by the facet: `runs` is the caller's to load", () => {
+    expect(
+      can(ACTORS.organizer, "league.record", target({ linked: null })),
+    ).toBe(NOT_LINKED);
+  });
+
+  it("refuses when the facts weren't loaded, and an anonymous visitor", () => {
+    for (const action of writes) {
+      expect(
+        can(ACTORS.organizer, action, { warWeekId: XI, competitionId: CATAN }),
+      ).toBe(ADMIN);
+      expect(can(null, action, target())).toBe(SIGN_IN);
+    }
+  });
+
+  it("never lets a player pair, close or reopen it", () => {
+    for (const action of [
+      "league.pair",
       "results.close",
       "results.reopen",
     ] as WarWeekAction[]) {

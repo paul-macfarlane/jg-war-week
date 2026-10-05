@@ -155,3 +155,96 @@ export async function assertNoRosterEmailInPickers(
     );
   }
 }
+
+/**
+ * R23, red-team W6: no email on a League's pages. The same check as above
+ * for XII's seeded Leagues (named in `names`), which are current while the
+ * caller has XI ended: each one's Participant page, and its admin page as
+ * an Organizer and as a Host, in the HTML and the `RSC: 1` payload. Adds
+ * the marker roster entries to XII and makes the smoke Host a roster
+ * Participant who hosts the first League; both are removed when it ends.
+ */
+export async function assertNoRosterEmailInLeagues(
+  sessions: {
+    organizer: SmokeSession;
+    host: SmokeSession;
+    notOrganizer: SmokeSession;
+  },
+  names: string[],
+  hostEmail: string,
+  organizerEmail: string,
+  participantEmail: string,
+) {
+  const [xii] = await runQuery<{ id: string }>(
+    `select id from war_week where edition = 'xii'`,
+  );
+  const competitions = await runQuery<{ id: string; name: string }>(
+    `select id, name from competition where war_week_id = $1 and name = any($2)
+     order by name`,
+    [xii.id, names],
+  );
+  if (competitions.length !== names.length) {
+    fail(
+      "the League picker email check finds XII's Leagues",
+      JSON.stringify(competitions),
+    );
+    return;
+  }
+  const hosted = competitions[0].id;
+  try {
+    for (const email of MARKER_EMAILS) {
+      await runQuery(
+        `insert into participant (war_week_id, display_name, email) values ($1, $2, $3)`,
+        [xii.id, `R23 Picker Marker ${email.split("@")[1]}`, email],
+      );
+    }
+    const [host] = await runQuery<{ id: string }>(
+      `insert into participant (war_week_id, display_name, email)
+       values ($1, 'R23 Smoke League Host', $2) returning id`,
+      [xii.id, hostEmail],
+    );
+    await runQuery(
+      `insert into competition_host (competition_id, participant_id) values ($1, $2)`,
+      [hosted, host.id],
+    );
+    const emails = await rosterEmails();
+    if (!MARKER_EMAILS.every((email) => emails.includes(email))) {
+      fail(
+        "the League picker email check has roster emails to look for",
+        "none",
+      );
+      return;
+    }
+    for (const { id, name } of competitions) {
+      await assertNoEmail(
+        `no roster email in the Participant page of ${name} (League)`,
+        `/xii/competitions/${id}`,
+        sessions.notOrganizer,
+        emails,
+        participantEmail,
+      );
+      await assertNoEmail(
+        `no roster email in the admin page of ${name} (League) as an Organizer`,
+        `/admin/competitions/${id}`,
+        sessions.organizer,
+        emails,
+        organizerEmail,
+      );
+      await assertNoEmail(
+        `no roster email in the admin page of ${name} (League) as a Host`,
+        `/admin/competitions/${id}`,
+        sessions.host,
+        emails,
+        hostEmail,
+      );
+    }
+  } catch (error) {
+    fail("the League picker email check", String(error));
+  } finally {
+    await runQuery(`delete from participant where email = any($1)`, [
+      [...MARKER_EMAILS, hostEmail],
+    ]).catch((error) =>
+      fail("remove the League picker check's roster entries", String(error)),
+    );
+  }
+}

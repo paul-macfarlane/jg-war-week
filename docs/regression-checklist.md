@@ -431,6 +431,40 @@ on the matching War Week page.
       out with no majority (win, Draw, Draw) is drawn: it takes no more
       Matches, names no series Winner, and Close gives both Entrants the
       higher place's full points.
+- [ ] **League: set up and pair.** Add Competition, Format League (a new
+      one is Round robin; Swiss shows a Rounds field). At 1440 and 390 add 5
+      Participants with the picker (no email in any option) and press Pair
+      rounds: 5 rounds, each Entrant sits out once. Clear pairings, switch to
+      Swiss with 6 Entrants, Pair round 1: 3 Matches; Pairing, rounds, Score
+      direction and the Entrants now read "Locked once round 1 is paired.";
+      Score unit and self-report stay editable. Edit pairings swaps two
+      Entrants and the round shows it; swapping to a repeat pairing shows the
+      warning before saving. After one result in the round the control is
+      disabled with its reason and the server refuses the swap.
+- [ ] **League: record, Close, Reopen.** Record result opens a dialog at 1440
+      and a bottom sheet at 390; record a win, a draw and a loss. Pair next
+      round is disabled until the round is done, and the standings follow
+      (W, D, L, Match points, Buchholz). Close is disabled with "Finish every
+      Match before closing." naming the unplayed Matches until the last
+      round is played (or, Swiss, until every played round is complete and
+      no next round can pair without a repeat Match: Pair next round reads
+      "Every pairing would repeat a Match. Close the League."); then Close writes Placement Points ("From league") to
+      the Standings and Reopen withdraws them. *(teams)* In Team scoring the
+      points go to Teams.
+- [ ] **League: self-report and enroll.** With self-report on, a linked
+      player records their own Match from the Participant page and the other
+      player edits it; a non-player sees no Record result. With it off,
+      neither does. "Participants can enroll" is offered; a Participant
+      enrolls and withdraws until round 1 is paired, then sees "Enrollment is
+      closed: round 1 is paired."
+- [ ] **League: Participant page.** Open XII's Chess Round Robin and Chess
+      Swiss as the linked Participant at 1440 and 390: the table (Rank,
+      Participant, W, D, L, Match points, H2H and SB or Buchholz, War Week
+      points with Provisional while open, every header sorting), Top
+      finishers only when Closed, the rounds with your Match highlighted and
+      "Your next Match" naming the round and opponent. No sideways scroll at
+      390 (the stats fold under the name), and no email anywhere on the page
+      or the admin page.
 - [ ] **Best score: Max attempts and Team score.** Set Max attempts per person
       to 3: the Attempt form says "N attempts left", a fourth is refused for
       a Participant and for an Organizer, and Max attempts cannot be lowered
@@ -453,9 +487,11 @@ on the matching War Week page.
       Edit is offered again. In a Group Bracket, once any later round has a
       result, every earlier Match's Edit and Clear result are disabled with
       "A later round already has a result. Change that round first."
-- [ ] **Close a Head-to-head Competition.** Log two Matches as the Organizer
-      in a Head-to-head Competition with Placement Points (Log a Match on its
-      public Competition page), then Close in its run area: its top
+- [ ] **Close a Head-to-head Competition.** In a Best of 3 Head-to-head
+      Competition with Placement Points, log one Match as the Organizer (Log
+      a Match on its public Competition page): Close is disabled with "Finish
+      the series before closing." and the server refuses it. Log a second
+      Match so the series is decided (or drawn), then Close in its run area: its top
       finishers get Placement Points ("From head-to-head" in the leaderboard's points breakdown) and
       the Standings move. Reopen withdraws them. *(teams)* Add it with
       Scoring Individual and Counts toward the Team on, so the Team Standings
@@ -743,9 +779,10 @@ that nothing personal shows (no You highlight, no Log a Match or Log an Attempt)
       "N more attempts" row; a Head-to-head Competition with a fixed list of
       two Entrants (always two) shows the series view (Matches with both Scores and the
       Winner or Draw, the series score, the series Winner once decided, and
-      each Entrant's Placement Points; a drawn series, or one Closed early
-      with equal wins, says so and names no series Winner) and no
-      leaderboard. On every one: no Points Entries
+      each Entrant's Placement Points; a drawn series says so and names no
+      series Winner) and no leaderboard; a League shows Top finishers once
+      Closed, its table (W, D, L, Match points, H2H and SB or Buchholz, War
+      Week points) and its rounds). On every one: no Points Entries
       section anywhere on the page.
 - [ ] **Scale: 100 Participants.** Run `pnpm seed:demo:scale`, then
       `pnpm seed:demo` when done. At both viewports: the admin roster lists all

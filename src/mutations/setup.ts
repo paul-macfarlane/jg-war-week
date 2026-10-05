@@ -9,6 +9,7 @@ import {
   competitionHost,
   day,
   entrant,
+  leagueMatch,
   participant,
   participation,
   placement,
@@ -925,7 +926,8 @@ export async function updateCompetition(
 
 /**
  * Deletes a Competition of this War Week, refusing one with Points Entries,
- * Schedule Items, Matches, Attempts or anyone who took part.
+ * Schedule Items, Matches, Attempts, League Matches or anyone who took
+ * part.
  */
 export async function deleteCompetition(
   id: string,
@@ -959,6 +961,18 @@ export async function deleteCompetition(
       "Delete or move them first.",
     );
     if (refusal) return { ok: false, error: refusal };
+    const paired = inUseError(
+      "Competition",
+      [
+        [
+          await tx.$count(leagueMatch, eq(leagueMatch.competitionId, id)),
+          "League Match",
+          "League Matches",
+        ],
+      ],
+      "Clear the pairings first.",
+    );
+    if (paired) return { ok: false, error: paired };
     const tookPart = inUseError(
       "Competition",
       [

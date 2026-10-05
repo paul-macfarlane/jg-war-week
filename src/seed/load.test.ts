@@ -861,3 +861,210 @@ describe.skipIf(!isLocalDatabase)("loadWarWeekSeed Placements", () => {
     });
   });
 });
+
+describe.skipIf(!isLocalDatabase)("loadWarWeekSeed Leagues", () => {
+  const HOST = "seed-league-host@jahnelgroup.com";
+  const CLOSED_AT = "2099-01-03T18:00:00.000Z";
+  const LOGGED_AT = "2099-01-02T12:00:00.000Z";
+
+  /** A round robin of Ana, Ben and Cal, all played, Closed by HOST at CLOSED_AT. */
+  async function leagueSeed(
+    competition: Record<string, unknown> = {},
+    extra: Record<string, unknown> = {},
+  ) {
+    const m = (
+      key: string,
+      round: number,
+      a: string,
+      b: string | null,
+      result: "a" | "b" | "draw" | null,
+      more: Record<string, unknown> = {},
+    ) => ({
+      key,
+      competition: "Chess",
+      round,
+      position: 0,
+      a,
+      b,
+      result,
+      ...more,
+    });
+    return seed("slg", 8, "upcoming", {
+      participants: [
+        { displayName: "Ana" },
+        { displayName: "Ben" },
+        { displayName: "Cal" },
+      ],
+      competitions: [
+        {
+          name: "Chess",
+          scoring: "individual",
+          format: "league",
+          leagueConfig: { pairing: "round-robin", rounds: null },
+          entrants: ["Ana", "Ben", "Cal"],
+          placementPoints: [5, 3, 1],
+          closed: true,
+          closedAt: CLOSED_AT,
+          closedByEmail: HOST,
+          ...competition,
+        },
+      ],
+      leagueMatches: [
+        m("r1", 1, "Ana", "Ben", "a", { recordedAt: LOGGED_AT }),
+        m("r1-sit", 1, "Cal", null, null, { position: 1 }),
+        m("r2", 2, "Ana", "Cal", "draw"),
+        m("r2-sit", 2, "Ben", null, null, { position: 1 }),
+        m("r3", 3, "Ben", "Cal", "a"),
+        m("r3-sit", 3, "Ana", null, null, { position: 1 }),
+      ],
+      ...extra,
+    });
+  }
+
+  async function read(tx: DBTx, warWeekId: string) {
+    const schema = await import("@/db/schema");
+    const { and, asc, eq } = await import("drizzle-orm");
+    const [league] = await tx
+      .select({
+        id: schema.competition.id,
+        format: schema.competition.format,
+        leagueConfig: schema.competition.leagueConfig,
+        closedAt: schema.competition.closedAt,
+      })
+      .from(schema.competition)
+      .where(eq(schema.competition.warWeekId, warWeekId));
+    const entrants = await tx
+      .select({
+        name: schema.participant.displayName,
+        seedPosition: schema.entrant.seedPosition,
+      })
+      .from(schema.entrant)
+      .innerJoin(
+        schema.participant,
+        eq(schema.participant.id, schema.entrant.participantId),
+      )
+      .where(eq(schema.entrant.competitionId, league.id))
+      .orderBy(asc(schema.entrant.seedPosition));
+    const matches = await tx
+      .select({
+        round: schema.leagueMatch.round,
+        position: schema.leagueMatch.position,
+        a: schema.leagueMatch.entrantAId,
+        b: schema.leagueMatch.entrantBId,
+        result: schema.leagueMatch.result,
+        recordedAt: schema.leagueMatch.recordedAt,
+        seedKey: schema.leagueMatch.seedKey,
+      })
+      .from(schema.leagueMatch)
+      .where(eq(schema.leagueMatch.competitionId, league.id))
+      .orderBy(asc(schema.leagueMatch.round), asc(schema.leagueMatch.position));
+    const entries = await tx
+      .select({
+        points: schema.pointsEntry.points,
+        seedKey: schema.pointsEntry.seedKey,
+        note: schema.pointsEntry.note,
+        generated: schema.pointsEntry.generated,
+        enteredByEmail: schema.pointsEntry.enteredByEmail,
+        enteredAt: schema.pointsEntry.enteredAt,
+      })
+      .from(schema.pointsEntry)
+      .where(
+        and(
+          eq(schema.pointsEntry.warWeekId, warWeekId),
+          eq(schema.pointsEntry.competitionId, league.id),
+        ),
+      )
+      .orderBy(asc(schema.pointsEntry.seedKey));
+    return { league, entrants, matches, entries };
+  }
+
+  it("loads a League's Entrants, Matches and a Closed League's points; a reload changes nothing", async () => {
+    await inRolledBackTransaction(async (tx) => {
+      const { loadWarWeekSeed } = await import("@/seed/load");
+      await clearLive(tx);
+      const first = await loadWarWeekSeed(await leagueSeed(), tx);
+      const loaded = await read(tx, first.id);
+
+      expect(loaded.league).toMatchObject({
+        format: "league",
+        leagueConfig: { pairing: "round-robin", rounds: null },
+        closedAt: new Date(CLOSED_AT),
+      });
+      expect(loaded.entrants).toEqual([
+        { name: "Ana", seedPosition: 1 },
+        { name: "Ben", seedPosition: 2 },
+        { name: "Cal", seedPosition: 3 },
+      ]);
+      // A result without `recordedAt` gets the League's `closedAt`; a sit-out has none.
+      expect(
+        loaded.matches.map((x) => [
+          x.round,
+          x.position,
+          x.result,
+          x.recordedAt?.toISOString() ?? null,
+          x.seedKey,
+          x.b === null,
+        ]),
+      ).toEqual([
+        [1, 0, "a", LOGGED_AT, "r1", false],
+        [1, 1, null, null, "r1-sit", true],
+        [2, 0, "draw", CLOSED_AT, "r2", false],
+        [2, 1, null, null, "r2-sit", true],
+        [3, 0, "a", CLOSED_AT, "r3", false],
+        [3, 1, null, null, "r3-sit", true],
+      ]);
+      // Ana 1.5, Ben 1, Cal 0.5: places 1, 2, 3 earn 5, 3, 1.
+      expect(loaded.entries).toEqual(
+        [
+          ["league:Chess:Ana", 5],
+          ["league:Chess:Ben", 3],
+          ["league:Chess:Cal", 1],
+        ].map(([seedKey, points]) => ({
+          seedKey,
+          points,
+          note: "From league",
+          generated: true,
+          enteredByEmail: HOST,
+          enteredAt: new Date(CLOSED_AT),
+        })),
+      );
+
+      await loadWarWeekSeed(await leagueSeed(), tx);
+      expect(await read(tx, first.id)).toEqual(loaded);
+    });
+  });
+
+  it("never restores pairings an Organizer cleared, nor adds to a League that already has Entrants", async () => {
+    await inRolledBackTransaction(async (tx) => {
+      const { loadWarWeekSeed } = await import("@/seed/load");
+      const schema = await import("@/db/schema");
+      const { eq } = await import("drizzle-orm");
+      await clearLive(tx);
+      const open = {
+        closed: undefined,
+        closedAt: undefined,
+        closedByEmail: undefined,
+      };
+      const first = await loadWarWeekSeed(await leagueSeed(open), tx);
+      const before = await read(tx, first.id);
+      expect(before.matches).toHaveLength(6);
+      expect(before.entries).toEqual([]);
+
+      // Clear pairings: the Entrants stay, the Matches go; a reload adds none.
+      await tx
+        .delete(schema.leagueMatch)
+        .where(eq(schema.leagueMatch.competitionId, before.league.id));
+      await loadWarWeekSeed(await leagueSeed(open), tx);
+      const cleared = await read(tx, first.id);
+      expect(cleared.matches).toEqual([]);
+      expect(cleared.entrants).toEqual(before.entrants);
+
+      // No Entrants and no Matches (the Organizer removed them): the seed loads again.
+      await tx
+        .delete(schema.entrant)
+        .where(eq(schema.entrant.competitionId, before.league.id));
+      await loadWarWeekSeed(await leagueSeed(open), tx);
+      expect((await read(tx, first.id)).matches).toHaveLength(6);
+    });
+  });
+});

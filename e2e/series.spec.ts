@@ -30,6 +30,28 @@ const PLAYER = { name: "Albert Hernandez", team: "Red" };
 /** Bouncy Pong's other Entrant, on the same Team. */
 const OPPONENT = { name: "Austin Gage", team: "Red" };
 
+/**
+ * Logs a Match `winnerId` won against the series' other Entrant, by SQL as
+ * the e2e Host would, and returns its id.
+ */
+async function logWinBySql(
+  competitionId: string,
+  winnerId: string,
+): Promise<string> {
+  const [match] = await runQuery<{ id: string }>(
+    `insert into series_match (competition_id, logged_by_email)
+     values ($1, $2) returning id`,
+    [competitionId, E2E_HOST_EMAIL],
+  );
+  await runQuery(
+    `insert into series_match_entrant (series_match_id, entrant_id, place)
+     select $1, e.id, case when e.participant_id = $2 then 1 else 2 end
+     from entrant e where e.competition_id = $3`,
+    [match.id, winnerId, competitionId],
+  );
+  return match.id;
+}
+
 /** Screenshots at 375 and 1280 under `test-results/e2e/series-<step>/`. */
 async function shoot(page: Page, testInfo: TestInfo, step: string) {
   for (const width of [375, 1280]) {
@@ -109,7 +131,7 @@ async function leaderboardTotals(page: Page) {
   };
 }
 
-test("series: a Participant logs a Head-to-head Match from home, the Host edits it and closes the Competition, the Standings move", async ({
+test("series: a Participant logs a Head-to-head Match from home, the Host edits it, Close waits for a decided series, then the Host closes it and the Standings move", async ({
   browser,
   context,
   page,
@@ -235,6 +257,18 @@ test("series: a Participant logs a Head-to-head Match from home, the Host edits 
       await organizerContext.close();
     }
 
+    // 0–1 in a Best of 3 isn't decided: Close is disabled with the
+    // server's reason (SC1). The opponent wins a second Match: 0–2, decided.
+    await openCompetitionPage(page, id);
+    await expect(
+      page.getByText("Finish the series before closing."),
+    ).toBeVisible();
+    await expect(
+      page.getByRole("button", { name: "Close", exact: true }),
+    ).toBeDisabled();
+    const opponentId = await xiParticipantId(OPPONENT.name);
+    const deciding = await logWinBySql(id, opponentId);
+
     // The Host closes it from the Competition's page.
     await openCompetitionPage(page, id);
     await page.getByRole("button", { name: "Close", exact: true }).click();
@@ -257,13 +291,13 @@ test("series: a Participant logs a Head-to-head Match from home, the Host edits 
         .getByText("Closed — its Placement Points are in the Standings."),
     ).toBeVisible();
     // Closed: no Provisional badge, and the points are the Points Entries;
-    // Closed short of the Best of, the leader takes the series.
+    // the opponent took the series 2–0.
     await expect(
       page
         .getByRole("region", { name: "Placement Points" })
         .getByRole("button", { name: "Provisional" }),
     ).toHaveCount(0);
-    await expectSeries(page, "0–1", [
+    await expectSeries(page, "0–2", [
       ["1st", OPPONENT.name, "3 points"],
       ["2nd", PLAYER.name, "2 points"],
     ]);
@@ -295,6 +329,7 @@ test("series: a Participant logs a Head-to-head Match from home, the Host edits 
       .getByRole("button", { name: "Reopen" })
       .click();
     await expect(page.getByText("Competition reopened")).toBeVisible();
+    await runQuery(`delete from series_match where id = $1`, [deciding]);
     await page.goto(`/xi/competitions/${id}`);
     await page.getByRole("button", { name: `Delete Match: ${logged}` }).click();
     await page

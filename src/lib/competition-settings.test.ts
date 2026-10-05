@@ -209,4 +209,55 @@ describe("parseCompetitionSetting", () => {
       error: "Choose a setting to save.",
     });
   });
+
+  it("parses a League's Pairing: a round robin always saves rounds null, a Swiss blank rounds is the default (M3)", () => {
+    expect(
+      parseCompetitionSetting({
+        field: "leagueConfig",
+        value: { pairing: "round-robin", rounds: 5 },
+      }),
+    ).toEqual({
+      ok: true,
+      value: {
+        field: "leagueConfig",
+        value: { pairing: "round-robin", rounds: null },
+      },
+    });
+    expect(
+      parseCompetitionSetting({
+        field: "leagueConfig",
+        value: { pairing: "swiss", rounds: "" },
+      }),
+    ).toEqual({
+      ok: true,
+      value: {
+        field: "leagueConfig",
+        value: { pairing: "swiss", rounds: null },
+      },
+    });
+    expect(
+      parseCompetitionSetting({
+        field: "leagueConfig",
+        value: { pairing: "swiss", rounds: "4" },
+      }),
+    ).toEqual({
+      ok: true,
+      value: { field: "leagueConfig", value: { pairing: "swiss", rounds: 4 } },
+    });
+    expect(
+      parseCompetitionSetting({
+        field: "leagueConfig",
+        value: { pairing: "swiss", rounds: 0 },
+      }),
+    ).toMatchObject({
+      ok: false,
+      fieldErrors: { leagueConfig: "A League plays at least 1 round." },
+    });
+    expect(
+      parseCompetitionSetting({
+        field: "leagueConfig",
+        value: { pairing: "knockout", rounds: null },
+      }),
+    ).toMatchObject({ ok: false, error: "Choose Round robin or Swiss." });
+  });
 });

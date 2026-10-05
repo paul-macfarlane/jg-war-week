@@ -29,6 +29,8 @@ export const COMPETITION_SETTING_FIELDS = [
   "bestScoreConfig",
   /** A Bracket's match size, how many advance and the 3rd place Match. */
   "bracketConfig",
+  /** A League's Pairing and (Swiss) rounds. */
+  "leagueConfig",
   "entrants",
   /** Building (generating or re-rolling) the Bracket. */
   "bracket",
@@ -49,10 +51,12 @@ export type CompetitionSettingField =
 /**
  * When a setting locks: `never`; once any `result` exists; once `play` has
  * started in the Competition's own Format (a Placement row, a logged Match
- * or Attempt, a Bracket Match Result; spec R21, decision 3); once the
- * Competition has a `logged` Match or Attempt; once any `match-result`
- * exists; or only while `closed`. Every setting but the `never` ones also
- * locks while Closed.
+ * or Attempt, a Bracket Match Result, a League's round 1 paired; spec R21,
+ * decision 3); once the Competition has a `logged` Match or Attempt; once
+ * any `match-result` exists; or only while `closed`. Every setting but the
+ * `never` ones also locks while Closed. A League's Pairing and rounds,
+ * Score direction and Entrants also lock once its round 1 is paired
+ * (`LEAGUE_PAIRED_FIELDS`), whatever their lock here.
  */
 export type SettingLock =
   "never" | "result" | "play" | "logged" | "match-result" | "closed";
@@ -76,6 +80,9 @@ export const SETTING_LOCKS: Record<CompetitionSettingField, SettingLock> = {
   seriesConfig: "logged",
   bestScoreConfig: "logged",
   bracketConfig: "match-result",
+  // Locks once round 1 is paired (`LEAGUE_PAIRED_FIELDS`), else while Closed.
+  leagueConfig: "closed",
+  // A League's Entrants lock once round 1 is paired (`LEAGUE_PAIRED_FIELDS`).
   entrants: "match-result",
   bracket: "match-result",
   // They set who joins, so an Organizer can raise a limit mid-week.
@@ -95,6 +102,21 @@ export const LOCKED_BY_RESULT = "Locked once the Competition has a result.";
 export const LOCKED_BY_MATCH =
   "Locked once the Competition has a Match or Attempt.";
 export const LOCKED_BY_MATCH_RESULT = "Locked once a Match has a result.";
+/**
+ * A League's Pairing, rounds, Score direction and Entrants (spec R23,
+ * decision 11; reading R1). Clear pairings unlocks them.
+ */
+export const LOCKED_BY_PAIRING = "Locked once round 1 is paired.";
+
+/**
+ * The settings a League locks once round 1 is paired (reading R1): the one
+ * source of the League lock, checked before `SETTING_LOCKS`.
+ */
+const LEAGUE_PAIRED_FIELDS: readonly CompetitionSettingField[] = [
+  "leagueConfig",
+  "scoreDirection",
+  "entrants",
+];
 /** Every Format reopens the same way. */
 export const LOCKED_WHILE_CLOSED =
   "Locked while the Competition is Closed. Reopen it first.";
@@ -104,8 +126,8 @@ export const APPLIES_AT_NEXT_CLOSE = "Applies at the next Close.";
 /**
  * What a Competition has entered so far. A result is any of them: an
  * Entrant, a logged Head-to-head Match or Best score Attempt, a Placement,
- * a check-in (someone who took part), a Bracket Match or Match Result, or
- * a generated Points Entry.
+ * a check-in (someone who took part), a Bracket Match or Match Result, a
+ * League Match, or a generated Points Entry.
  */
 export type CompetitionResults = {
   entrants: number;
@@ -116,6 +138,10 @@ export type CompetitionResults = {
   matches: number;
   /** Whether a Match has a Match Result (byes don't count). */
   matchResult: boolean;
+  /** A League's Matches, byes and sit-outs included: paired once any. */
+  leagueMatches: number;
+  /** Whether a League Match has a result. */
+  leagueResult: boolean;
   generatedPointsEntries: number;
 };
 
@@ -123,11 +149,13 @@ export type CompetitionResults = {
 export function hasResult(results: CompetitionResults): boolean {
   return (
     results.matchResult ||
+    results.leagueResult ||
     results.entrants +
       results.logged +
       results.placements +
       results.checkIns +
       results.matches +
+      results.leagueMatches +
       results.generatedPointsEntries >
       0
   );
@@ -136,7 +164,8 @@ export function hasResult(results: CompetitionResults): boolean {
 /**
  * Whether play has started, by Format: a Placement sheet has a row, a
  * Head-to-head or Best score Competition has a Match or Attempt, a Bracket
- * has a Match Result. A Participation Competition has no Scores.
+ * has a Match Result, a League has round 1 paired. A Participation
+ * Competition has no Scores.
  */
 export function hasPlay(results: CompetitionResults, format: Format): boolean {
   switch (format) {
@@ -147,8 +176,14 @@ export function hasPlay(results: CompetitionResults, format: Format): boolean {
       return results.logged > 0;
     case "participation":
       return false;
-    default:
+    case "league":
+      return results.leagueMatches > 0;
+    case "bracket":
       return results.matchResult;
+    default: {
+      const unknown: never = format;
+      return unknown;
+    }
   }
 }
 
@@ -180,9 +215,10 @@ export function lockFactsOf(
 }
 
 /**
- * Why `field` can't change now, or null. A result, Match, Attempt or Match
- * Result
- * lock's reason comes before Closed's: Reopen alone won't unlock it.
+ * Why `field` can't change now, or null. A result, Match, Attempt, Match
+ * Result or pairing lock's reason comes before Closed's: Reopen alone
+ * won't unlock it. A League locks its Pairing, rounds, Score direction and
+ * Entrants once round 1 is paired (`hasPlay`), with its own reason.
  */
 export function settingLockReason(
   field: CompetitionSettingField,
@@ -190,6 +226,13 @@ export function settingLockReason(
 ): string | null {
   const lock = settingLock(field);
   if (lock === "never") return null;
+  if (
+    facts.format === "league" &&
+    facts.hasPlay &&
+    LEAGUE_PAIRED_FIELDS.includes(field)
+  ) {
+    return LOCKED_BY_PAIRING;
+  }
   if (lock === "result" && facts.hasResult) return LOCKED_BY_RESULT;
   if (lock === "play" && facts.hasPlay) return LOCKED_BY_RESULT;
   if (lock === "logged" && facts.hasLogged) return LOCKED_BY_MATCH;

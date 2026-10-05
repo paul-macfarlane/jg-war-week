@@ -6,6 +6,7 @@ import {
   ENROLL_CLOSED_BUILT,
   ENROLL_CLOSED_BY_HOST,
   ENROLL_CLOSED_FULL,
+  ENROLL_CLOSED_PAIRED,
   ENROLL_OFF,
   type EnrollFacet,
   JOIN_A_SQUAD,
@@ -290,10 +291,43 @@ describe("withdrawError: leaving a Squad", () => {
   });
 });
 
-describe("enrollmentUnavailable: only a Bracket takes enrollment", () => {
+describe("a League's enrollment (spec R23, decision 2)", () => {
+  const league = (over: Partial<EnrollFacet> = {}) =>
+    facet({ format: "league", ...over });
+
+  it("lets a linked Participant enroll and withdraw before round 1 is paired", () => {
+    expect(enrollError(league())).toBeNull();
+    expect(
+      withdrawError(league({ entrants: [participant(ME)], entrantCount: 1 })),
+    ).toBeNull();
+  });
+
+  it("closes once round 1 is paired, with its own reason", () => {
+    expect(enrollError(league({ built: true }))).toBe(
+      "Enrollment is closed: round 1 is paired.",
+    );
+    expect(enrollError(league({ built: true }))).toBe(ENROLL_CLOSED_PAIRED);
+    expect(
+      withdrawError(
+        league({ built: true, entrants: [participant(ME)], entrantCount: 1 }),
+      ),
+    ).toBe(ENROLL_CLOSED_PAIRED);
+  });
+
+  it("closes at the Entrant limit and when Closed, as a Bracket", () => {
+    expect(enrollError(league({ entrantLimit: 1 }))).toBe(ENROLL_CLOSED_FULL);
+    expect(enrollError(league({ closed: true }))).toBe(ENROLL_CLOSED_BY_HOST);
+  });
+});
+
+describe("enrollmentUnavailable: only a Bracket or a League takes enrollment", () => {
   it.each([
     ["bracket" as const, null],
-    ["placement" as const, "Participants enroll only in a Bracket."],
+    ["league" as const, null],
+    [
+      "placement" as const,
+      "Participants enroll only in a Bracket or a League.",
+    ],
     [
       "head-to-head" as const,
       "A Head-to-head's 2 Entrants are set by the Host; enrollment is off.",

@@ -442,7 +442,7 @@ describe.skipIf(!isLocalDatabase)(
               const applied = await client.query(
                 "select count(*)::int as n from drizzle.__drizzle_migrations",
               );
-              expect(applied.rows[0].n).toBe(34);
+              expect(applied.rows[0].n).toBe(35);
 
               const brackets = await client.query(
                 `select id, format::text as format, bracket_config,
@@ -505,6 +505,7 @@ describe.skipIf(!isLocalDatabase)(
                 "head-to-head",
                 "best-score",
                 "participation",
+                "league",
               ]);
               const statuses = await client.query<{ value: string }>(
                 `select unnest(enum_range(null::bracket_match_status))::text as value`,
@@ -598,7 +599,7 @@ describe.skipIf(!isLocalDatabase)(
               const applied = await client.query(
                 "select count(*)::int as n from drizzle.__drizzle_migrations",
               );
-              expect(applied.rows[0].n).toBe(34);
+              expect(applied.rows[0].n).toBe(35);
               const after = await client.query(
                 `select id, description is null as cleared,
                   pg_typeof(description)::text as type
@@ -836,7 +837,7 @@ describe.skipIf(!isLocalDatabase)(
                     "select count(*)::int as n from drizzle.__drizzle_migrations",
                   )
                 )[0].n,
-              ).toBe(34);
+              ).toBe(35);
 
               // Bracket configs under their new keys; null is the default.
               const configs = Object.fromEntries(
@@ -1271,3 +1272,271 @@ describe.skipIf(!isLocalDatabase)(
     }, 60_000);
   },
 );
+
+describe.skipIf(!isLocalDatabase)("league (0034)", () => {
+  it("commits, leaves every Format's rows untouched, takes a League and refuses each new CHECK's violation", async () => {
+    const upTo0033 = migrationsUpTo(33);
+    const WW = id(1);
+    const [PLACEMENT, BRACKET, H2H, BEST, PARTICIPATION, LEAGUE] = [
+      id(10),
+      id(11),
+      id(12),
+      id(13),
+      id(14),
+      id(15),
+    ];
+    const [ADA, BO, CY] = [id(20), id(21), id(22)];
+    const [E_ADA, E_BO, E_CY] = [id(30), id(31), id(32)];
+    try {
+      await withThrowawayDatabase(
+        async (url) => {
+          await migrateTo(url, upTo0033);
+          const client = new Client({ connectionString: url });
+          await client.connect();
+          try {
+            await client.query(`
+              insert into war_week (id, edition, edition_number, year,
+                start_date, end_date, story_theme, status, mode, team_label,
+                leader_title, slack_channel_url, primary_color,
+                primary_foreground_color, accent_color, background_color,
+                foreground_color, font_preset)
+              values ('${WW}', 'xi', 9811, 9811, '2026-02-23',
+                '2026-02-27', 'Eleven', 'live', 'teams', 'Team', 'Captain',
+                'https://slack.example', '#000000', '#ffffff', '#ff0000',
+                '#ffffff', '#000000', 'sans');
+              insert into competition (id, war_week_id, name, scoring, format,
+                score_direction, series_config, participation_points,
+                self_enroll, entrant_limit)
+              values
+                ('${PLACEMENT}', '${WW}', 'A Placement', 'individual',
+                  'placement', 'none', null, null, false, null),
+                ('${BRACKET}', '${WW}', 'B Bracket', 'individual',
+                  'bracket', 'none', null, null, true, 8),
+                ('${H2H}', '${WW}', 'C Head-to-head', 'individual',
+                  'head-to-head', 'none',
+                  '{"drawsAllowed":false,"bestOf":3}', null, false, null),
+                ('${BEST}', '${WW}', 'D Best score', 'individual',
+                  'best-score', 'higher', null, null, false, null),
+                ('${PARTICIPATION}', '${WW}', 'E Participation',
+                  'individual', 'participation', 'none', null, 1, false,
+                  null);`);
+            await migrateTo(url, DRIZZLE_DIR);
+            const q = async (text: string) => (await client.query(text)).rows;
+
+            // Every Format's row is as it was, with no League config.
+            expect(
+              await q(
+                `select name, format::text as format, score_direction::text as direction,
+                   series_config, participation_points::float as n,
+                   self_enroll, entrant_limit, league_config
+                 from competition order by name`,
+              ),
+            ).toEqual([
+              {
+                name: "A Placement",
+                format: "placement",
+                direction: "none",
+                series_config: null,
+                n: null,
+                self_enroll: false,
+                entrant_limit: null,
+                league_config: null,
+              },
+              {
+                name: "B Bracket",
+                format: "bracket",
+                direction: "none",
+                series_config: null,
+                n: null,
+                self_enroll: true,
+                entrant_limit: 8,
+                league_config: null,
+              },
+              {
+                name: "C Head-to-head",
+                format: "head-to-head",
+                direction: "none",
+                series_config: { drawsAllowed: false, bestOf: 3 },
+                n: null,
+                self_enroll: false,
+                entrant_limit: null,
+                league_config: null,
+              },
+              {
+                name: "D Best score",
+                format: "best-score",
+                direction: "higher",
+                series_config: null,
+                n: null,
+                self_enroll: false,
+                entrant_limit: null,
+                league_config: null,
+              },
+              {
+                name: "E Participation",
+                format: "participation",
+                direction: "none",
+                series_config: null,
+                n: 1,
+                self_enroll: false,
+                entrant_limit: null,
+                league_config: null,
+              },
+            ]);
+
+            // A Swiss League with enrollment, three Entrants, a drawn Match
+            // with Scores and a bye.
+            await client.query(`
+              insert into competition (id, war_week_id, name, scoring, format,
+                league_config, self_enroll, entrant_limit)
+              values ('${LEAGUE}', '${WW}', 'F Chess', 'individual', 'league',
+                '{"pairing":"swiss","rounds":2}', true, 8);
+              insert into participant (id, war_week_id, display_name) values
+                ('${ADA}', '${WW}', 'Ada'), ('${BO}', '${WW}', 'Bo'),
+                ('${CY}', '${WW}', 'Cy');
+              insert into entrant (id, competition_id, participant_id, seed_position) values
+                ('${E_ADA}', '${LEAGUE}', '${ADA}', 1),
+                ('${E_BO}', '${LEAGUE}', '${BO}', 2),
+                ('${E_CY}', '${LEAGUE}', '${CY}', 3);
+              insert into league_match (competition_id, round, position,
+                entrant_a_id, entrant_b_id, result, score_a, score_b,
+                recorded_at, recorded_by_email, recorded_by_participant_id)
+              values
+                ('${LEAGUE}', 1, 0, '${E_ADA}', '${E_BO}', 'draw', 1.5, 1.5,
+                  now(), 'ada@jahnelgroup.com', '${ADA}'),
+                ('${LEAGUE}', 1, 1, '${E_CY}', null, null, null, null,
+                  null, null, null);`);
+            expect(
+              await q(
+                `select round, position, result::text as result,
+                   score_a::float as a, score_b::float as b
+                 from league_match order by round, position`,
+              ),
+            ).toEqual([
+              { round: 1, position: 0, result: "draw", a: 1.5, b: 1.5 },
+              { round: 1, position: 1, result: null, a: null, b: null },
+            ]);
+
+            // Each new CHECK refuses its bad row, by name.
+            const refused = async (statement: string) => {
+              await client.query("savepoint r23");
+              const error = await client.query(statement).then(
+                () => null,
+                (e: { code?: string; constraint?: string }) =>
+                  `${e.code ?? "error"} ${e.constraint ?? ""}`.trim(),
+              );
+              await client.query("rollback to savepoint r23");
+              return error;
+            };
+            const match = (columns: string, values: string) =>
+              `insert into league_match (competition_id, round, position,
+                 entrant_a_id, ${columns}) values ('${LEAGUE}', 2, 0,
+                 '${E_ADA}', ${values})`;
+            await client.query("begin");
+            try {
+              for (const [statement, constraint] of [
+                [
+                  `update competition set league_config = null where id = '${LEAGUE}'`,
+                  "competition_league_config_league",
+                ],
+                [
+                  `update competition set league_config = '{"pairing":"round-robin","rounds":null}' where id = '${PLACEMENT}'`,
+                  "competition_league_config_league",
+                ],
+                [
+                  `update competition set league_config = '{"pairing":"knockout","rounds":null}' where id = '${LEAGUE}'`,
+                  "competition_league_config_shape",
+                ],
+                [
+                  `update competition set league_config = '{"pairing":"round-robin","rounds":3}' where id = '${LEAGUE}'`,
+                  "competition_league_config_shape",
+                ],
+                [
+                  `update competition set league_config = '{"pairing":"swiss","rounds":0}' where id = '${LEAGUE}'`,
+                  "competition_league_config_shape",
+                ],
+                [
+                  `update competition set league_config = '{"pairing":"swiss","rounds":2.5}' where id = '${LEAGUE}'`,
+                  "competition_league_config_shape",
+                ],
+                [
+                  `update competition set league_config = '{"pairing":"swiss","rounds":"3"}' where id = '${LEAGUE}'`,
+                  "competition_league_config_shape",
+                ],
+                [
+                  `update competition set self_enroll = true where id = '${H2H}'`,
+                  "competition_self_enroll_bracket_only",
+                ],
+                [
+                  match("entrant_b_id", `'${E_ADA}'`),
+                  "league_match_two_entrants",
+                ],
+                [
+                  match(
+                    "entrant_b_id, result, recorded_at",
+                    `null, 'a', now()`,
+                  ),
+                  "league_match_bye_no_result",
+                ],
+                [
+                  match("entrant_b_id, result", `'${E_BO}', 'a'`),
+                  "league_match_recorded",
+                ],
+                [
+                  match("entrant_b_id, recorded_at", `'${E_BO}', now()`),
+                  "league_match_recorded",
+                ],
+                [
+                  match("entrant_b_id, score_a", `'${E_BO}', 3`),
+                  "league_match_scores_need_result",
+                ],
+                [
+                  `insert into league_match (competition_id, round, position, entrant_a_id)
+                   values ('${LEAGUE}', 0, 5, '${E_ADA}')`,
+                  "league_match_round_from_1",
+                ],
+                [
+                  `insert into league_match (competition_id, round, position, entrant_a_id)
+                   values ('${LEAGUE}', 2, -1, '${E_ADA}')`,
+                  "league_match_position_from_0",
+                ],
+              ]) {
+                expect(await refused(statement), statement).toBe(
+                  `23514 ${constraint}`,
+                );
+              }
+              // A swiss League without rounds, and a round robin, are fine.
+              for (const config of [
+                '{"pairing":"swiss","rounds":null}',
+                '{"pairing":"swiss"}',
+                '{"pairing":"round-robin","rounds":null}',
+              ]) {
+                expect(
+                  await refused(
+                    `update competition set league_config = '${config}' where id = '${LEAGUE}'`,
+                  ),
+                  config,
+                ).toBeNull();
+              }
+            } finally {
+              await client.query("rollback");
+            }
+
+            // Deleting the League deletes its Matches.
+            await client.query(
+              `delete from competition where id = '${LEAGUE}'`,
+            );
+            expect(
+              (await q("select count(*)::int as n from league_match"))[0].n,
+            ).toBe(0);
+          } finally {
+            await client.end();
+          }
+        },
+        { migrations: false },
+      );
+    } finally {
+      rmSync(upTo0033, { recursive: true, force: true });
+    }
+  }, 60_000);
+});

@@ -54,6 +54,11 @@ export const MCP_TOOLS = {
     description:
       "Returns a Competition's Bracket by name: Entrants by Seed Position; its kind (head-to-head or group), Score direction and unit, Match size, how many advance, any Round whose defaults differ, whether it has a 3rd place Match and whether it's Closed; each Round's Matches with status, size, how many advance and, for a played Match, when its result was recorded (a 3rd place Match is marked thirdPlace; the final is the last Round's other Match); and the Winner once the Bracket is Closed. A Competition run another way instead returns bracket: null; an unknown Competition returns found: false.",
   },
+  get_league: {
+    title: "Get League",
+    description:
+      "Returns a League (round robin or Swiss, for match points) by name: its Pairing, rounds, Score direction and unit, whether self-report is on and whether it's Closed; the standings by rank with wins, draws, losses, byes, match points, tiebreaks (round robin: head-to-head and Sonneborn-Berger; Swiss: Buchholz) and War Week points (Provisional until Closed); and each round's Matches with their result. A Competition run another way instead returns league: null; an unknown Competition returns found: false.",
+  },
   get_games: {
     title: "Get Head-to-head and Best score",
     description:

@@ -22,9 +22,11 @@ export type EnrollEntrant = {
 
 /**
  * What `can("competition.enroll" | "competition.withdraw", …)` checks:
- * - `format`: only a Bracket takes enrollment (`enrollmentUnavailable`).
+ * - `format`: only a Bracket or a League takes enrollment
+ *   (`enrollmentUnavailable`).
  * - `selfEnroll`: the "Participants can enroll" switch.
- * - The close conditions: `built` (the Bracket has Matches), `entrantLimit`
+ * - The close conditions: `built` (the Bracket has Matches, or the
+ *   League's round 1 is paired), `entrantLimit`
  *   against `entrantCount`, `closed` (the Competition is Closed).
  * - `linked`: the Participant the actor's email links to, with their Team
  *   and their Squad in this Competition.
@@ -61,6 +63,8 @@ export type EnrollFacet = {
 export const ENROLL_OFF = "Enrollment is off for this Competition.";
 export const ENROLL_CLOSED_BUILT =
   "Enrollment is closed: the Bracket is built.";
+/** A League's enrollment closes when round 1 is paired (spec R23, decision 2). */
+export const ENROLL_CLOSED_PAIRED = "Enrollment is closed: round 1 is paired.";
 export const ENROLL_CLOSED_FULL =
   "Enrollment is closed: the Entrant limit is reached.";
 export const ENROLL_CLOSED_BY_HOST =
@@ -80,7 +84,8 @@ export const NOT_IN_SQUAD = "You're not in that Squad.";
 export const LAST_IN_SQUAD =
   "You're the last Participant in this Squad. Ask the Host to remove the Squad.";
 /** Enrollment on a Placement Competition: it has no Entrant list. */
-export const POINTS_NO_ENROLL = "Participants enroll only in a Bracket.";
+export const POINTS_NO_ENROLL =
+  "Participants enroll only in a Bracket or a League.";
 /** Enrollment on a `participation` Competition: no Entrant list. */
 export const PARTICIPATION_NO_ENROLL =
   "A Participation Competition takes check-ins, not Entrants.";
@@ -100,8 +105,9 @@ const NO_ENROLL: Partial<Record<(typeof COMPETITION_FORMATS)[number], string>> =
   };
 
 /**
- * Why this Competition offers no enrollment, or null: only a Bracket takes
- * it (spec R21, decision 5). The database CHECK
+ * Why this Competition offers no enrollment, or null: only a Bracket or a
+ * League takes it (spec R21, decision 5; spec R23, decision 2). The
+ * database CHECK
  * `competition_self_enroll_bracket_only` backs it.
  */
 export function enrollmentUnavailable({
@@ -113,11 +119,16 @@ export function enrollmentUnavailable({
 }
 
 /**
- * Why enrollment is closed, or null, in order: Bracket built, Entrant
- * limit reached (only when adding an Entrant), closed by the Host.
+ * Why enrollment is closed, or null, in order: Bracket built (a League's
+ * round 1 paired), Entrant limit reached (only when adding an Entrant),
+ * closed by the Host.
  */
 function closeError(facet: EnrollFacet, addsEntrant: boolean): string | null {
-  if (facet.built) return ENROLL_CLOSED_BUILT;
+  if (facet.built) {
+    return facet.format === "league"
+      ? ENROLL_CLOSED_PAIRED
+      : ENROLL_CLOSED_BUILT;
+  }
   if (
     addsEntrant &&
     facet.entrantLimit !== null &&

@@ -45,7 +45,7 @@ export default async function CompetitionPage({
   if (!page) notFound();
   const { competition, facts, hostIds, hostNames } = page;
   const entrantCount =
-    competition.format === "bracket"
+    competition.format === "bracket" || competition.format === "league"
       ? (await getBracketEntrants(competition.id)).length
       : 0;
 

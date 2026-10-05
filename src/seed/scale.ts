@@ -8,6 +8,7 @@ import {
   competition,
   competitionHost,
   entrant,
+  leagueMatch,
   participant,
   participation,
   seriesMatch,
@@ -19,6 +20,7 @@ import {
   recordMatchResult,
   replaceEntrants,
 } from "@/mutations/brackets";
+import { pairLeague } from "@/mutations/league";
 import { markParticipant } from "@/mutations/participation";
 import { logMatch } from "@/mutations/series";
 import { setCompetitionHosts } from "@/mutations/setup";
@@ -35,6 +37,9 @@ export const HEAD_TO_HEAD = "Cornhole";
 export const HEAD_TO_HEAD_MATCHES = 5;
 export const BEST_SCORE = "Darts";
 export const BEST_SCORE_ATTEMPTS = 60;
+/** A Swiss League of 64 of the 100 over 6 rounds, with round 1 paired. */
+export const LEAGUE = "Blitz Chess";
+export const LEAGUE_ENTRANTS = 64;
 
 /** A fixed-seed generator (mulberry32), so every load draws the same Bracket. */
 function seededRng(seed: number): () => number {
@@ -55,7 +60,8 @@ function check(result: { ok: boolean; error?: string }, what: string) {
  * What the seed format can't express for the 100-Participant XII demo
  * (`seeds/demo/xii-scale.json`), written through the app's own mutations:
  * the Hosts (its @jahnelgroup.com Participants), the 64-Entrant Bracket
- * generated with Round 1 partly recorded, Participation ticks, the
+ * generated with Round 1 partly recorded, the 64-Entrant Swiss League with
+ * round 1 paired, Participation ticks, the
  * Head-to-head's Matches between its 2 seeded Entrants and Best score's
  * Attempts, each by a Participant. Each part is skipped when it is
  * already there, so a reload with the fixture changes no row count.
@@ -127,6 +133,43 @@ export async function applyScaleFixture(dbOrTx: DBOrTx = db) {
   await tickParticipation(dbOrTx, idOf(PARTICIPATION), people, ctxFor(1));
   await logMatches(dbOrTx, idOf(HEAD_TO_HEAD), ctxFor(2));
   await logAttempts(dbOrTx, idOf(BEST_SCORE), people, ctxFor(3));
+  await pairBlitz(dbOrTx, idOf(LEAGUE), people, ctxFor(0));
+}
+
+/**
+ * Blitz Chess's 64 Entrants (the seed format can't hold them by hand), then
+ * round 1 paired as "Pair round 1" does, from a fixed seed. Skipped when the
+ * League has an Entrant or a Match, so an Organizer's changes are kept.
+ */
+async function pairBlitz(
+  dbOrTx: DBOrTx,
+  competitionId: string,
+  people: Person[],
+  ctx: MutationContext,
+) {
+  const [{ entrants }] = await dbOrTx
+    .select({ entrants: count() })
+    .from(entrant)
+    .where(eq(entrant.competitionId, competitionId));
+  const [{ matches }] = await dbOrTx
+    .select({ matches: count() })
+    .from(leagueMatch)
+    .where(eq(leagueMatch.competitionId, competitionId));
+  if (entrants > 0 || matches > 0) return;
+  // The last 64 of a stride-37 shuffle, so they are spread over the roster.
+  const order = people
+    .map((p, i) => ({ p, key: (i * 37) % people.length }))
+    .sort((a, b) => b.key - a.key)
+    .slice(0, LEAGUE_ENTRANTS)
+    .map(({ p }) => p.id);
+  check(
+    await replaceEntrants(competitionId, { targetIds: order }, ctx, dbOrTx),
+    "League Entrants",
+  );
+  check(
+    await pairLeague(competitionId, { rng: seededRng(23) }, ctx, dbOrTx),
+    "Pair round 1",
+  );
 }
 
 type Person = { id: string };

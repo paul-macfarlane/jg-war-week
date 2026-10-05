@@ -45,7 +45,7 @@ export function llmsTxt(origin: string): string {
 
   return `# JG War Week
 
-> The JG War Week app is where Jahnel Group organizers run War Week, the company's annual week of team competitions, and where participants follow it: themes, schedule, teams, competitions (a Placement sheet, Head-to-head Matches or Best score Attempts, Participation, or Brackets, with a Match size and how many advance), points, awards and announcements, the Finale, plus a history of past War Weeks.
+> The JG War Week app is where Jahnel Group organizers run War Week, the company's annual week of team competitions, and where participants follow it: themes, schedule, teams, competitions (a Placement sheet, Head-to-head Matches or Best score Attempts, Participation, Brackets with a Match size and how many advance, or a League of round robin or Swiss Matches), points, awards and announcements, the Finale, plus a history of past War Weeks.
 
 Every page and API route except sign-in needs a signed-in Jahnel Group account.
 
@@ -57,7 +57,9 @@ are always the current Standings, live or complete. The Finale
 Standings, not a separate result — it changes nothing. Some Competitions run as a Bracket
 (a Match size and how many advance; two per Match with one advancing is
 head-to-head) instead of a Placement sheet; \`get_bracket\` reads
-one by Competition name, with its Squads by name.
+one by Competition name, with its Squads by name. A League (round robin or
+Swiss, for match points) is not a Bracket; \`get_league\` reads one by
+Competition name, with its standings and tiebreaks and each round's Matches.
 
 ## Pages
 

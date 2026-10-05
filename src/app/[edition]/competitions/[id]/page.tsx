@@ -11,6 +11,7 @@ import {
 import { CollapsibleDescription } from "@/components/collapsible-description";
 import { CompetitionFacts } from "@/components/competitions";
 import { EnrollButton } from "@/components/enroll-button";
+import { LeagueView } from "@/components/league-view";
 import { LoggedResults } from "@/components/logged-results-view";
 import { ParticipationView } from "@/components/participation-view";
 import { PlacementView } from "@/components/placement-view";
@@ -29,6 +30,7 @@ import {
   getParticipantSquadIds,
   getParticipantTeamIds,
 } from "@/queries/brackets";
+import { getLeagueView } from "@/queries/league";
 import { getLoggedResultsView } from "@/queries/logged-results";
 import { getMatchReportFacts } from "@/queries/match-reports";
 import { getParticipationView } from "@/queries/participation";
@@ -126,6 +128,7 @@ export default async function CompetitionPage({
   const found = await getCompetitionPage(edition, id);
   if (!found) notFound();
   const { warWeek, competition } = found;
+  // `getBracket` loads nothing for a League: it has its own view.
   const bracket = await getBracket(competition.id);
   const isBracket = bracket && bracket.competition.format !== "placement";
   const [participantTeams, participantSquads] = isBracket
@@ -142,6 +145,7 @@ export default async function CompetitionPage({
   const isLogged = isLoggedFormat(competition.format);
   const isParticipation = competition.format === "participation";
   const isPlacement = competition.format === "placement";
+  const isLeague = competition.format === "league";
   // The viewer's email stays on the server: the page gets names, ids and
   // booleans computed from it (R3 decision 17).
   const actor = await getActor();
@@ -153,12 +157,14 @@ export default async function CompetitionPage({
       warWeekId: warWeek.id,
       competitionId: competition.id,
     }) === null;
-  const [logged, enrollOffer, participation, checkInOffer, placements] =
+  const [logged, enrollOffer, participation, checkInOffer, placements, league] =
     await Promise.all([
       isLogged
         ? getLoggedResultsView(competition.id, email)
         : Promise.resolve(null),
-      isBracket ? enrollOfferFor(competition, email) : Promise.resolve(null),
+      isBracket || isLeague
+        ? enrollOfferFor(competition, email)
+        : Promise.resolve(null),
       isParticipation
         ? getParticipationView(competition.id)
         : Promise.resolve(undefined),
@@ -168,6 +174,7 @@ export default async function CompetitionPage({
       isPlacement
         ? getPlacementsView(competition.id)
         : Promise.resolve(undefined),
+      isLeague ? getLeagueView(competition.id, email) : Promise.resolve(null),
     ]);
 
   return (
@@ -250,6 +257,14 @@ export default async function CompetitionPage({
           teamLabel={warWeek.teamLabel}
         />
       ) : null}
+      {league ? (
+        <LeagueView
+          view={league}
+          primaryColor={warWeek.primaryColor}
+          teamLabel={warWeek.teamLabel}
+          now={new Date()}
+        />
+      ) : null}
       {isBracket ? (
         <BracketView
           competitionId={competition.id}
@@ -269,7 +284,7 @@ export default async function CompetitionPage({
       {/* A Bracket's view refreshes itself, pausing while a report is open. */}
       {isBracket ? null : <AutoRefresh />}
       {/* Results and refusals toast here, as on the admin screens. */}
-      {isBracket || isLogged || enrollOffer || checkInOffer ? (
+      {isBracket || isLogged || league || enrollOffer || checkInOffer ? (
         <Toaster position="bottom-center" closeButton />
       ) : null}
     </main>

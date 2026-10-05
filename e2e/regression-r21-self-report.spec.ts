@@ -23,8 +23,8 @@ import {
 
 // Epic R21, AC 3 (.scratch/competition-setup/spec.md, decision 4): one
 // self-report setting, "Participants can log their own results", off on a
-// new Competition of every Format and offered on Bracket, Head-to-head and
-// Best score only. With it on, a linked Participant logs a Best score
+// new Competition of every Format and offered on Bracket, Head-to-head, Best score and
+// League (R23) only. With it on, a linked Participant logs a Best score
 // Attempt as themselves (no picker), a Head-to-head Entrant logs a Match,
 // and a Bracket player records their Match; with it off, each of those
 // writes is refused by the server with its message (the form was opened
@@ -40,11 +40,12 @@ const FORMATS: [FormatName, boolean][] = [
   ["Bracket", true],
   ["Head-to-head", true],
   ["Best score", true],
+  ["League", true],
   ["Placement", false],
   ["Participation", false],
 ];
 
-test("r21 AC3 the self-report switch is off on a new Competition of every Format, and only Bracket, Head-to-head and Best score offer it", async ({
+test("r21 AC3 the self-report switch is off on a new Competition of every Format, and only Bracket, Head-to-head, Best score and League offer it", async ({
   context,
   page,
 }, testInfo) => {

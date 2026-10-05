@@ -1,0 +1,99 @@
+(!) Your Vite config uses features that are unsupported by `configLoader: 'native'`, which is planned to become the default in a future major version of Vite:
+  - ESM syntax in a file loaded as CommonJS (vitest.config.ts:1:1). Use a `.mjs` extension or set `"type": "module"` in the closest package.json
+Set `VITE_CONFIG_NATIVE_IGNORE_WARNING=true` to suppress this warning.
+
+ RUN  v4.1.11 /Users/paulmacfarlane/Code/jg-war-week/.claude/worktrees/r23-league/war-weeker
+
+ ✓ src/lib/league/standings.test.ts > a round robin of 5 (the A–E fixture) > ranks A, B, E, C, D: A over B on head-to-head, E over C on Sonneborn-Berger 1ms
+ ✓ src/lib/league/standings.test.ts > a round robin of 5 (the A–E fixture) > gives match points 2½, 2½, 2, 2, 1, a sit-out worth 0 0ms
+ ✓ src/lib/league/standings.test.ts > a round robin of 5 (the A–E fixture) > counts W / D / L over played Matches only 0ms
+ ✓ src/lib/league/standings.test.ts > a round robin of 5 (the A–E fixture) > shows head-to-head only on rows tied on match points 0ms
+ ✓ src/lib/league/standings.test.ts > a round robin of 5 (the A–E fixture) > works out Sonneborn-Berger as hand-worked: C 3.25, E 4 0ms
+ ✓ src/lib/league/standings.test.ts > a round robin still tied after head-to-head and Sonneborn-Berger > shares the place: 1, 1, 3, 4 0ms
+ ✓ src/lib/league/standings.test.ts > a round robin still tied after head-to-head and Sonneborn-Berger > gives Placings by those places 0ms
+ ✓ src/lib/league/standings.test.ts > a Swiss League of 9 over 4 rounds (the 1–9 fixture) > matches the hand-worked match points and Buchholz 0ms
+ ✓ src/lib/league/standings.test.ts > a Swiss League of 9 over 4 rounds (the 1–9 fixture) > counts a bye as 1 match point but not as a Match played 0ms
+ ✓ src/lib/league/standings.test.ts > Matches not yet played > count for nothing, in match points or in Buchholz 0ms
+ ✓ src/lib/league/standings.test.ts > formatMatchPoints > writes 0 as 0 0ms
+ ✓ src/lib/league/standings.test.ts > formatMatchPoints > writes 0.5 as ½ 0ms
+ ✓ src/lib/league/standings.test.ts > formatMatchPoints > writes 1 as 1 0ms
+ ✓ src/lib/league/standings.test.ts > formatMatchPoints > writes 2.5 as 2½ 0ms
+ ✓ src/lib/league/standings.test.ts > formatMatchPoints > writes 10 as 10 0ms
+ ✓ src/lib/league/rules.test.ts > leagueRecordError: who records a Match > lets an Organizer or Host record any Match, self-report or not 1ms
+ ✓ src/lib/league/rules.test.ts > leagueRecordError: who records a Match > lets either player record their own Match with self-report on 0ms
+ ✓ src/lib/league/rules.test.ts > leagueRecordError: who records a Match > lets anyone on a player's Team record it in team scoring 0ms
+ ✓ src/lib/league/rules.test.ts > leagueRecordError: who records a Match > refuses a non-player 0ms
+ ✓ src/lib/league/rules.test.ts > leagueRecordError: who records a Match > refuses everyone but Organizers and Hosts with self-report off 0ms
+ ✓ src/lib/league/rules.test.ts > leagueRecordError: who records a Match > refuses a sign-in with no Participant 0ms
+ ✓ src/lib/league/rules.test.ts > leagueRecordError: who records a Match > refuses everyone once Closed, a missing Match and a bye 0ms
+ ✓ src/lib/league/rules.test.ts > pairError: Pair rounds / Pair round 1 > pairs an open League of 2 or more with no pairings yet 0ms
+ ✓ src/lib/league/rules.test.ts > pairError: Pair rounds / Pair round 1 > refuses fewer than 2 Entrants, existing pairings, too many rounds and a Closed League 0ms
+ ✓ src/lib/league/rules.test.ts > pairNextError: Pair next round > pairs once every Match of the latest round has a result, ignoring its bye 0ms
+ ✓ src/lib/league/rules.test.ts > pairNextError: Pair next round > waits for the latest round's results 0ms
+ ✓ src/lib/league/rules.test.ts > pairNextError: Pair next round > stops at the League's rounds 0ms
+ ✓ src/lib/league/rules.test.ts > pairNextError: Pair next round > refuses before round 1, on a round robin, and once Closed 0ms
+ ✓ src/lib/league/rules.test.ts > swapError: Edit pairings > swaps two Entrants of a round before it has a result, the bye included 0ms
+ ✓ src/lib/league/rules.test.ts > swapError: Edit pairings > refuses Entrants outside the round, the same one twice, and two already paired 0ms
+ ✓ src/lib/league/rules.test.ts > swapError: Edit pairings > refuses any swap in a Swiss round once a Match of it has a result 0ms
+ ✓ src/lib/league/rules.test.ts > swapError: Edit pairings > in a round robin, refuses only a swap touching a Match with a result 0ms
+ ✓ src/lib/league/rules.test.ts > swapError: Edit pairings > refuses once Closed 0ms
+ ✓ src/lib/league/rules.test.ts > clearPairingsError: Clear pairings > clears pairings while no Match has a result 0ms
+ ✓ src/lib/league/rules.test.ts > clearPairingsError: Clear pairings > refuses with no pairings, with a result, and once Closed 0ms
+ ✓ src/lib/league/rules.test.ts > unplayedSummary: Close waits for a finished League > is nothing once every round is paired and every Match but the byes has a result 0ms
+ ✓ src/lib/league/rules.test.ts > unplayedSummary: Close waits for a finished League > names each unplayed Match by round 0ms
+ ✓ src/lib/league/rules.test.ts > unplayedSummary: Close waits for a finished League > names the Swiss rounds not yet paired 0ms
+ ✓ src/lib/league/rules.test.ts > unplayedSummary: Close waits for a finished League > counts an unpaired round robin as every round unpaired 0ms
+ ✓ src/lib/league/rules.test.ts > unplayedSummary: Close waits for a finished League > has nothing to finish with fewer than 2 Entrants 0ms
+ ✓ src/lib/league/config.test.ts > a new League > is a round robin with its rounds left blank 1ms
+ ✓ src/lib/league/config.test.ts > a new League > labels its Pairings as Organizers read them 0ms
+ ✓ src/lib/league/config.test.ts > swissDefaultRounds > is ⌈log₂ 2⌉ = 1 0ms
+ ✓ src/lib/league/config.test.ts > swissDefaultRounds > is ⌈log₂ 3⌉ = 2 0ms
+ ✓ src/lib/league/config.test.ts > swissDefaultRounds > is ⌈log₂ 4⌉ = 2 0ms
+ ✓ src/lib/league/config.test.ts > swissDefaultRounds > is ⌈log₂ 5⌉ = 3 0ms
+ ✓ src/lib/league/config.test.ts > swissDefaultRounds > is ⌈log₂ 6⌉ = 3 0ms
+ ✓ src/lib/league/config.test.ts > swissDefaultRounds > is ⌈log₂ 8⌉ = 3 0ms
+ ✓ src/lib/league/config.test.ts > swissDefaultRounds > is ⌈log₂ 9⌉ = 4 0ms
+ ✓ src/lib/league/config.test.ts > swissDefaultRounds > is ⌈log₂ 64⌉ = 6 0ms
+ ✓ src/lib/league/config.test.ts > swissDefaultRounds > is ⌈log₂ 65⌉ = 7 0ms
+ ✓ src/lib/league/config.test.ts > swissDefaultRounds > is at least 1 0ms
+ ✓ src/lib/league/config.test.ts > roundsOf > is N − 1 for an even round robin and N for an odd one (one sits out each round) 0ms
+ ✓ src/lib/league/config.test.ts > roundsOf > is a Swiss League's set rounds, or the default when blank 0ms
+ ✓ src/lib/league/config.test.ts > roundsError > allows a Swiss League 1 to N − 1 rounds 0ms
+ ✓ src/lib/league/config.test.ts > roundsError > refuses more rounds than opponents 0ms
+ ✓ src/lib/league/config.test.ts > roundsError > has nothing to say about a round robin, or before there are 2 Entrants 0ms
+ ✓ src/lib/league/config.test.ts > leagueConfigSchema > accepts a round robin and a Swiss League with or without rounds 1ms
+ ✓ src/lib/league/config.test.ts > leagueConfigSchema > refuses another Pairing, rounds on a round robin, part rounds and extra keys 0ms
+ ✓ src/lib/league/config.test.ts > leagueConfigOf > reads a saved config, and falls back to the default on anything else 0ms
+ ✓ src/lib/league/result.test.ts > parseLeagueResult with a Score direction > lets the higher Score win when higher is better 2ms
+ ✓ src/lib/league/result.test.ts > parseLeagueResult with a Score direction > lets the lower Score win when lower is better 0ms
+ ✓ src/lib/league/result.test.ts > parseLeagueResult with a Score direction > records equal Scores as a draw 0ms
+ ✓ src/lib/league/result.test.ts > parseLeagueResult with a Score direction > takes a posted result that agrees with the Scores 0ms
+ ✓ src/lib/league/result.test.ts > parseLeagueResult with a Score direction > refuses a posted result against the Scores 0ms
+ ✓ src/lib/league/result.test.ts > parseLeagueResult with a Score direction > needs a picked result while a Score is missing 0ms
+ ✓ src/lib/league/result.test.ts > parseLeagueResult with direction none > needs a picked result, whatever the Scores say 0ms
+ ✓ src/lib/league/result.test.ts > parseLeagueResult with direction none > takes a draw with no Scores 0ms
+ ✓ src/lib/league/result.test.ts > parseLeagueResult refusals > refuses a result that isn't A won, B won or a draw 0ms
+ ✓ src/lib/league/result.test.ts > parseLeagueResult refusals > refuses a Score that isn't a number 0ms
+ ✓ src/lib/league/result.test.ts > parseLeagueResult refusals > refuses anything that isn't a form 0ms
+ ✓ src/lib/league/pairing.test.ts > roundRobin: a round robin of 5 > plays 5 rounds, each Entrant once per round 1ms
+ ✓ src/lib/league/pairing.test.ts > roundRobin: a round robin of 5 > meets every pair exactly once 1ms
+ ✓ src/lib/league/pairing.test.ts > roundRobin: a round robin of 5 > sits one Entrant out each round, and each Entrant out exactly once 0ms
+ ✓ src/lib/league/pairing.test.ts > roundRobin: an even count > plays N − 1 rounds with nobody sitting out, every pair once 0ms
+ ✓ src/lib/league/pairing.test.ts > roundRobin: an even count > pairs by Seed Position whatever order the Entrants arrive in 0ms
+ ✓ src/lib/league/pairing.test.ts > swissRound: round 1 > is one group paired top half against bottom half by Seed Position 1ms
+ ✓ src/lib/league/pairing.test.ts > swissRound: round 1 > with an odd count, gives the lowest seed the bye, listed last 0ms
+ ✓ src/lib/league/pairing.test.ts > swissRound: a fixed round 2 (the Swiss 1–9 fixture's round 1) > pairs within score groups, floats down to avoid a rematch and gives the bye to the lowest-ranked 0ms
+ ✓ src/lib/league/pairing.test.ts > swissRound: a dead end > refuses when every pairing would repeat a Match 0ms
+ ✓ src/lib/league/pairing.test.ts > swissRound: a Swiss League of 9 over 4 rounds > holds every rule on a fixed run 1ms
+ ✓ src/lib/league/pairing.test.ts > swissRound: a Swiss League of 9 over 4 rounds > holds every rule over 200 seeded runs 61ms
+ ✓ src/lib/league/pairing.test.ts > swissRound: 64 Entrants over 6 rounds > pairs every round within the step budget, with no rematch 18ms
+ ✓ src/lib/league/pairing.test.ts > swap > exchanges two Entrants of a round, keeping each Match's place 0ms
+ ✓ src/lib/league/pairing.test.ts > swap > can move an Entrant onto the bye 0ms
+ ✓ src/lib/league/pairing.test.ts > rematches and neverMet > names each pair that meets more than once 0ms
+ ✓ src/lib/league/pairing.test.ts > rematches and neverMet > names each pair of Entrants that never meets 0ms
+
+ Test Files  5 passed (5)
+      Tests  87 passed (87)
+   Start at  20:10:54
+   Duration  253ms (transform 242ms, setup 0ms, import 389ms, tests 104ms, environment 0ms)
+

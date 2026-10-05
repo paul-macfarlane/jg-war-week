@@ -171,7 +171,9 @@ export function toLoggedResultsAnswer(
       message:
         found.format === "participation"
           ? `${found.name} isn't run as Head-to-head or Best score; it's run as Participation. Call get_participation instead.`
-          : `${found.name} isn't run as Head-to-head or Best score; call get_bracket or get_leaderboard.`,
+          : found.format === "league"
+            ? `${found.name} isn't run as Head-to-head or Best score; it's run as a League. Call get_league instead.`
+            : `${found.name} isn't run as Head-to-head or Best score; call get_bracket or get_leaderboard.`,
     };
   }
 

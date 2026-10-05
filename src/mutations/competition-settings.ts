@@ -17,6 +17,7 @@ import {
   setCompetitionFormat,
 } from "@/mutations/brackets";
 import { setSelfEnroll } from "@/mutations/enrollment";
+import { NOT_A_LEAGUE } from "@/mutations/league";
 import { setSelfReport } from "@/mutations/match-reports";
 import { setParticipationSettings } from "@/mutations/participation";
 import { setSeriesConfig } from "@/mutations/series";
@@ -217,6 +218,15 @@ async function write(
       return set({ scoreDirection: change.value });
     case "scoreUnit":
       return set({ scoreUnit: change.value });
+    case "leagueConfig":
+      if (found.format !== "league") return refuse(NOT_A_LEAGUE);
+      // A round robin's rounds are always null (the parser sets it).
+      return set({
+        leagueConfig:
+          change.value.pairing === "round-robin"
+            ? { pairing: "round-robin", rounds: null }
+            : change.value,
+      });
     case "seriesConfig":
       return setSeriesConfig(id, change.value, ctx, tx);
     case "bestScoreConfig":

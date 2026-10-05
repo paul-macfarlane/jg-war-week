@@ -126,7 +126,7 @@ describe("PrivacyPage", () => {
     const source = readFileSync(new URL("./page.tsx", import.meta.url), "utf8");
     expect(source).toContain('export const dynamic = "force-dynamic"');
     expect(text).not.toMatch(
-      /\b(event|tournament|member|league|heat|champion|game)s?\b/i,
+      /\b(event|tournament|member|heat|champion|game)s?\b/i,
     );
     expect(text).not.toMatch(/\b(un-?)?finali[sz]/i);
   });

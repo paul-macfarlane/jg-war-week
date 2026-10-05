@@ -5,6 +5,7 @@ import {
   bracketMatch,
   competition,
   entrant,
+  leagueMatch,
   participant,
   squad,
   squadParticipant,
@@ -38,7 +39,8 @@ function refusingFacet(): EnrollFacet {
 
 /**
  * The facts self-enrollment is checked against (ADR 0006): the
- * Competition's Format, switch and close conditions (Bracket built,
+ * Competition's Format, switch and close conditions (Bracket built or a
+ * League's round 1 paired,
  * Entrant limit, Closed), its Entrants and Squads, the Squad
  * being joined or left (only a Squad of this Competition), and the
  * Participant of the Competition's War Week whose email is `email`,
@@ -78,7 +80,12 @@ export async function getEnrollFacts(
       })
       .from(entrant)
       .where(eq(entrant.competitionId, competitionId)),
-    dbOrTx.$count(bracketMatch, eq(bracketMatch.competitionId, competitionId)),
+    found.format === "league"
+      ? dbOrTx.$count(leagueMatch, eq(leagueMatch.competitionId, competitionId))
+      : dbOrTx.$count(
+          bracketMatch,
+          eq(bracketMatch.competitionId, competitionId),
+        ),
     dbOrTx.$count(squad, eq(squad.competitionId, competitionId)),
     squadId === undefined || squadId === null
       ? Promise.resolve(null)

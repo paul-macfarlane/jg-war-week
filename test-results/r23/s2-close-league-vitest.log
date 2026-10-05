@@ -1,0 +1,66 @@
+(!) Your Vite config uses features that are unsupported by `configLoader: 'native'`, which is planned to become the default in a future major version of Vite:
+  - ESM syntax in a file loaded as CommonJS (vitest.config.ts:1:1). Use a `.mjs` extension or set `"type": "module"` in the closest package.json
+Set `VITE_CONFIG_NATIVE_IGNORE_WARNING=true` to suppress this warning.
+
+ RUN  v4.1.11 /Users/paulmacfarlane/Code/jg-war-week/.claude/worktrees/r23-league/war-weeker
+
+ ✓ src/actions/league.test.ts > League pairing actions > pair, pair next, swap and clear pairings run through "league.pair", then revalidate 4ms
+ ✓ src/actions/league.test.ts > League pairing actions > refuses before parsing: the refusal wins over a malformed swap 0ms
+ ✓ src/actions/league.test.ts > League pairing actions > refuses a malformed swap once authorized 0ms
+ ✓ src/actions/league.test.ts > League pairing actions > closes through "results.close" and reopens through "results.reopen" 0ms
+ ✓ src/actions/league.test.ts > League result actions > authorizes the Match before parsing: the refusal wins over malformed input 0ms
+ ✓ src/actions/league.test.ts > League result actions > parses with the League's Score direction: the Scores decide, and a posted result against them is refused (R2) 1ms
+ ✓ src/actions/league.test.ts > League result actions > clears through "league.clear" 0ms
+ ✓ src/lib/placings-now.test.ts > placings now, by Format > 'Placement: each placed row\'s Place\'…' 1ms
+ ✓ src/lib/placings-now.test.ts > placings now, by Format > 'Placement: refused while nobody is pl…' 0ms
+ ✓ src/lib/placings-now.test.ts > placings now, by Format > 'Placement: refused while a row has a …' 0ms
+ ✓ src/lib/placings-now.test.ts > placings now, by Format > 'Bracket: the final\'s placings\' poin…' 1ms
+ ✓ src/lib/placings-now.test.ts > placings now, by Format > 'Bracket: refused until every Match is…' 0ms
+ ✓ src/lib/placings-now.test.ts > placings now, by Format > 'Head-to-head: the series Winner 1st, …' 0ms
+ ✓ src/lib/placings-now.test.ts > placings now, by Format > 'Head-to-head: a drawn Best of 3 (win,…' 1ms
+ ✓ src/lib/placings-now.test.ts > placings now, by Format > 'Participation, individual: N to each …' 0ms
+ ✓ src/lib/placings-now.test.ts > placings now, by Format > 'Participation, team: Teams by headcou…' 0ms
+ ✓ src/lib/placings-now.test.ts > SC1: a Head-to-head series closes once decided or drawn > refuses a series nobody has won and not every Match is played 0ms
+ ✓ src/lib/placings-now.test.ts > SC1: a Head-to-head series closes once decided or drawn > closes a decided series: the Winner 1st, the other 2nd 0ms
+ ✓ src/lib/placings-now.test.ts > SC1: a Head-to-head series closes once decided or drawn > closes a drawn series (win, Draw, Draw): both take 1st's full points 0ms
+ ✓ src/lib/placings-now.test.ts > leaguePlacingsNow (spec R23, decision 9; R10) > gives each standing's Placement Points, Entrants still tied sharing a place's full points 0ms
+ ✓ src/lib/placings-now.test.ts > leaguePlacingsNow (spec R23, decision 9; R10) > gives a team League's points to each Entrant's Team 0ms
+ ✓ src/lib/placings-now.test.ts > leaguePlacingsNow (spec R23, decision 9; R10) > refuses with a Match unplayed, naming it 0ms
+ ✓ src/lib/placings-now.test.ts > leaguePlacingsNow (spec R23, decision 9; R10) > refuses a Swiss League with a round not yet paired 0ms
+(node:38767) DeprecationWarning: Calling client.query() when the client is already executing a query is deprecated and will be removed in pg@9.0. Use async/await or an external async flow control mechanism instead.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+ ✓ src/mutations/league.test.ts > League pairing (spec R23) > Swiss: pairs round 1, waits for its results, pairs round 2 with no rematch, then every round is paired 928ms
+ ✓ src/mutations/close.test.ts > closeCompetition and reopenCompetition > Placement: Close writes each Place's points, Reopen withdraws them and keeps a typed entry 971ms
+ ✓ src/mutations/league.test.ts > League pairing (spec R23) > Swiss: an odd count gives one Entrant a bye, which takes no result 61ms
+ ✓ src/mutations/league.test.ts > League pairing (spec R23) > refuses pairing with fewer than 2 Entrants, and on another Format 39ms
+(node:38768) DeprecationWarning: Calling client.query() when the client is already executing a query is deprecated and will be removed in pg@9.0. Use async/await or an external async flow control mechanism instead.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+ ✓ src/mutations/close.test.ts > closeCompetition and reopenCompetition > Placement: refuses a Score with no Place, or nobody placed, and writes nothing 44ms
+ ✓ src/mutations/close.test.ts > closeCompetition and reopenCompetition > Head-to-head: Close gives the series winner 1st and the other 2nd; Reopen withdraws 44ms
+ ✓ src/mutations/league.test.ts > League pairing (spec R23) > round robin: Pair rounds pairs everyone once; Clear pairings deletes them until a Match has a result 62ms
+ ✓ src/mutations/league.test.ts > League pairing edits (reading R7) > Swiss: swaps two Entrants of a round before a result, and refuses once the round has one 43ms
+ ✓ src/mutations/close.test.ts > closeCompetition and reopenCompetition > Head-to-head: a drawn Best of 3 (win, Draw, Draw) gives both Entrants 1st place's full points 56ms
+ ✓ src/mutations/close.test.ts > closeCompetition and reopenCompetition > Best score: Close ranks the best Attempts, ties sharing a place's points; Reopen withdraws 42ms
+ ✓ src/mutations/close.test.ts > closeCompetition and reopenCompetition > Participation: Close gives each Participant who took part N points; Reopen withdraws 40ms
+ ✓ src/mutations/league.test.ts > League pairing edits (reading R7) > round robin: allows a swap that repeats a pairing (Q4), and refuses one touching a Match with a result 41ms
+ ✓ src/mutations/league.test.ts > League results (spec R23, decision 8) > with self-report on, a player records their own Match and their opponent changes it; a non-player is refused 44ms
+ ✓ src/mutations/league.test.ts > League results (spec R23, decision 8) > with self-report off, refuses the players, and a Host or Organizer still records (recorded by no Participant) 64ms
+ ✓ src/mutations/close.test.ts > closeCompetition and reopenCompetition > Bracket: Close is refused until the Bracket is complete, then gives the final placings' points 68ms
+ ✓ src/mutations/close.test.ts > closeCompetition and reopenCompetition > Head-to-head (SC1): refuses a series neither decided nor drawn and writes nothing 41ms
+ ✓ src/mutations/close.test.ts > closeCompetition and reopenCompetition > League (spec R23, decision 9; R10; SC1) > refuses with a Match unplayed, naming it, and writes nothing 40ms
+ ✓ src/mutations/close.test.ts > closeCompetition and reopenCompetition > League (spec R23, decision 9; R10; SC1) > refuses a Swiss League with a round not yet paired 46ms
+ ✓ src/mutations/close.test.ts > closeCompetition and reopenCompetition > League (spec R23, decision 9; R10; SC1) > closes a complete League with Placement Points by standing, ties sharing full points; Reopen withdraws them 19ms
+ ✓ src/mutations/close.test.ts > closeCompetition and reopenCompetition > refuses a Competition of another War Week or one that doesn't exist 11ms
+ ✓ src/mutations/league.test.ts > League results (spec R23, decision 8) > clears a result, by whoever could record it, and refuses a Match with none 40ms
+ ✓ src/mutations/league.test.ts > League results (spec R23, decision 8) > refuses another Competition's Match id, another War Week, and a Closed League (P3a) 46ms
+ ✓ src/mutations/league.test.ts > League settings, Entrants and enrollment (reading R1) > saving Round robin writes rounds null (M3), and the Pairing, Score direction and Entrants lock once paired until Clear pairings 194ms
+ ✓ src/mutations/league.test.ts > League settings, Entrants and enrollment (reading R1) > enrollment closes when round 1 is paired 23ms
+ ✓ src/mutations/league.test.ts > League settings, Entrants and enrollment (reading R1) > refuses deleting a paired League, and counts its results for Unstart and End War Week 37ms
+ ✓ src/mutations/league.test.ts > getLeagueView (P4) > gives a player their next Match and Record result on it, the Host the offers with their reasons, and Provisional points once a Match has a result 30ms
+ ✓ src/mutations/league.test.ts > getLeagueView (P4) > is null for another Format 11ms
+
+ Test Files  4 passed (4)
+      Tests  50 passed (50)
+   Start at  20:32:49
+   Duration  2.11s (transform 579ms, setup 0ms, import 1.76s, tests 3.10s, environment 0ms)
+

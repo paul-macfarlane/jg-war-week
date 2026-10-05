@@ -4,22 +4,16 @@
  * result.
  */
 import type { BracketConfig } from "@/lib/bracket/config";
-import type { COMPETITION_FORMATS, LoggedFormat } from "@/lib/enums";
+import type { COMPETITION_FORMATS } from "@/lib/enums";
 
 /** How a Competition is run; see CONTEXT.md. */
 export type Format = (typeof COMPETITION_FORMATS)[number];
 
 /**
- * The Format that runs as a Bracket, `bracket`: what's left once
- * `placement`, the logged Formats (a Head-to-head or Best score
- * Competition is decided by logged Matches or Attempts, never a Bracket)
- * and `participation` (decided by
- * who took part) are excluded.
+ * The Format that runs as a Bracket: `bracket` alone. Extracted, not the
+ * rest of the Formats, so a new Format (League) never narrows into it.
  */
-export type BracketFormat = Exclude<
-  Format,
-  "placement" | LoggedFormat | "participation"
->;
+export type BracketFormat = Extract<Format, "bracket">;
 
 /** A Team or Participant entered in a Bracket, at its Seed Position. */
 export type Entrant = { id: string; seedPosition: number; label: string };

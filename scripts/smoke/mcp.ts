@@ -191,6 +191,7 @@ export async function assertMcp() {
       "list_history",
       "get_history",
       "get_bracket",
+      "get_league",
       "get_games",
       "get_participation",
       "get_placements",

@@ -8,6 +8,7 @@ import {
   bracketMatchEntrant,
   competition,
   entrant,
+  leagueMatch,
   participant,
   pointsEntry,
   seriesMatch,
@@ -51,6 +52,7 @@ import {
 import { isBracketFormat } from "@/lib/bracket/view";
 import {
   LOCKED_BY_MATCH_RESULT,
+  LOCKED_BY_PAIRING,
   settingLockReason,
 } from "@/lib/competition-locks";
 import { isLoggedFormat } from "@/lib/enums";
@@ -73,6 +75,7 @@ export const REOPEN_FIRST = "Reopen the Competition first.";
 const NO_SQUADS_IN_HEAD_TO_HEAD = "Squads aren't entered in a Head-to-head.";
 export const HEAD_TO_HEAD_NEEDS_TWO =
   "A Head-to-head needs exactly 2 Entrants.";
+const NO_SQUADS_IN_LEAGUE = "Squads aren't entered in a League.";
 /** Best score takes no Entrant list (spec R21, decision 5). */
 export const BEST_SCORE_NO_ENTRANTS =
   "Best score has no Entrant list: anyone can log an Attempt.";
@@ -533,6 +536,10 @@ async function changeFormat(
  * Entrants can't change until the Matches are deleted. Best score has no
  * Entrant list.
  *
+ * A League's Entrants (spec R23, decision 2) take Teams or Participants by
+ * scoring (never Squads), any number, in the order added; once round 1 is
+ * paired they lock (`LOCKED_BY_PAIRING`) until Clear pairings.
+ *
  * `format` says which the caller sets: a Bracket's Entrants refuse a
  * Head-to-head, a Head-to-head's refuse any other Format.
  */
@@ -554,13 +561,19 @@ export async function replaceEntrants(
     const found = await lockedCompetition(tx, competitionId, ctx);
     if (found?.format === "best-score") return refuse(BEST_SCORE_NO_ENTRANTS);
     const isSeries = found !== undefined && isLoggedFormat(found.format);
+    const isLeague = found?.format === "league";
     if (found && format === "head-to-head" && !isSeries) {
       return refuse(NOT_HEAD_TO_HEAD);
     }
-    if (found && format === "bracket" && isSeries) return refuse(NOT_A_BRACKET);
+    if (found && format === "bracket" && (isSeries || isLeague)) {
+      return refuse(NOT_A_BRACKET);
+    }
     if (isSeries) {
       if (found.closedAt) return refuse(REOPEN_FIRST);
       if (givenKind === "squad") return refuse(NO_SQUADS_IN_HEAD_TO_HEAD);
+    } else if (isLeague) {
+      if (found.closedAt) return refuse(REOPEN_FIRST);
+      if (givenKind === "squad") return refuse(NO_SQUADS_IN_LEAGUE);
     } else {
       const refusal = bracketRefusal(found);
       if (refusal || !isBracketRun(found)) {
@@ -629,6 +642,12 @@ export async function replaceEntrants(
       if (played) {
         return refuse(`${played} has logged Matches. Delete them first.`);
       }
+    } else if (isLeague) {
+      const paired = await tx.$count(
+        leagueMatch,
+        eq(leagueMatch.competitionId, competitionId),
+      );
+      if (paired > 0) return refuse(LOCKED_BY_PAIRING);
     } else {
       if (isBracketRun(found) && hasResults(await bracketOf(tx, found))) {
         return refuse(LOCKED_BY_MATCH_RESULT);

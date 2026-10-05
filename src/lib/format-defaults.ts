@@ -14,12 +14,14 @@ import {
 import type { Format } from "@/lib/bracket/types";
 import { BRACKET_PLACEMENTS } from "@/lib/competitions";
 import type { COMPETITION_SCORINGS, ScoreDirection } from "@/lib/enums";
+import { DEFAULT_LEAGUE_CONFIG, type LeagueConfig } from "@/lib/league/config";
 import { DEFAULT_SERIES_CONFIG, type SeriesConfig } from "@/lib/series/config";
 
 export type FormatDefaults = {
   bracketConfig: BracketConfig | null;
   seriesConfig: SeriesConfig | null;
   bestScoreConfig: BestScoreConfig | null;
+  leagueConfig: LeagueConfig | null;
   scoreDirection: ScoreDirection;
   participationPoints: number | null;
   placementPoints: number[] | null;
@@ -30,7 +32,7 @@ export type FormatDefaults = {
  * a Bracket's match settings (`bracketConfig`, else the default) and at
  * most its first 4 Placement Points; a Head-to-head's default series (no
  * draws, Best of 3); Best score's default Team score and a `higher` Score
- * direction (it has no `none`); every other Format `none`; a team
+ * direction (it has no `none`); a League's round robin; every other Format `none`; a team
  * Participation Competition's Placement Points (3/2/1 when it has none)
  * and an individual one's 1 point per Participant instead.
  */
@@ -63,6 +65,9 @@ export function formatDefaults(
       format === "bracket" ? (bracketConfig ?? DEFAULT_BRACKET_CONFIG) : null,
     seriesConfig: format === "head-to-head" ? DEFAULT_SERIES_CONFIG : null,
     bestScoreConfig: format === "best-score" ? DEFAULT_BEST_SCORE_CONFIG : null,
+    // Set on a League and cleared on every other Format, so the CHECK
+    // `competition_league_config_league` holds on a Format change.
+    leagueConfig: format === "league" ? DEFAULT_LEAGUE_CONFIG : null,
     scoreDirection: format === "best-score" ? "higher" : "none",
     ...points,
   };

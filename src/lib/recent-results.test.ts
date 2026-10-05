@@ -107,6 +107,28 @@ describe("shapeRecentResults", () => {
     expect(row).toMatchObject({ kind: "results-closed", winners: [red, blue] });
   });
 
+  it("shows a closed League's winner as a results row, listing a tie for first (R23)", () => {
+    const league: ResultCompetition = {
+      id: "chess",
+      name: "Chess Swiss",
+      format: "league",
+      closedAt: at(6),
+    };
+    const rows = shapeRecentResults(
+      [league],
+      [
+        entry("chess", red, 10, at(6), true),
+        entry("chess", blue, 10, at(6), true),
+      ],
+    );
+    expect(rows).toHaveLength(1);
+    expect(rows[0]).toMatchObject({
+      kind: "results-closed",
+      competition: "Chess Swiss",
+      winners: [red, blue],
+    });
+  });
+
   it("shows a Closed Placement's winner instead of its generated entries, listing a tie for first", () => {
     const darts: ResultCompetition = {
       id: "darts",

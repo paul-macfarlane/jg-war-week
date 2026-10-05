@@ -64,6 +64,11 @@ import {
   assertParticipantRefused,
   deleteSmokeHosts,
 } from "./hosts";
+import {
+  assertLeagueConstraints,
+  assertLeagueLoop,
+  assertLeagueSeeds,
+} from "./league";
 import { assertPostedWarWeekWins, assertWarWeekLifecycle } from "./lifecycle";
 import { assertLoggedResultsLoop } from "./logged-results";
 import { assertMcp } from "./mcp";
@@ -163,6 +168,7 @@ async function main() {
   await assertPlacementTargetConstraint();
   await assertParticipationColumnsConstraint();
   await assertFormatColumnsConstraints();
+  await assertLeagueConstraints();
   await assertPlacementPointsSeeded();
   await assertAwardNamesSeeded();
 
@@ -247,11 +253,15 @@ async function main() {
       await assertHostChecks(sessions);
       await assertParticipantRefused(sessions);
       await assertParticipationLoop(sessions);
+      await assertLeagueLoop(sessions);
       // Ends XI by SQL in its own step, then restores it.
       await assertLoggedResultsLoop(sessions);
       await assertPostedWarWeekWins(sessions);
       // It changes which War Week is current, then restores XI.
       await assertWarWeekLifecycle(sessions);
+      // Ends XI by SQL so XII is current, loads XII's demo Leagues, then
+      // restores XI and XII.
+      await assertLeagueSeeds(sessions);
       // Final phase: reloads the seeds with the XII scale demo, then puts
       // localSeedFiles() back. Before the step below, which can leave the
       // faq_item table hidden until `restoreFaqTable` in `finally`.

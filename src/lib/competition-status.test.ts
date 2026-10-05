@@ -7,6 +7,7 @@ import {
   bracketRoundInPlay,
   competitionStatus,
   competitionStatusText,
+  leagueRoundInPlay,
 } from "@/lib/competition-status";
 
 /** A Competition with nothing entered yet; each case overrides a fact. */
@@ -270,5 +271,78 @@ describe("bracketRoundInPlay", () => {
         ]),
       ),
     ).toEqual({ round: 2, of: 2 });
+  });
+});
+
+describe("a League's status", () => {
+  it("is Not started with no Entrant, Underway · Round 2 of 3 mid-League, and Done once Closed", () => {
+    expect(text({ format: "league" })).toBe("Not started");
+    expect(
+      text({
+        format: "league",
+        hasResult: true,
+        leagueRound: { round: 2, of: 3 },
+      }),
+    ).toBe("Underway · Round 2 of 3");
+    // A League has no final: its last round is still "Round m of m".
+    expect(
+      text({
+        format: "league",
+        hasResult: true,
+        leagueRound: { round: 3, of: 3 },
+      }),
+    ).toBe("Underway · Round 3 of 3");
+    expect(text({ format: "league", closed: true, hasResult: true })).toBe(
+      "Done",
+    );
+    expect(
+      text({
+        format: "league",
+        closed: true,
+        hasResult: true,
+        winners: ["Ada"],
+      }),
+    ).toBe("Done · Winner: Ada");
+  });
+});
+
+describe("leagueRoundInPlay", () => {
+  const swiss3 = { pairing: "swiss", rounds: 3 } as const;
+  const m = (
+    round: number,
+    b: string | null,
+    result: "a" | "b" | "draw" | null,
+  ) => ({ round, b, result });
+
+  it("is null before round 1 is paired", () => {
+    expect(leagueRoundInPlay(swiss3, 6, [])).toBeNull();
+  });
+
+  it("is the first round with a Match to play, a bye never being one", () => {
+    expect(
+      leagueRoundInPlay(swiss3, 5, [
+        m(1, "x", "a"),
+        m(1, "y", null),
+        m(1, null, null),
+      ]),
+    ).toEqual({ round: 1, of: 3 });
+  });
+
+  it("is the next round to pair once every paired round is played", () => {
+    expect(
+      leagueRoundInPlay(swiss3, 6, [m(1, "x", "a"), m(1, "y", "draw")]),
+    ).toEqual({ round: 2, of: 3 });
+  });
+
+  it("is the last round once every round is played", () => {
+    const rr = { pairing: "round-robin", rounds: null } as const;
+    // A round robin of 4 plays 3 rounds.
+    expect(
+      leagueRoundInPlay(rr, 4, [
+        m(1, "x", "a"),
+        m(2, "x", "b"),
+        m(3, "x", "a"),
+      ]),
+    ).toEqual({ round: 3, of: 3 });
   });
 });

@@ -8,6 +8,7 @@ import {
   attempt,
   competition,
   entrant,
+  leagueMatch,
   participation,
   placement,
   pointsEntry,
@@ -20,11 +21,13 @@ import {
   type CompetitionStatus,
   bracketRoundInPlay,
   competitionStatus,
+  leagueRoundInPlay,
 } from "@/lib/competition-status";
 import {
   type CompetitionListItem,
   groupCompetitions,
 } from "@/lib/competitions";
+import { leagueConfigOf } from "@/lib/league/config";
 import { finalWinners } from "@/lib/recent-results";
 import { isUuid } from "@/lib/uuid";
 import { loadBrackets } from "@/queries/brackets";
@@ -93,10 +96,12 @@ export async function getCompetitions(
       ...competitionColumns,
       closedAt: competition.closedAt,
       bracketConfig: competition.bracketConfig,
+      leagueConfig: competition.leagueConfig,
     })
     .from(competition)
     .where(eq(competition.warWeekId, warWeek.id));
   const ids = rows.map((c) => c.id);
+  const leagueIds = rows.flatMap((c) => (c.format === "league" ? [c.id] : []));
   const closedIds = rows.flatMap((c) => (c.closedAt ? [c.id] : []));
 
   /** How many rows of `table` each Competition has, by Competition id. */
@@ -123,6 +128,7 @@ export async function getCompetitions(
     generated,
     brackets,
     generatedEntries,
+    leagueMatches,
   ] = await Promise.all([
     countsBy(entrant, entrant.competitionId),
     countsBy(seriesMatch, seriesMatch.competitionId),
@@ -146,7 +152,20 @@ export async function getCompetitions(
           ),
         )
       : Promise.resolve([]),
+    leagueIds.length > 0
+      ? dbOrTx
+          .select({
+            competitionId: leagueMatch.competitionId,
+            round: leagueMatch.round,
+            b: leagueMatch.entrantBId,
+            result: leagueMatch.result,
+          })
+          .from(leagueMatch)
+          .where(inArray(leagueMatch.competitionId, leagueIds))
+      : Promise.resolve([]),
   ]);
+  const leagueMatchesOf = (id: string) =>
+    leagueMatches.filter((m) => m.competitionId === id);
 
   const winnersOf = new Map(
     finalWinners(rows, generatedEntries.map(toResultEntry)).map((final) => [
@@ -158,6 +177,7 @@ export async function getCompetitions(
 
   const listed = rows.map((row): CompetitionListRow => {
     const bracket = brackets.get(row.id);
+    const league = row.format === "league" ? leagueMatchesOf(row.id) : [];
     return {
       id: row.id,
       name: row.name,
@@ -178,9 +198,19 @@ export async function getCompetitions(
           // Only Brackets have Matches, and `loadBrackets` has them.
           matches: bracket?.matches.length ?? 0,
           matchResult: bracket ? hasResults(bracket) : false,
+          leagueMatches: league.length,
+          leagueResult: league.some((m) => m.result !== null),
           generatedPointsEntries: generated.get(row.id) ?? 0,
         }),
         bracketRound: bracket ? bracketRoundInPlay(bracket) : null,
+        leagueRound:
+          row.format === "league"
+            ? leagueRoundInPlay(
+                leagueConfigOf(row),
+                entrants.get(row.id) ?? 0,
+                league,
+              )
+            : null,
         winners: winnersOf.get(row.id) ?? [],
       }),
     };

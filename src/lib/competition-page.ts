@@ -13,6 +13,7 @@ import type { Format } from "@/lib/bracket/types";
 import type { CompetitionSettingField } from "@/lib/competition-locks";
 import type { CompetitionSettingChange } from "@/lib/competition-settings";
 import type { COMPETITION_SCORINGS, ScoreDirection } from "@/lib/enums";
+import { type LeagueConfig, leagueConfigOf } from "@/lib/league/config";
 import { formatPoints } from "@/lib/points";
 import { type Content } from "@/lib/rich-text/content";
 import { type SeriesConfig, seriesConfigOf } from "@/lib/series/config";
@@ -43,6 +44,8 @@ export type CompetitionSettingsValues = {
   bestScoreConfig: BestScoreConfig | null;
   /** A Bracket's config; else null. */
   bracketConfig: BracketConfig | null;
+  /** A League's Pairing and rounds; else null. */
+  leagueConfig: LeagueConfig | null;
   selfEnroll: boolean;
   entrantLimit: string;
   selfReport: boolean;
@@ -70,6 +73,8 @@ export type CompetitionSettingsSource = {
   seriesConfig: unknown;
   bestScoreConfig: unknown;
   bracketConfig: unknown;
+  /** A League's config; absent or null on every other Format. */
+  leagueConfig?: unknown;
   selfEnroll: boolean;
   entrantLimit: number | null;
   selfReport: boolean;
@@ -100,6 +105,10 @@ export function settingsValuesOf(
     seriesConfig: format === "head-to-head" ? seriesConfigOf(source) : null,
     bestScoreConfig: format === "best-score" ? bestScoreConfigOf(source) : null,
     bracketConfig: format === "bracket" ? configOf(source) : null,
+    leagueConfig:
+      format === "league"
+        ? leagueConfigOf({ leagueConfig: source.leagueConfig })
+        : null,
     selfEnroll: source.selfEnroll,
     entrantLimit:
       source.entrantLimit === null ? "" : String(source.entrantLimit),
@@ -134,8 +143,9 @@ export function shownSettings(
   const { format } = values;
   const individualParticipation =
     format === "participation" && values.scoring === "individual";
-  // Only a Bracket takes enrollment (spec R21, decision 5).
-  const enrolls = format === "bracket";
+  // Only a Bracket or a League takes enrollment (spec R21, decision 5;
+  // spec R23, decision 2).
+  const enrolls = format === "bracket" || format === "league";
   const fields: (SettingsField | false)[] = [
     "name",
     "group",
@@ -153,12 +163,14 @@ export function shownSettings(
     format === "best-score" && values.scoring === "team" && "bestScoreConfig",
     format === "head-to-head" && "seriesConfig",
     format === "bracket" && "bracketConfig",
+    format === "league" && "leagueConfig",
     format === "best-score" && "maxAttempts",
     // "Participants can log their own results" (spec R21, decision 4):
     // never Placement (ADR 0010) or Participation.
     (format === "bracket" ||
       format === "head-to-head" ||
-      format === "best-score") &&
+      format === "best-score" ||
+      format === "league") &&
       "selfReport",
     enrolls && "selfEnroll",
     enrolls && values.selfEnroll && "entrantLimit",
@@ -179,4 +191,6 @@ export const FORMAT_DESCRIPTIONS: Record<Format, string> = {
     "Each Attempt records a Score; a person's best counts. Anyone logs Attempts as themselves and a leaderboard ranks them.",
   participation:
     "Points for taking part: the Host ticks who took part, or Participants check in.",
+  league:
+    "Entrants play each other one Match at a time, round robin or Swiss, for match points.",
 };

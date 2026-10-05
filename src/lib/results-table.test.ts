@@ -4,6 +4,7 @@ import {
   DEFAULT_RESULTS_SORT,
   ariaSortFor,
   entryPointsFor,
+  foldedStatsText,
   nextResultsSort,
   showsScore,
   sortResults,
@@ -185,5 +186,56 @@ describe("entryPointsFor", () => {
     expect(entryPointsFor(entries, { teamId: "blue" })).toBeNull();
     expect(entryPointsFor(entries, { participantId: "bo" })).toBeNull();
     expect(entryPointsFor(entries, {})).toBeNull();
+  });
+});
+
+describe("stat columns", () => {
+  const withStats = [
+    { key: "ada", rank: 1, name: "Ada", points: null, stats: { w: 3, sb: 4 } },
+    { key: "bo", rank: 2, name: "Bo", points: null, stats: { w: 5, sb: null } },
+    { key: "cy", rank: 3, name: "Cy", points: null, stats: { w: 1, sb: 9 } },
+    { key: "dee", rank: 4, name: "Dee", points: null },
+  ];
+
+  it("sorts by a stat, most first, rows without it last either way", () => {
+    expect(
+      keys(
+        sortResults(withStats, { column: "stat:w", direction: "descending" }),
+      ),
+    ).toEqual(["bo", "ada", "cy", "dee"]);
+    expect(
+      keys(
+        sortResults(withStats, { column: "stat:sb", direction: "ascending" }),
+      ),
+    ).toEqual(["ada", "cy", "bo", "dee"]);
+    expect(
+      keys(
+        sortResults(withStats, { column: "stat:sb", direction: "descending" }),
+      ),
+    ).toEqual(["cy", "ada", "bo", "dee"]);
+  });
+
+  it("starts a stat's sort most first, then flips it", () => {
+    const first = nextResultsSort(DEFAULT_RESULTS_SORT, "stat:w");
+    expect(first).toEqual({ column: "stat:w", direction: "descending" });
+    expect(nextResultsSort(first, "stat:w").direction).toBe("ascending");
+    expect(ariaSortFor(first, "stat:w")).toBe("descending");
+    expect(ariaSortFor(first, "stat:sb")).toBe("none");
+  });
+
+  it("folds the folding stats into one line under the name", () => {
+    const stats = [
+      { id: "w", header: "W", label: "W", fold: true, labelAfter: true },
+      { id: "d", header: "D", label: "D", fold: true, labelAfter: true },
+      { id: "mp", header: "Match points", label: "MP", fold: false },
+      { id: "sb", header: "SB", label: "SB", fold: true },
+    ];
+    expect(foldedStatsText(stats, { w: 2, d: 1, mp: 2.5, sb: 4.5 })).toBe(
+      "2 W · 1 D · SB 4.5",
+    );
+    expect(foldedStatsText(stats, { w: 0, d: 0, mp: 0, sb: null })).toBe(
+      "0 W · 0 D",
+    );
+    expect(foldedStatsText(stats, undefined)).toBe("");
   });
 });

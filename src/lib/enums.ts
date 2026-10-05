@@ -28,6 +28,7 @@ export const COMPETITION_FORMATS = [
   "head-to-head",
   "best-score",
   "participation",
+  "league",
 ] as const;
 
 /**
@@ -39,6 +40,14 @@ export const COMPETITION_FORMATS = [
 export const SCORE_DIRECTIONS = ["none", "higher", "lower"] as const;
 
 export type ScoreDirection = (typeof SCORE_DIRECTIONS)[number];
+
+/**
+ * A League Match's result (CONTEXT.md, League): Entrant A won, Entrant B
+ * won, or a draw. A bye or sit-out never has one.
+ */
+export const LEAGUE_RESULTS = ["a", "b", "draw"] as const;
+
+export type LeagueResult = (typeof LEAGUE_RESULTS)[number];
 
 export const MATCH_STATUSES = ["pending", "ready", "played"] as const;
 

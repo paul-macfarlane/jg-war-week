@@ -85,7 +85,7 @@ export type BracketResult =
       competition: {
         name: string;
         scoring: Competition["scoring"];
-        format: LoggedFormat | "participation";
+        format: LoggedFormat | "participation" | "league";
       };
       bracket: null;
       message: string;
@@ -131,6 +131,25 @@ export function toParticipationBracketResult(
 }
 
 /**
+ * The `get_bracket` answer for a League, which is never a Bracket: no
+ * Bracket, and a pointer to `get_league`. Pure.
+ */
+export function toLeagueBracketResult(
+  competition: Pick<Competition, "name" | "scoring">,
+): BracketResult {
+  return {
+    found: true,
+    competition: {
+      name: competition.name,
+      scoring: competition.scoring,
+      format: "league",
+    },
+    bracket: null,
+    message: `${competition.name} isn't run as a Bracket; it's run as a League. Call get_league instead.`,
+  };
+}
+
+/**
  * Serializes a Bracket (or its absence, or a Placement Competition) into the
  * `get_bracket` MCP tool payload. Names only: never an email, the Organizer
  * list, Hosts or who self-reported a Match. Pure: the route resolves the
@@ -156,6 +175,10 @@ export function toBracketResult(
   }
   if (view.competition.format === "participation") {
     return toParticipationBracketResult(view.competition);
+  }
+
+  if (view.competition.format === "league") {
+    return toLeagueBracketResult(view.competition);
   }
 
   if (view.competition.format === "placement") {

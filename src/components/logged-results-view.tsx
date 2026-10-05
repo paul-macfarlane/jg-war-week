@@ -114,7 +114,7 @@ function timeAgo(then: Date, now: Date): string {
   return "just now";
 }
 
-function When({ at, now }: { at: Date; now: Date }) {
+export function When({ at, now }: { at: Date; now: Date }) {
   return (
     <time
       dateTime={new Date(at).toISOString()}
@@ -126,7 +126,7 @@ function When({ at, now }: { at: Date; now: Date }) {
 }
 
 /** A row's lead: a person's Avatar, or a Team's color dot. */
-function Lead({
+export function Lead({
   scoring,
   row,
   primaryColor,
@@ -153,7 +153,7 @@ function Lead({
 }
 
 /** A Participant's Team by name (the Team rule); a Team row is the Team. */
-function RowTeam({
+export function RowTeam({
   scoring,
   row,
 }: {

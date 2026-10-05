@@ -110,11 +110,12 @@ export function shapeRecentResults(
       continue;
     }
     results.push({
-      kind: isLoggedFormat(c.format)
-        ? "results-closed"
-        : c.format === "placement"
-          ? "placement-closed"
-          : "bracket-closed",
+      kind:
+        isLoggedFormat(c.format) || c.format === "league"
+          ? "results-closed"
+          : c.format === "placement"
+            ? "placement-closed"
+            : "bracket-closed",
       ...base,
       winners: final.winners,
     });

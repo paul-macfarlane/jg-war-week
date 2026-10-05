@@ -5,7 +5,8 @@
  * and the tests share one rule.
  */
 
-export type ResultsColumn = "rank" | "name" | "score" | "points";
+export type ResultsColumn =
+  "rank" | "name" | "score" | "points" | `stat:${string}`;
 export type SortDirection = "ascending" | "descending";
 export type ResultsSort = { column: ResultsColumn; direction: SortDirection };
 
@@ -26,7 +27,15 @@ export type SortableResult = {
   name: string;
   score?: number | null;
   points: number | null;
+  /** Extra stat columns (a League's W, D, L...), by stat id. */
+  stats?: Record<string, number | string | null>;
 };
+
+/** A stat column's numeric value on a row; text or a missing value is none. */
+function statValue(row: SortableResult, id: string): number | null {
+  const value = row.stats?.[id];
+  return typeof value === "number" ? value : null;
+}
 
 const byName = (a: SortableResult, b: SortableResult) =>
   a.name.localeCompare(b.name) || a.key.localeCompare(b.key);
@@ -65,6 +74,10 @@ export function sortResults<T extends SortableResult>(
         return compareMaybe(a.score, b.score, sort.direction);
       case "points":
         return compareMaybe(a.points, b.points, sort.direction);
+      default: {
+        const id = sort.column.slice("stat:".length);
+        return compareMaybe(statValue(a, id), statValue(b, id), sort.direction);
+      }
     }
   };
   return [...rows].sort(
@@ -83,7 +96,7 @@ export function ariaSortFor(
 /**
  * The sort after pressing `column`'s header: the sorted column flips; a
  * new column starts at its natural direction (Rank and name ascending,
- * Score and points most first).
+ * Score, points and every stat most first).
  */
 export function nextResultsSort(
   sort: ResultsSort,
@@ -160,4 +173,49 @@ export function entryPointsFor(
     mine.reduce((total, entry) => total + Math.round(entry.points * 100), 0) /
     100
   );
+}
+
+/** A stat column a results table adds (a League's W, D, L, Match points...). */
+export type ResultsStat = {
+  id: string;
+  /** The column header. */
+  header: string;
+  /** What the folded line calls it ("W", "SB"). */
+  label: string;
+  /** Below `sm` it folds into the line under the name; false stays a column. */
+  fold: boolean;
+  /** The label follows the value ("2 W") rather than leads it ("SB 4.5"). */
+  labelAfter?: boolean;
+  /** How a value reads in a cell and the folded line; default `String`. */
+  format?: (value: number | string) => string;
+};
+
+/** A stat's value as a cell reads it: "–" for none. */
+export function statText(
+  stat: Pick<ResultsStat, "format">,
+  value: number | string | null | undefined,
+): string {
+  if (value === null || value === undefined) return "–";
+  return stat.format ? stat.format(value) : String(value);
+}
+
+/**
+ * The line under a name below `sm`: every folding stat that has a value,
+ * "2 W · 1 D · 0 L · SB 4.5". Empty when none has one.
+ */
+export function foldedStatsText(
+  stats: ResultsStat[],
+  values: Record<string, number | string | null> | undefined,
+): string {
+  return stats
+    .filter((stat) => stat.fold)
+    .flatMap((stat) => {
+      const value = values?.[stat.id];
+      if (value === null || value === undefined) return [];
+      const text = statText(stat, value);
+      return [
+        stat.labelAfter ? `${text} ${stat.label}` : `${stat.label} ${text}`,
+      ];
+    })
+    .join(" · ");
 }

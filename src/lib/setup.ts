@@ -15,6 +15,8 @@ import {
   isLoggedFormat,
 } from "@/lib/enums";
 import { fieldErrorsFrom } from "@/lib/form-errors";
+import { DEFAULT_LEAGUE_CONFIG, roundsError } from "@/lib/league/config";
+import { leagueConfigSchema } from "@/lib/league/config-schema";
 import { participationPointsSchema } from "@/lib/participation/input";
 import { parsePlacementPointsText } from "@/lib/placement-points";
 import { pointsSchema as points } from "@/lib/points-entry";
@@ -123,12 +125,15 @@ export const competitionSeedSchema = z
     bracketConfig: bracketConfigSchema.nullish(),
     /** A Head-to-head's draws and Best of; omitted for the default (Best of 3). */
     seriesConfig: seriesConfigSchema.optional(),
+    /** A League's Pairing and rounds; omitted is a round robin. Set on insert only. */
+    leagueConfig: leagueConfigSchema.optional(),
     /**
-     * A Head-to-head's two Entrants: Participant display names (individual)
-     * or Team names (team) from this seed. Added when absent; a reload
-     * changes nothing.
+     * A Head-to-head's two Entrants, or a League's (2 or more, in Seed
+     * Position order): Participant display names (individual) or Team
+     * names (team) from this seed. Added when absent (a League's only
+     * while it has no Entrant and no Match); a reload changes nothing.
      */
-    entrants: z.array(z.string().min(1).max(120)).length(2).optional(),
+    entrants: z.array(z.string().min(1).max(120)).min(2).optional(),
     /**
      * The Competition's Hosts: Participant display names from this seed's
      * roster (ADR 0012). Added when absent; a reload never removes one.
@@ -148,9 +153,9 @@ export const competitionSeedSchema = z
     /** The Scores' unit label, like "sec" (Placement or Best score). Set on insert only. */
     scoreUnit: z.string().trim().min(1).max(20).optional(),
     /**
-     * A Placement Competition seeded Closed, with its real time and
-     * author (all three together): the loader writes its generated Points
-     * Entries as Close does. Set on insert only.
+     * A Placement or League Competition seeded Closed, with its real time
+     * and author (all three together): the loader writes its generated
+     * Points Entries as Close does. Set on insert only.
      */
     closed: z.literal(true).optional(),
     closedAt: z.iso.datetime({ offset: true }).optional(),
@@ -173,22 +178,31 @@ export const competitionSeedSchema = z
         path: ["placementPoints"],
       });
     }
-    // A seeded Close is Placement's alone.
-    if (c.format !== "placement" && c.closed !== undefined) {
+    // A seeded Close is Placement's and League's.
+    if (
+      c.format !== "placement" &&
+      c.format !== "league" &&
+      c.closed !== undefined
+    ) {
       ctx.addIssue({
         code: "custom",
-        message: "closed is only for a placement Competition",
+        message: "closed is only for a placement or league Competition",
         path: ["closed"],
       });
     }
-    // The Score direction and unit are Placement's and Best score's; Best
-    // score's is never none (the CHECK `competition_score_direction_by_format`).
-    if (c.format !== "placement" && c.format !== "best-score") {
+    // The Score direction and unit are Placement's, Best score's and
+    // League's; Best score's is never none (the CHECK
+    // `competition_score_direction_by_format`).
+    if (
+      c.format !== "placement" &&
+      c.format !== "best-score" &&
+      c.format !== "league"
+    ) {
       for (const key of ["scoreDirection", "scoreUnit"] as const) {
         if (c[key] !== undefined) {
           ctx.addIssue({
             code: "custom",
-            message: `${key} is only for a placement or best-score Competition`,
+            message: `${key} is only for a placement, best-score or league Competition`,
             path: [key],
           });
         }
@@ -282,23 +296,68 @@ export const competitionSeedSchema = z
     // `competition_series_config_head_to_head` and
     // `competition_best_score_config_best_score`), so a bad seed is a zod
     // error.
-    if (c.format !== "head-to-head") {
-      for (const key of ["seriesConfig", "entrants"] as const) {
-        if (c[key] !== undefined) {
-          ctx.addIssue({
-            code: "custom",
-            message: `${key} is only for a head-to-head Competition`,
-            path: [key],
-          });
-        }
-      }
+    if (c.format !== "head-to-head" && c.seriesConfig !== undefined) {
+      ctx.addIssue({
+        code: "custom",
+        message: "seriesConfig is only for a head-to-head Competition",
+        path: ["seriesConfig"],
+      });
     }
-    if (c.entrants && c.entrants[0] === c.entrants[1]) {
+    if (
+      c.format !== "head-to-head" &&
+      c.format !== "league" &&
+      c.entrants !== undefined
+    ) {
+      ctx.addIssue({
+        code: "custom",
+        message: "entrants is only for a head-to-head or league Competition",
+        path: ["entrants"],
+      });
+    }
+    if (c.format === "head-to-head" && c.entrants && c.entrants.length !== 2) {
+      ctx.addIssue({
+        code: "custom",
+        message: "a head-to-head has exactly 2 entrants",
+        path: ["entrants"],
+      });
+    }
+    if (
+      c.format === "head-to-head" &&
+      c.entrants &&
+      c.entrants[0] === c.entrants[1]
+    ) {
       ctx.addIssue({
         code: "custom",
         message: "a head-to-head's 2 entrants are different",
         path: ["entrants"],
       });
+    }
+    if (c.leagueConfig !== undefined && c.format !== "league") {
+      ctx.addIssue({
+        code: "custom",
+        message: "leagueConfig is only for a League",
+        path: ["leagueConfig"],
+      });
+    }
+    if (c.format === "league" && c.entrants) {
+      if (new Set(c.entrants).size !== c.entrants.length) {
+        ctx.addIssue({
+          code: "custom",
+          message: "a League's entrants are all different",
+          path: ["entrants"],
+        });
+      }
+      const rounds = roundsError(
+        c.leagueConfig ?? DEFAULT_LEAGUE_CONFIG,
+        c.entrants.length,
+      );
+      if (rounds && c.leagueConfig?.rounds != null) {
+        ctx.addIssue({
+          code: "custom",
+          message: rounds,
+          path: ["leagueConfig", "rounds"],
+        });
+      }
     }
     if (c.format !== "best-score" && c.bestScoreConfig !== undefined) {
       ctx.addIssue({
@@ -952,7 +1011,8 @@ export function competitionGuardError(
     // reuses `closed_at` (R3 decision 1); so does a Closed Placement.
     if (existing.format === "placement") return PLACEMENT_IS_CLOSED;
     return (existing.format !== undefined && isLoggedFormat(existing.format)) ||
-      existing.format === "participation"
+      existing.format === "participation" ||
+      existing.format === "league"
       ? "This Competition is closed. Reopen the Competition first."
       : "This Competition's Bracket is closed. Reopen the Bracket first.";
   }

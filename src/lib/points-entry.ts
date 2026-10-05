@@ -64,6 +64,7 @@ export function generatedNote(format: Competition["format"]): string {
     return `From ${loggedFormatLabel(format).toLowerCase()}`;
   if (format === "participation") return "From participation";
   if (format === "placement") return "From placement";
+  if (format === "league") return "From league";
   return "From bracket";
 }
 
@@ -77,6 +78,9 @@ export function generatedRefusal(format: Competition["format"]): string {
   }
   if (format === "placement") {
     return "This Points Entry comes from a Placement. Change it there.";
+  }
+  if (format === "league") {
+    return "This Points Entry comes from a League. Change it there.";
   }
   return "This Points Entry comes from a bracket. Change it there.";
 }

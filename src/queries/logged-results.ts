@@ -31,6 +31,7 @@ import {
   type StandingsRow,
   placingsOf,
 } from "@/lib/logged-results";
+import { seriesCloseError } from "@/lib/placings-now";
 import { entryPointsFor } from "@/lib/results-table";
 import { type ScoringConfig, scoringOf } from "@/lib/scoring";
 import { type SeriesConfig, seriesConfigOf } from "@/lib/series/config";
@@ -517,6 +518,32 @@ export async function getLoggedStandings(
   return standingsOf(found, entrants, matches, attempts);
 }
 
+/**
+ * A Head-to-head's series as Close reads it: its draws and Best of, its
+ * Matches (each side by Team or Participant id) and its two Entrants. Null
+ * when the Competition is gone or isn't a Head-to-head.
+ */
+export async function getSeriesResults(
+  competitionId: string,
+  dbOrTx: DBOrTx = db,
+): Promise<{
+  config: SeriesConfig;
+  matches: ResultFact[];
+  entrantIds: string[];
+} | null> {
+  const found = await getLoggedCompetition(competitionId, dbOrTx);
+  if (!found || found.format !== "head-to-head") return null;
+  const [entrants, matches] = await Promise.all([
+    entrantsOf([competitionId], dbOrTx),
+    matchesOf([competitionId], dbOrTx),
+  ]);
+  return {
+    config: found.config as SeriesConfig,
+    matches: matchFactsOf(matches),
+    entrantIds: entrants.map(idOf),
+  };
+}
+
 /** A Team or Participant as a Head-to-head or Best score page shows it: name and Team color. */
 export type LoggedResultsName = {
   id: string;
@@ -609,6 +636,11 @@ export type LoggedResultsView = {
   decided: boolean;
   /** The decided series' Winner's name, or null. */
   seriesWinner: string | null;
+  /**
+   * Why Close is disabled, or null: a Head-to-head series neither decided
+   * nor drawn ("Finish the series before closing."), the server's refusal.
+   */
+  closeError: string | null;
   /**
    * Who the result form offers: a Head-to-head's two Entrants, or every
    * Participant of the War Week for Best score.
@@ -736,6 +768,10 @@ export async function getLoggedResultsView(
       attemptCounts: {},
       decided,
       seriesWinner,
+      closeError: seriesCloseError(
+        found.config as SeriesConfig,
+        matchFactsOf(matches),
+      ),
       playerOptions: entrants.map((e) => {
         const { id, name, color, image, teamName } = nameOf(idOf(e));
         return { id, name, color, image, teamName };
@@ -784,6 +820,7 @@ export async function getLoggedResultsView(
     attemptCounts,
     decided: false,
     seriesWinner: null,
+    closeError: null,
     playerOptions: participants.map((p) => {
       const { id, name, color, image, teamName } = nameOf(p.id);
       return { id, name, color, image, teamName };

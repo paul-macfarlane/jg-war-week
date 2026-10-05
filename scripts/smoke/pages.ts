@@ -58,6 +58,8 @@ function expectedXiCounts(): Record<string, number> {
       0,
     ),
     placement: count(seed.placements),
+    // The XI demo holds no League.
+    league_match: count(seed.leagueMatches),
     points_entry: generated + count(seed.discretionaryPoints),
     award: count(seed.awards),
     announcement: count(seed.announcements),
@@ -80,6 +82,8 @@ const XI_COUNT_QUERIES: Record<string, string> = {
     "select count(*) from entrant e join competition c on c.id = e.competition_id join war_week w on w.id = c.war_week_id where w.edition = 'xi'",
   placement:
     "select count(*) from placement p join competition c on c.id = p.competition_id join war_week w on w.id = c.war_week_id where w.edition = 'xi'",
+  league_match:
+    "select count(*) from league_match m join competition c on c.id = m.competition_id join war_week w on w.id = c.war_week_id where w.edition = 'xi'",
   points_entry:
     "select count(*) from points_entry e join war_week w on w.id = e.war_week_id where w.edition = 'xi'",
   award:

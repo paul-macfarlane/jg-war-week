@@ -72,6 +72,14 @@ import { placementLimit } from "@/lib/competitions";
 import { COMPETITION_FORMATS } from "@/lib/enums";
 import { type HostCandidate, buildHostOptions } from "@/lib/host-options";
 import {
+  DEFAULT_LEAGUE_CONFIG,
+  LEAGUE_PAIRINGS,
+  type LeagueConfig,
+  PAIRING_LABELS,
+} from "@/lib/league/config";
+import { LEAGUE_MAX_ROUNDS } from "@/lib/league/config";
+import { roundsHelp } from "@/lib/league/view-text";
+import {
   BEST_OF_OPTIONS,
   type BestOf,
   bestOfLabel,
@@ -94,6 +102,7 @@ const FIELD_LABELS: Record<SettingsField, string> = {
   seriesConfig: "Head-to-head settings",
   bestScoreConfig: "Team score",
   bracketConfig: "Match settings",
+  leagueConfig: "Pairing",
   selfEnroll: "Participants can enroll",
   entrantLimit: "Entrant limit",
   selfReport: "Participants can log their own results",
@@ -121,6 +130,8 @@ function directionHelp(format: CompetitionSettingsValues["format"]): string {
       return "With a direction, a Match's places and who advances follow its Scores; you can still set them by hand.";
     case "head-to-head":
       return "With a direction, the better Score wins a Match; equal Scores are a Draw or need a pick.";
+    case "league":
+      return "With a direction, the better Score wins a Match and equal Scores are a draw; without one you pick each result.";
     default:
       return "Which Score is better.";
   }
@@ -133,6 +144,8 @@ function selfReportHelp(format: CompetitionSettingsValues["format"]): string {
       return "Either Entrant (or anyone on an Entrant Team) logs a Match, and changes any Match of the series, from their phone. You can always log and change any Match.";
     case "best-score":
       return "A Participant logs Attempts as themselves, and changes or deletes their own. You can always log for anyone.";
+    case "league":
+      return "Either player in a Match (or anyone on a player Team) records its result from their phone, and changes any Match until the League is Closed. You can always record and change any Match.";
     default:
       return "Participants in a Match enter its result from their phone, and change it until a later Match uses it. It counts at once; you can still change any result in the Bracket below.";
   }
@@ -606,6 +619,16 @@ export function CompetitionSettingsForm({
           />
         )}
 
+        {shown.has("leagueConfig") && (
+          <LeagueConfigFields
+            config={values.leagueConfig ?? DEFAULT_LEAGUE_CONFIG}
+            entrantCount={entrantCount}
+            reason={lock("leagueConfig")}
+            error={errors.leagueConfig}
+            onChange={(leagueConfig) => edit({ leagueConfig })}
+          />
+        )}
+
         {shown.has("maxAttempts") && (
           <Field className="sm:max-w-56" data-invalid={!!errors.maxAttempts}>
             <FieldLabel htmlFor={id("maxAttempts")}>
@@ -641,7 +664,9 @@ export function CompetitionSettingsForm({
           switchField(
             "selfEnroll",
             "Participants can enroll",
-            "Participants enter themselves until the Bracket is built, the limit is reached or you close this Competition.",
+            values.format === "league"
+              ? "Participants enter themselves until round 1 is paired, the limit is reached or you close this Competition."
+              : "Participants enter themselves until the Bracket is built, the limit is reached or you close this Competition.",
           )}
         {shown.has("entrantLimit") && (
           <Field className="sm:max-w-48" data-invalid={!!errors.entrantLimit}>
@@ -729,6 +754,93 @@ function SeriesConfigFields({
           />
         </Field>
       </FieldGroup>
+      {reason && (
+        <FieldDescription data-slot="lock-reason">{reason}</FieldDescription>
+      )}
+      <FieldError>{error}</FieldError>
+    </FieldSet>
+  );
+}
+
+/**
+ * A League's Pairing and, for Swiss, its Rounds (spec R23, decision 11): a
+ * two-way toggle, Round robin or Swiss, and the Swiss rounds (blank for the
+ * default, ⌈log₂ N⌉ for the Entrants so far). Both are disabled with the
+ * lock reason once round 1 is paired. Choosing Round robin drops the
+ * rounds in the same save. One setting (`leagueConfig`).
+ */
+function LeagueConfigFields({
+  config,
+  entrantCount,
+  reason,
+  error,
+  onChange,
+}: {
+  config: LeagueConfig;
+  entrantCount: number;
+  reason: string | null;
+  error: string | undefined;
+  onChange: (config: LeagueConfig) => void;
+}) {
+  const off = reason !== null;
+  const swiss = config.pairing === "swiss";
+  return (
+    <FieldSet data-invalid={!!error}>
+      <FieldLegend>Pairing</FieldLegend>
+      <FieldDescription>
+        {swiss
+          ? "Each round pairs Entrants on similar match points, one round at a time; no pair meets twice."
+          : "Everyone plays everyone once, over every round at once."}
+      </FieldDescription>
+      <ToggleGroup
+        aria-label="Pairing"
+        value={[config.pairing]}
+        onValueChange={(value) => {
+          // A choice can't be deselected: pressing the pressed item again
+          // would otherwise clear the group.
+          const [pairing] = value as LeagueConfig["pairing"][];
+          if (!pairing || pairing === config.pairing) return;
+          onChange({ pairing, rounds: null });
+        }}
+        disabled={off}
+        variant="outline"
+        className="grid w-full max-w-md grid-cols-2 gap-2"
+      >
+        {LEAGUE_PAIRINGS.map((pairing) => (
+          <ToggleGroupItem
+            key={pairing}
+            value={pairing}
+            className="aria-pressed:border-primary aria-pressed:bg-primary aria-pressed:text-primary-foreground aria-pressed:hover:bg-primary/80 h-auto min-h-11 py-2"
+          >
+            {PAIRING_LABELS[pairing]}
+          </ToggleGroupItem>
+        ))}
+      </ToggleGroup>
+      {swiss && (
+        <Field className="sm:max-w-56">
+          <FieldLabel htmlFor="league-rounds">Rounds</FieldLabel>
+          <Input
+            id="league-rounds"
+            type="number"
+            inputMode="numeric"
+            min={1}
+            max={LEAGUE_MAX_ROUNDS}
+            placeholder="Default"
+            className="h-11 sm:h-9"
+            disabled={off}
+            aria-invalid={!!error}
+            value={config.rounds === null ? "" : String(config.rounds)}
+            onChange={(event) => {
+              const text = event.target.value.trim();
+              onChange({
+                ...config,
+                rounds: text === "" ? null : Number(text),
+              });
+            }}
+          />
+          <FieldDescription>{roundsHelp(entrantCount)}</FieldDescription>
+        </Field>
+      )}
       {reason && (
         <FieldDescription data-slot="lock-reason">{reason}</FieldDescription>
       )}
