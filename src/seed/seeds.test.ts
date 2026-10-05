@@ -395,12 +395,14 @@ describe("War Week XII demo", () => {
     expect(xiiDemo.participants.every((p) => p.team == null)).toBe(true);
   });
 
-  it("has a few scheduled Days and one Bracket, one Head-to-head and two placement-only Competitions", () => {
+  it("has a few scheduled Days, one Bracket, one Head-to-head, two Leagues and two placement-only Competitions", () => {
     expect(xiiDemo.days.length).toBeGreaterThanOrEqual(3);
     expect(xiiDemo.days.every((d) => d.scheduleItems.length > 0)).toBe(true);
     expect(xiiDemo.competitions.map((c) => c.format).sort()).toEqual([
       "bracket",
       "head-to-head",
+      "league",
+      "league",
       "placement",
       "placement",
     ]);
@@ -437,5 +439,68 @@ describe("War Week XII demo", () => {
       xiiDemo.competitions.find((c) => c.name === "Step Challenge"),
     ).toMatchObject({ scoreDirection: "higher", closed: true });
     expect(xiiDemo.awards).toEqual([]);
+  });
+});
+
+describe("War Week XII demo Leagues", () => {
+  const leagueOf = (name: string) =>
+    xiiDemo.competitions.find((c) => c.name === name)!;
+  const matchesOf = (name: string) =>
+    xiiDemo.leagueMatches.filter((m) => m.competition === name);
+  const roster = new Set(xiiDemo.participants.map((p) => p.displayName));
+
+  it("holds a Closed round robin of 5 with every pair meeting once and the sit-outs unplayed", () => {
+    const league = leagueOf("Chess Round Robin");
+    expect(league).toMatchObject({
+      format: "league",
+      leagueConfig: { pairing: "round-robin", rounds: null },
+      closed: true,
+    });
+    expect(league.entrants).toEqual([
+      "Ada Anvil",
+      "Bo Banner",
+      "Cass Comet",
+      "Dot Dynamo",
+      "Eli Ember",
+    ]);
+    const matches = matchesOf("Chess Round Robin");
+    const played = matches.filter((m) => m.b !== null);
+    expect(played).toHaveLength(10);
+    expect(played.every((m) => m.result != null)).toBe(true);
+    expect(new Set(played.map((m) => [m.a, m.b].sort().join("|"))).size).toBe(
+      10,
+    );
+    expect(matches.filter((m) => m.b === null)).toHaveLength(5);
+    expect(new Set(matches.map((m) => m.round))).toEqual(
+      new Set([1, 2, 3, 4, 5]),
+    );
+  });
+
+  it("holds a Swiss of 8 over 3 rounds: rounds 1 and 2 played, round 3 paired with one result", () => {
+    const league = leagueOf("Chess Swiss");
+    expect(league).toMatchObject({
+      format: "league",
+      leagueConfig: { pairing: "swiss", rounds: 3 },
+    });
+    expect(league.closed).toBeUndefined();
+    expect(league.entrants).toHaveLength(8);
+    const matches = matchesOf("Chess Swiss");
+    const round = (n: number) => matches.filter((m) => m.round === n);
+    expect(round(1)).toHaveLength(4);
+    expect(round(2)).toHaveLength(4);
+    expect(round(3)).toHaveLength(4);
+    expect([...round(1), ...round(2)].every((m) => m.result != null)).toBe(
+      true,
+    );
+    expect(round(3).filter((m) => m.result != null)).toHaveLength(1);
+    expect(matches.some((m) => m.result === "draw")).toBe(true);
+  });
+
+  it("uses only roster Participants", () => {
+    for (const name of ["Chess Round Robin", "Chess Swiss"]) {
+      for (const entrant of leagueOf(name).entrants ?? []) {
+        expect(roster.has(entrant), entrant).toBe(true);
+      }
+    }
   });
 });

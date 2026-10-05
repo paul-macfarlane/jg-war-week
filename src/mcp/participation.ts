@@ -59,7 +59,10 @@ export function toParticipationResult(
         format: found.format as Exclude<Competition["format"], "participation">,
       },
       participation: null,
-      message: `${found.name} isn't run as Participation; call get_games, get_bracket or get_leaderboard.`,
+      message:
+        found.format === "league"
+          ? `${found.name} isn't run as Participation; it's run as a League. Call get_league instead.`
+          : `${found.name} isn't run as Participation; call get_games, get_bracket or get_leaderboard.`,
     };
   }
 

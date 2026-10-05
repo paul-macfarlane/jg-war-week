@@ -66,7 +66,10 @@ export function toPlacementsResult(
         format: found.format as Exclude<Competition["format"], "placement">,
       },
       placements: null,
-      message: `${found.name} isn't run as Placement; call get_games, get_bracket, get_participation or get_leaderboard.`,
+      message:
+        found.format === "league"
+          ? `${found.name} isn't run as Placement; it's run as a League. Call get_league instead.`
+          : `${found.name} isn't run as Placement; call get_games, get_bracket, get_participation or get_leaderboard.`,
     };
   }
 

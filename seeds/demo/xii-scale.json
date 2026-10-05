@@ -595,6 +595,17 @@
       "scoreUnit": "points",
       "placementPoints": [5, 3, 1],
       "description": "Three darts a turn; your best turn counts."
+    },
+    {
+      "name": "Blitz Chess",
+      "description": "Sixty-four players, six Swiss rounds, paired one at a time. Round 1 is paired.",
+      "scoring": "individual",
+      "format": "league",
+      "leagueConfig": {
+        "pairing": "swiss",
+        "rounds": 6
+      },
+      "placementPoints": [5, 3, 1]
     }
   ],
   "discretionaryPoints": [

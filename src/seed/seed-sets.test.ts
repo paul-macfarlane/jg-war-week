@@ -161,6 +161,8 @@ describe.skipIf(!isLocalDatabase)("every seed loads twice", () => {
     await loadTwice(demoXiiFiles(), async (client, { first, second }) => {
       expect(second).toEqual(first);
       expect(first.war_week).toBe(12);
+      // Chess Round Robin's 15 Matches and sit-outs, Chess Swiss's 3 rounds of 4.
+      expect(first.league_match).toBe(27);
       const sheet = await client.query<{
         rows: number;
         scored: number;
@@ -205,6 +207,9 @@ describe.skipIf(!isLocalDatabase)("every seed loads twice", () => {
             matches_logged: number;
             attempts: number;
             attempters: number;
+            blitz_entrants: number;
+            blitz_matches: number;
+            blitz_round_one: number;
           }>(
             `select
                (select count(*)::int from participant p join war_week w
@@ -228,12 +233,20 @@ describe.skipIf(!isLocalDatabase)("every seed loads twice", () => {
                  on c.id = a.competition_id where c.name = 'Darts') as attempts,
                (select count(distinct a.participant_id)::int from attempt a
                  join competition c on c.id = a.competition_id
-                 where c.name = 'Darts') as attempters`,
+                 where c.name = 'Darts') as attempters,
+               (select count(*)::int from entrant e join competition c
+                 on c.id = e.competition_id where c.name = 'Blitz Chess') as blitz_entrants,
+               (select count(*)::int from league_match m join competition c
+                 on c.id = m.competition_id where c.name = 'Blitz Chess') as blitz_matches,
+               (select count(*)::int from league_match m join competition c
+                 on c.id = m.competition_id where c.name = 'Blitz Chess'
+                 and m.round = 1 and m.result is null) as blitz_round_one`,
           )
         ).rows;
         // 32 + 16 + 8 + 4 + 2 Matches, the final and the 3rd place Match;
         // Cornhole a Best of 7 between its 2 Entrants with 5 Matches logged
-        // (3–2, still open); Darts 60 Attempts, each by a Participant.
+        // (3–2, still open); Darts 60 Attempts, each by a Participant; Blitz
+        // Chess 64 Entrants with round 1 paired: 32 Matches, none played.
         expect(facts).toEqual({
           participants: 100,
           entrants: 64,
@@ -244,6 +257,9 @@ describe.skipIf(!isLocalDatabase)("every seed loads twice", () => {
           matches_logged: 5,
           attempts: 60,
           attempters: expect.any(Number),
+          blitz_entrants: 64,
+          blitz_matches: 32,
+          blitz_round_one: 32,
         });
         expect(facts.attempters).toBeGreaterThan(1);
       },

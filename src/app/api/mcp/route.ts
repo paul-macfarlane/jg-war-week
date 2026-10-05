@@ -6,6 +6,7 @@ import { toAnnouncementsResult } from "@/mcp/announcements";
 import { toAwardsResult } from "@/mcp/awards";
 import {
   toBracketResult,
+  toLeagueBracketResult,
   toLoggedBracketResult,
   toParticipationBracketResult,
 } from "@/mcp/bracket";
@@ -13,6 +14,7 @@ import { toDiscretionaryPointsResult } from "@/mcp/discretionary-points";
 import { toFaqResult } from "@/mcp/faq";
 import { toHistoryListResult, toHistoryResult } from "@/mcp/history";
 import { toLeaderboardResult } from "@/mcp/leaderboard";
+import { toLeagueResult, toNotLeagueResult } from "@/mcp/league";
 import { toLoggedResultsAnswer } from "@/mcp/logged-results";
 import { toParticipationResult } from "@/mcp/participation";
 import { toPlacementsResult } from "@/mcp/placements";
@@ -26,6 +28,7 @@ import { getBracket } from "@/queries/brackets";
 import { getCompetitionByName } from "@/queries/competitions";
 import { getDiscretionaryLedger } from "@/queries/discretionary-points";
 import { getFaqItems } from "@/queries/faq";
+import { getLeagueView } from "@/queries/league";
 import { getLoggedResultsView } from "@/queries/logged-results";
 import { getParticipationView } from "@/queries/participation";
 import { getPlacementsView } from "@/queries/placements";
@@ -285,8 +288,56 @@ const handler = createMcpHandler(
             ],
           };
         }
+        // Nor is a League: point to `get_league`.
+        if (found?.format === "league") {
+          return {
+            content: [
+              {
+                type: "text",
+                text: JSON.stringify(toLeagueBracketResult(found)),
+              },
+            ],
+          };
+        }
         const view = found ? await getBracket(found.id) : undefined;
         const result = toBracketResult(view, competition);
+
+        return {
+          content: [{ type: "text", text: JSON.stringify(result) }],
+        };
+      },
+    );
+
+    server.registerTool(
+      "get_league",
+      {
+        ...MCP_TOOLS.get_league,
+        inputSchema: z.object({
+          competition: z
+            .string()
+            .trim()
+            .min(1)
+            .describe("The Competition's name, in the current War Week."),
+        }),
+      },
+      async ({ competition }) => {
+        const warWeek = await getCurrentWarWeek();
+        if (!warWeek) {
+          return {
+            content: [
+              { type: "text", text: JSON.stringify({ warWeek: null }) },
+            ],
+          };
+        }
+        const found = await getCompetitionByName(warWeek, competition);
+        let result;
+        if (found && found.format !== "league") {
+          result = toNotLeagueResult(found);
+        } else {
+          // Anonymous: no viewer, so nothing viewer-specific is read.
+          const view = found ? await getLeagueView(found.id, null) : undefined;
+          result = toLeagueResult(view ?? undefined, competition);
+        }
 
         return {
           content: [{ type: "text", text: JSON.stringify(result) }],

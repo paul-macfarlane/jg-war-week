@@ -19,6 +19,7 @@ import {
   entrant,
   faqItem,
   finaleSlide,
+  leagueMatch,
   organizer,
   participant,
   placement,
@@ -27,9 +28,13 @@ import {
   team,
   warWeek,
 } from "@/db/schema";
+import { DEFAULT_LEAGUE_CONFIG, leagueConfigOf } from "@/lib/league/config";
 import { placementEntryValues } from "@/lib/placement/score";
+import { leaguePlacingsNow } from "@/lib/placings-now";
+import { generatedNote } from "@/lib/points-entry";
 import { descriptionContent } from "@/lib/rich-text/from-plain-text";
 import { DEFAULT_SERIES_CONFIG } from "@/lib/series/config";
+import { getLeagueClose } from "@/queries/league";
 import { getPlacementRows } from "@/queries/placements";
 import { WarWeekSeed } from "@/seed/schema";
 
@@ -90,6 +95,14 @@ export async function loadWarWeekSeed(
       teamIds,
       participantIds,
     );
+    await insertLeagues(
+      tx,
+      warWeekId,
+      seed,
+      competitionIds,
+      teamIds,
+      participantIds,
+    );
     await insertAwards(tx, warWeekId, seed, teamIds, participantIds);
     await insertAnnouncements(tx, warWeekId, seed);
 
@@ -110,17 +123,20 @@ async function insertEntrants(
   teamIds: Map<string, string>,
   participantIds: Map<string, string>,
 ) {
-  const rows = seed.competitions.flatMap((c) =>
-    (c.entrants ?? []).map((name, i) => {
-      const isTeam = c.scoring === "team";
-      return {
-        competitionId: resolve(competitionIds, c.name),
-        teamId: isTeam ? resolve(teamIds, name) : null,
-        participantId: isTeam ? null : resolve(participantIds, name),
-        seedPosition: i + 1,
-      };
-    }),
-  );
+  // A League's Entrants load with its Matches (`insertLeagues`).
+  const rows = seed.competitions
+    .filter((c) => c.format !== "league")
+    .flatMap((c) =>
+      (c.entrants ?? []).map((name, i) => {
+        const isTeam = c.scoring === "team";
+        return {
+          competitionId: resolve(competitionIds, c.name),
+          teamId: isTeam ? resolve(teamIds, name) : null,
+          participantId: isTeam ? null : resolve(participantIds, name),
+          seedPosition: i + 1,
+        };
+      }),
+    );
   if (rows.length) await tx.insert(entrant).values(rows).onConflictDoNothing();
 }
 
@@ -360,8 +376,13 @@ async function syncCompetitions(
           ? (c.seriesConfig ?? DEFAULT_SERIES_CONFIG)
           : null,
       bestScoreConfig: c.bestScoreConfig ?? null,
-      // Placement's and Best score's (the seed schema; Best score never
-      // `none`); like `format`, set on insert only.
+      // A League always has one (the CHECK `competition_league_config_league`).
+      leagueConfig:
+        c.format === "league"
+          ? (c.leagueConfig ?? DEFAULT_LEAGUE_CONFIG)
+          : null,
+      // Placement's, Best score's and League's (the seed schema; Best
+      // score never `none`); like `format`, set on insert only.
       scoreDirection:
         c.scoreDirection ?? (c.format === "best-score" ? "higher" : "none"),
       scoreUnit: c.scoreUnit ?? null,
@@ -388,7 +409,8 @@ async function syncCompetitions(
       participationPoints: sql`case when excluded.participation_points is null
         then null
         else coalesce(${competition.participationPoints}, excluded.participation_points) end`,
-      // `format`, `bracketConfig`, `seriesConfig`, `bestScoreConfig`, the
+      // `format`, `bracketConfig`, `seriesConfig`, `bestScoreConfig`,
+      // `leagueConfig`, the
       // Score direction and unit, a seeded Close and the other Participation
       // settings
       // are set on insert only: a reload must
@@ -617,6 +639,134 @@ async function insertPlacements(
           target: [pointsEntry.warWeekId, pointsEntry.seedKey],
         });
     }
+  }
+}
+
+/**
+ * Each seeded League's Entrants (Seed Positions in the seed's order) and
+ * Matches, loaded together and only while the League has no Entrant and no
+ * Match, so an Organizer's own Entrants, pairings or a Clear pairings are
+ * never overwritten or resurrected. A result without `recordedAt` is
+ * recorded at the League's `closedAt`, else now (the CHECK
+ * `league_match_recorded`). Then, for a League seeded Closed that is still
+ * Closed and has no generated Points Entries yet, writes them as Close does,
+ * at the seed's time and author, keyed `league:<competition>:<entrant>`: so
+ * a reload, or a Host's Reopen or re-Close, is never doubled or undone.
+ */
+async function insertLeagues(
+  tx: DBTx,
+  warWeekId: string,
+  seed: WarWeekSeed,
+  competitionIds: Map<string, string>,
+  teamIds: Map<string, string>,
+  participantIds: Map<string, string>,
+) {
+  for (const c of seed.competitions) {
+    if (c.format !== "league") continue;
+    const competitionId = resolve(competitionIds, c.name);
+    const isTeam = c.scoring === "team";
+    const idOf = (name: string) =>
+      resolve(isTeam ? teamIds : participantIds, name);
+    const names = c.entrants ?? [];
+
+    const existing =
+      (await tx.$count(entrant, eq(entrant.competitionId, competitionId))) +
+      (await tx.$count(
+        leagueMatch,
+        eq(leagueMatch.competitionId, competitionId),
+      ));
+    if (existing === 0 && names.length > 0) {
+      const inserted = await tx
+        .insert(entrant)
+        .values(
+          names.map((name, i) => ({
+            competitionId,
+            teamId: isTeam ? idOf(name) : null,
+            participantId: isTeam ? null : idOf(name),
+            seedPosition: i + 1,
+          })),
+        )
+        .onConflictDoNothing()
+        .returning({ id: entrant.id, seedPosition: entrant.seedPosition });
+      const entrantIds = new Map(
+        inserted.map((row) => [names[row.seedPosition - 1], row.id]),
+      );
+      const matches = seed.leagueMatches.filter(
+        (m) => m.competition === c.name,
+      );
+      if (matches.length > 0) {
+        const loadedAt = c.closedAt ? new Date(c.closedAt) : new Date();
+        await tx
+          .insert(leagueMatch)
+          .values(
+            matches.map((m) => ({
+              competitionId,
+              round: m.round,
+              position: m.position,
+              entrantAId: resolve(entrantIds, m.a),
+              entrantBId: m.b === null ? null : resolve(entrantIds, m.b),
+              result: m.result ?? null,
+              scoreA: m.scoreA ?? null,
+              scoreB: m.scoreB ?? null,
+              recordedAt: m.result
+                ? m.recordedAt
+                  ? new Date(m.recordedAt)
+                  : loadedAt
+                : null,
+              seedKey: m.key,
+            })),
+          )
+          .onConflictDoNothing();
+      }
+    }
+
+    if (!c.closed || !c.closedAt || !c.closedByEmail) continue;
+    const [found] = await tx
+      .select({
+        closedAt: competition.closedAt,
+        placementPoints: competition.placementPoints,
+        leagueConfig: competition.leagueConfig,
+      })
+      .from(competition)
+      .where(eq(competition.id, competitionId));
+    if (!found.closedAt) continue;
+    const generated = await tx.$count(
+      pointsEntry,
+      and(
+        eq(pointsEntry.competitionId, competitionId),
+        eq(pointsEntry.generated, true),
+      ),
+    );
+    if (generated > 0) continue;
+    const now = leaguePlacingsNow(
+      {
+        config: leagueConfigOf(found),
+        ...(await getLeagueClose(competitionId, tx)),
+      },
+      found,
+    );
+    // A League an Organizer has since changed may not be complete: no points.
+    if (!now.ok) continue;
+    const seedKeys = new Map(names.map((name) => [idOf(name), name]));
+    await tx
+      .insert(pointsEntry)
+      .values(
+        now.points.map(({ teamId, participantId, points }) => ({
+          warWeekId,
+          competitionId,
+          teamId,
+          participantId,
+          points,
+          note: generatedNote("league"),
+          enteredByEmail: c.closedByEmail!,
+          enteredAt: new Date(c.closedAt!),
+          generated: true,
+          seedKey: `league:${c.name}:${seedKeys.get((teamId ?? participantId)!) ?? ""}`,
+        })),
+      )
+      .onConflictDoNothing({
+        target: [pointsEntry.warWeekId, pointsEntry.seedKey],
+      });
   }
 }
 

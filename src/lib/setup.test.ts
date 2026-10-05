@@ -552,14 +552,16 @@ describe("competitionSeedSchema, Head-to-head and Best score", () => {
       issues({ ...base, seriesConfig: { drawsAllowed: true, bestOf: 3 } }),
     ).toEqual(["seriesConfig is only for a head-to-head Competition"]);
     expect(issues({ ...base, entrants: ["Ana", "Ben"] })).toEqual([
-      "entrants is only for a head-to-head Competition",
+      "entrants is only for a head-to-head or league Competition",
     ]);
     expect(
       issues({ ...base, bestScoreConfig: { teamScore: "best-member" } }),
     ).toEqual(["bestScoreConfig is only for a best-score Competition"]);
     expect(
       issues({ ...base, format: "head-to-head", scoreUnit: "pts" }),
-    ).toEqual(["scoreUnit is only for a placement or best-score Competition"]);
+    ).toEqual([
+      "scoreUnit is only for a placement, best-score or league Competition",
+    ]);
   });
 
   it("refuses the removed keys: entrantsOpen and the close times", () => {
