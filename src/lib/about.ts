@@ -57,6 +57,12 @@ export const ABOUT_FEATURES = [
     alt: "A finished Bracket on its Competition page: two Round 1 Matches of Participants feeding the Final, with its Winner on top.",
   },
   {
+    slug: "league",
+    title: "League: round robin and Swiss",
+    text: "Run a chess night as a League: everyone plays everyone (round robin), or a few rounds paired one at a time by Swiss. Each Match is a win, a draw or a loss, worth 1, ½ or 0 match points, and ties break by head-to-head and Sonneborn-Berger, or Buchholz. The page shows the standings, every round and your next Match. A League closes once every Match is played.",
+    alt: "The Chess Swiss League's Competition page: its standings table with wins, draws, losses, match points and Buchholz, above the rounds and their Matches.",
+  },
+  {
     slug: "archive",
     title: "The Archive",
     text: "Past War Weeks, each in its own theme: the Story Theme, the winner, the Awards and the highlights. Each Award name has its own page: every War Week's recipients, by name, through the years. Awards come from presets.",

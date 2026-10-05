@@ -168,10 +168,11 @@ reads the string literals, template text and JSX text of every non-test
 under `src/mcp/`, so UI copy and MCP output can't carry a
 banned word: **Heat** (say Match), **Champion** (Winner), **Finalize** and
 **Un-finalize** (Close, Closed, Reopen), **Game** (Match for a Bracket or
-Head-to-head, Attempt for Best score), plus Event, League, Member, ELO,
+Head-to-head or League, Attempt for Best score), plus Event, Member, ELO,
 Placeholder, Tournament, News and "admin" for a person. Other identifiers and
-comments aren't scanned, nor are `scripts/` and `drizzle/`. **Match** is no longer banned. **League** stays
-banned until spec D lifts it. The `ALLOWLIST` at the top of the test (one
+comments aren't scanned, nor are `scripts/` and `drizzle/`. **Match** and **League**
+are no longer banned (League is a Format; League copy says chess, never
+"tournament" or "Elo", which stay banned). The `ALLOWLIST` at the top of the test (one
 file, one term, the exact literal, a reason) holds only the two Team score
 labels, **"Best member"** and **"Sum of members"** in
 `src/lib/best-score/config.ts`, allowed despite the banned **Member**; Heat,
@@ -821,8 +822,7 @@ Every ranked view on a Participant Competition page is one component
   the Matches in order with both Scores and the Winner (or Draw), the series
   score ("2–1") and its Winner once decided, and each Entrant's Placement
   Points (Provisional until Closed). A drawn series (every Match played
-  with no majority) says so and names no series Winner; so does one Closed
-  early with equal wins.
+  with no majority) says so and names no series Winner.
 - **Order and links:** the page reads back link, name and facts,
   **description** (long ones collapse behind "Show more"), enroll button,
   then the results. It has no Points Entries list; points are in the table.
@@ -861,7 +861,10 @@ or an Organizer sets, in the Settings:
   Match recomputes it. With draws allowed a series can end drawn: every Match
   played with no majority (win, Draw, Draw is drawn though the wins are
   1–0). A drawn series has no Winner and both Entrants share the higher
-  place's full points at Close.
+  place's full points at Close. **Close waits for a finished series**: it is
+  disabled, and the server refuses it, until the series is decided or drawn
+  ("Finish the series before closing."). Close used to be allowed on an
+  undecided series; it no longer is.
 - **Best score:** **Score direction** (higher or lower), **Score unit**,
   **Max attempts per person** (blank for unlimited; the form shows "N attempts
   left", and at 1 the button reads "Update your score" and edits the one
@@ -895,20 +898,80 @@ right now, straight to the form. What the page shows is under "Read a results ta
 the Archive too once the War Week ends: a Competition left open
 when its War Week ends keeps taking results until the Host closes it.
 
+### Run a Competition as a League
+
+For a chess night, run it as a **League**: Entrants play each other one Match
+at a time, for match points (win 1, draw ½, loss 0). Under **Competitions**,
+**Add Competition**, choose the Format **League**, and you land on its page.
+In the Settings:
+
+- **Pairing:** **Round robin** (everyone plays everyone once; the default) or
+  **Swiss** (a set number of **rounds**, paired one at a time). Rounds, for
+  Swiss only: 1 to N−1 for N Entrants, blank for the default ⌈log₂ N⌉ (3 for
+  6 Entrants).
+- **Score direction** and **Score unit** (optional): with a direction, the
+  better Score wins and equal Scores are a draw; with none, the recorder picks
+  A won, Draw or B won.
+- **Participants can log their own results** and **Participants can enroll**
+  (both off by default), and the Entrant limit.
+- Pairing, rounds, Score direction and the Entrants lock once round 1 is
+  paired ("Locked once round 1 is paired."). Score unit never locks, and
+  self-report and enrollment lock only while Closed.
+
+Then in the run area:
+
+1. **Entrants.** Add Teams or Participants (by the scoring) with the
+   Participant picker, or let Participants enroll. There are no Squads.
+2. **Pair.** Round robin: **Pair rounds** makes every round at once (the
+   circle method; with an odd number, one Entrant sits out each round, worth
+   0). Swiss: **Pair round 1**, then **Pair next round** once every Match of
+   the round has a result (it groups by match points, never repeats a Match,
+   and gives an odd Entrant the bye, worth 1, to the lowest-ranked Entrant
+   without one). Round 1 uses a random Seed Position order.
+3. **Edit pairings** (per round) swaps two Entrants, either may be the bye or
+   sit-out, until a Match in that round has a result (a round robin: until
+   either affected Match does). The dialog **warns before saving** if the
+   swap repeats a pairing, and in a round robin names the pairs that will
+   then never meet. It is a warning, not a refusal.
+4. **Clear pairings** deletes every Match while none has a result, which
+   unlocks the settings and Entrants again, so a wrong Entrant list can be
+   fixed before play.
+5. **Record result** on each Match opens a dialog at 1440 and a bottom sheet
+   at 390: Scores and A won / Draw / B won (filled in and disabled when the
+   Scores decide it). Edit and Clear result follow. With self-report on, a
+   player in the Match (or on their Team) records it from the Participant
+   page and the other player can edit it; with it off, only you and the
+   Organizers record. A bye or sit-out never has a result. Corrections after
+   the next Swiss round is paired are allowed; pairings already made stand.
+6. **Close** only when the League is finished: every round paired (Swiss: all
+   N rounds) and every Match recorded. Until then Close is disabled with
+   "Finish every Match before closing." naming the unplayed Matches, and the
+   server refuses it. Close writes Placement Points by final standing
+   ("From league"); **Reopen** withdraws them.
+
+The Participant page shows Top finishers once Closed, the results table (Rank,
+name, W, D, L, Match points, then **H2H** and **SB** in a round robin or
+**Buchholz** in Swiss, and War Week points, Provisional until Closed), **Your
+next Match** and the rounds. Ties break by head-to-head among the tied then
+Sonneborn-Berger (round robin) or Buchholz (Swiss); still level, the place is
+shared with full points. The XII demo has **Chess Round Robin** (finished and
+Closed) and **Chess Swiss** (round 3 under way).
+
 ### Let Participants enroll themselves
 
 The **"Participants can enroll"** switch (off by default) is on a
-**Bracket's** Settings only — never on a Placement, Head-to-head, Best score or
-Participation Competition. Turn it on, and
+**Bracket's** or **League's** Settings only — never on a Placement,
+Head-to-head, Best score or Participation Competition. Turn it on, and
 optionally set an Entrant limit; enrollment closes
-the moment the Bracket is built, when the limit is reached, or whenever the
+the moment the Bracket is built (or a League's round 1 is paired), when the limit is reached, or whenever the
 Host closes the Competition. There is no close time.
 
 In team scoring, any Participant on a Team enters or withdraws the whole
 Team. Once the Host has added any Squad to a team-scoring Bracket
 ("Squad: a pair or group from one Team, playing as one entrant"),
 Participants join or leave a Squad instead — their own Team's, up to 16
-Participants — and Team enrollment turns off. Withdrawing (or leaving a
+Participants — and Team enrollment turns off. A League has no Squads: a
+Participant or Team enters itself. Withdrawing (or leaving a
 Squad) works any time before enrollment closes; after that, only the Host
 or an Organizer removes an Entrant.
 
@@ -1063,6 +1126,7 @@ are `get_current_war_week`, `get_leaderboard`, `get_schedule`,
 Competition's Bracket by name, with its kind, Match size, how many advance and
 whether it has a 3rd place match, each played Match's recorded time, its `winner` once the Bracket is Closed (`closed`, `matchSize`, `thirdPlaceMatch` and each Round's `matches` are the field names), and a
 Squad's `participants` by name; never who reported a result) and
+`get_league` (a League by name: Pairing, rounds, each Match with its result and Scores, and the standings with match points and tiebreaks; no emails; `get_bracket` and `get_games` on a League point to it) and
 `get_games` (a Head-to-head or Best score Competition, by name: its Format and settings (Score direction and unit, Best of, draws, Max attempts, Team score), leaderboard
 ranked by that Format and its `matches` (Head-to-head) or `attempts` (Best score) newest first, with `closed`; never an email or who
 logged one) and `get_participation` (a Competition run as Participation, by
@@ -1229,6 +1293,22 @@ renamed), so confirm **Migrate** succeeded before checking the new deployment,
 and **a Vercel rollback past this deploy is unsafe**: it would run the old
 code against the new tables. If a migrate run fails, **don't reseed**: fix the
 migration on a `fix/…` branch.
+
+### Rolling out R23 (migration 0034)
+
+Epic R23 (League: round robin and Swiss) changed the schema with **one
+additive migration**, `drizzle/0034_*`: a `league` value on the Format enum,
+the `league_result` type, `competition.league_config`, the `league_match`
+table and its CHECKs, and `competition_self_enroll_bracket_only` widened to
+admit a League. It converts and drops nothing, so there is no report script.
+After the PR merges into `staging`: run **`migrate.yml`**, then **`seed.yml`**
+(file blank, all seeds) so the XII demo gains **Chess Round Robin** and
+**Chess Swiss**. Check: `/xii/competitions` lists both, both pages answer 200
+and `get_league` answers over MCP. Repeat for production after the `main`
+merge. **Roll back only after deleting every League Competition**: an older
+deploy has no Format branch for a `league` Competition and would error on it.
+This release also changes Head-to-head: Close now waits for a decided or
+drawn series.
 
 ## Guardrails
 

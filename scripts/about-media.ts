@@ -683,6 +683,19 @@ async function findSeriesDemo(): Promise<{
  * and saves. The
  * `finally` undoes the Match by the demo email (`teardownSeriesDemo`).
  */
+/** The seeded Chess Swiss League's id, the "league" still's page. */
+async function findLeagueDemo(): Promise<string> {
+  const [comp] = await query<{ id: string }>(
+    `select id from competition
+     where war_week_id = $1 and format = 'league' and name = 'Chess Swiss'`,
+    [current.id],
+  );
+  if (!comp) {
+    throw new Error(`no seeded Chess Swiss League on ${current.edition}`);
+  }
+  return comp.id;
+}
+
 async function captureSeriesDemo(cookie: string): Promise<void> {
   const { competitionId, playerA } = await findSeriesDemo();
   const page = await Page.open();
@@ -1004,7 +1017,7 @@ async function evidence() {
     note(
       `evidence: /about desktop under the ${scheme} Display shows ${shown.length} stills, ${wrong.length} wrong or unloaded`,
     );
-    if (shown.length !== 10 || wrong.length > 0)
+    if (shown.length !== 11 || wrong.length > 0)
       throw new Error(
         `/about under the ${scheme} Display: ${JSON.stringify(shown)}`,
       );
@@ -1130,6 +1143,18 @@ async function main() {
         );
         await sleep(300);
         if (!found) throw new Error("no Top finishers on the Bracket view");
+      },
+    );
+    await still(
+      "league",
+      cookie,
+      `${home()}/competitions/${await findLeagueDemo()}`,
+      async (page) => {
+        await sleep(500);
+        const found = await page.evaluate<boolean>(
+          `document.body.innerText.includes("Buchholz")`,
+        );
+        if (!found) throw new Error("no League results table on Chess Swiss");
       },
     );
     await captureSeriesDemo(cookie);

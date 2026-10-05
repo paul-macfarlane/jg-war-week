@@ -68,7 +68,7 @@ describe("OrganizerGuide", () => {
 
   it("never uses banned vocabulary", () => {
     expect(text).not.toMatch(
-      /\b(event|tournament|member|league|heat|champion|game)s?\b/i,
+      /\b(event|tournament|member|heat|champion|game)s?\b/i,
     );
     expect(text).not.toMatch(/\b(un-?)?finali[sz]/i);
   });
