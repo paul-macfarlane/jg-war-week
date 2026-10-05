@@ -204,6 +204,10 @@ test.describe("100 Participants in the XII scale demo", () => {
         await expect(
           page.getByRole("heading", { name: "Entrants and Bracket" }),
         ).toBeVisible();
+        // R24 D2: with results, Entrants and Seed Positions fold under a trigger.
+        await page
+          .getByRole("button", { name: "Entrants and Seed Positions (64)" })
+          .click();
         await expect(page.getByText("(64 chosen)")).toBeVisible();
       });
 

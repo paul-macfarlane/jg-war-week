@@ -5,6 +5,7 @@ import { applyResult, generate as generateFormat } from "@/lib/bracket/formats";
 import { matches } from "@/lib/bracket/groups";
 import type { Bracket, Entrant } from "@/lib/bracket/types";
 import {
+  currentMatchFor,
   entrantForYou,
   formatLabel,
   groupRounds,
@@ -325,5 +326,44 @@ describe("isBracketFormat", () => {
 
   it("is true for a Bracket Format", () => {
     expect(isBracketFormat("bracket")).toBe(true);
+  });
+});
+
+describe("currentMatchFor", () => {
+  // 3 Entrants: A has a bye into the Final; B plays C in Round 1 Match 2.
+  const three = generate(entrants(["A", "B", "C"]));
+
+  it("is the next unplayed Match", () => {
+    expect(currentMatchFor(three, "C", false)?.id).toBe("r1h2");
+    expect(currentMatchFor(three, "A", false)?.id).toBe("r2h1");
+  });
+
+  it("is the last played Match once eliminated", () => {
+    const played = applyResult(three, "r1h2", { order: ["B", "C"] });
+    expect(currentMatchFor(played, "C", false)?.id).toBe("r1h2");
+  });
+
+  it("is the last played Match for everyone once Closed", () => {
+    const played = applyResult(three, "r1h2", { order: ["B", "C"] });
+    const done = applyResult(played, "r2h1", { order: ["A", "B"] });
+    expect(currentMatchFor(done, "A", true)?.id).toBe("r2h1");
+    expect(currentMatchFor(done, "B", true)?.id).toBe("r2h1");
+    expect(currentMatchFor(done, "C", true)?.id).toBe("r1h2");
+  });
+
+  it("is none for someone who isn't an Entrant", () => {
+    expect(currentMatchFor(three, "Z", false)).toBeNull();
+    expect(currentMatchFor(three, "Z", true)).toBeNull();
+  });
+
+  it("works the same for a Squad or Team Entrant (any Entrant id)", () => {
+    const teams = generate([
+      { id: "squad-1", seedPosition: 1, label: "Squad One" },
+      { id: "team-2", seedPosition: 2, label: "Team Two" },
+    ]);
+    const played = applyResult(teams, "r1h1", { order: ["team-2", "squad-1"] });
+    expect(currentMatchFor(teams, "squad-1", false)?.id).toBe("r1h1");
+    expect(currentMatchFor(played, "squad-1", false)?.id).toBe("r1h1");
+    expect(currentMatchFor(played, "team-2", true)?.id).toBe("r1h1");
   });
 });

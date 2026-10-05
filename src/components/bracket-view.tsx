@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import { clearMatchReport, reportMatchResult } from "@/actions/match-reports";
 import { AutoRefresh } from "@/components/auto-refresh";
@@ -16,6 +16,7 @@ import type { PodiumPlace } from "@/lib/bracket/podium";
 import type { Bracket } from "@/lib/bracket/types";
 import {
   type NextMatch,
+  currentMatchFor,
   entrantForYou,
   matchName,
   nextMatchFor,
@@ -170,6 +171,22 @@ export function BracketView({
 }) {
   const you = useYou();
   const [reporting, setReporting] = useState<string | null>(null);
+  const [highlighted, setHighlighted] = useState<string | null>(null);
+  const treeRef = useRef<HTMLDivElement>(null);
+
+  // The ring lasts a few seconds, or until the next interaction.
+  useEffect(() => {
+    if (!highlighted) return;
+    const clear = () => setHighlighted(null);
+    const timer = setTimeout(clear, 5000);
+    document.addEventListener("pointerdown", clear);
+    document.addEventListener("keydown", clear);
+    return () => {
+      clearTimeout(timer);
+      document.removeEventListener("pointerdown", clear);
+      document.removeEventListener("keydown", clear);
+    };
+  }, [highlighted]);
   const entrantsById = new Map(entrants.map((e) => [e.id, e]));
   const youEntrantId = entrantForYou(
     entrants,
@@ -183,6 +200,26 @@ export function BracketView({
     scoring,
   );
   const next = youEntrantId ? nextMatchFor(bracket, youEntrantId) : null;
+  const current = youEntrantId
+    ? currentMatchFor(bracket, youEntrantId, closed)
+    : null;
+  const jumpToCurrent = () => {
+    if (!current) return;
+    const el = Array.from(
+      treeRef.current?.querySelectorAll<HTMLElement>("[data-match-id]") ?? [],
+    ).find((m) => m.dataset.matchId === current.id);
+    if (!el) return;
+    const reduced = window.matchMedia(
+      "(prefers-reduced-motion: reduce)",
+    ).matches;
+    // Scrolls the Rounds region sideways and the page down, as needed.
+    el.scrollIntoView({
+      behavior: reduced ? "auto" : "smooth",
+      block: "center",
+      inline: "center",
+    });
+    setHighlighted(current.id);
+  };
   const matchesById = new Map(bracket.matches.map((h) => [h.id, h]));
   const mine =
     selfReport.on && you?.participantId === selfReport.linkedParticipantId;
@@ -237,18 +274,36 @@ export function BracketView({
         />
       )}
 
-      <BracketTree
-        bracket={bracket}
-        entrantsById={entrantsById}
-        scoring={scoring}
-        scoreUnit={scoreUnit}
-        scoreDirection={scoreDirection}
-        primaryColor={primaryColor}
-        youEntrantId={youEntrantId}
-        recordableMatchIds={reportable}
-        lockedMatchIds={mine ? selfReport.lockedMatchIds : []}
-        onRecord={setReporting}
-      />
+      {current && (
+        <Button
+          type="button"
+          variant="outline"
+          className="min-h-11 w-fit sm:min-h-8"
+          onClick={jumpToCurrent}
+        >
+          Jump to your Match
+        </Button>
+      )}
+
+      {/* From md up the tree breaks out of the page's text column. */}
+      <div
+        ref={treeRef}
+        className="min-w-0 md:relative md:left-1/2 md:w-[min(calc(100vw-2rem),96rem)] md:max-w-none md:-translate-x-1/2"
+      >
+        <BracketTree
+          bracket={bracket}
+          entrantsById={entrantsById}
+          scoring={scoring}
+          scoreUnit={scoreUnit}
+          scoreDirection={scoreDirection}
+          primaryColor={primaryColor}
+          youEntrantId={youEntrantId}
+          highlightedMatchId={highlighted}
+          recordableMatchIds={reportable}
+          lockedMatchIds={mine ? selfReport.lockedMatchIds : []}
+          onRecord={setReporting}
+        />
+      </div>
 
       <ResponsiveSheetDialog
         open={reportMatch !== undefined}
