@@ -225,7 +225,7 @@ a docs line, which doesn't affect any check.
 | DoD `/about` and maintainers guide | PASS | `d7b72e0c`: maintainers guide and organizer guide updated. `/about` copy is still true, and no still shows a changed surface (`scripts/about-media.ts` shoots 1280×720 desktop pages: schedule, points, the home Standings and the Finale Title) |
 | DoD regression checklist | PASS | `d7b72e0c`, `0c38a8d6`: Roster, Bracket admin, Bracket tree, bottom bar and Finale lines |
 | DoD issues and backlog | PASS | 109–113 `done`, backlog moved under Done (this commit) |
-| DoD one PR | PASS | PR link below |
+| DoD one PR | PASS | [PR #140](https://github.com/paul-macfarlane/jg-war-week/pull/140) |
 
 **Deviations (approved):**
 - the "News" label with a `CONTEXT.md` exception
@@ -246,3 +246,5 @@ staging picks it up on merge.
 - one vitest failure that passed on rerun
 - one strict-mode flake in `regression-r22-hosts` (two `[data-finale-slide="title"]`)
 Both passed in the full gate.
+
+**PR:** [#140](https://github.com/paul-macfarlane/jg-war-week/pull/140) into `staging`.
