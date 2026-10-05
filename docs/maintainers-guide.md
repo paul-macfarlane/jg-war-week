@@ -142,13 +142,17 @@ Every change, however small:
    `pnpm exec playwright install chromium`.
 5. **Open a PR into `staging`.** Ask Claude to "commit and open a PR into
    staging", or `gh pr create --base staging`. CI runs on the PR: lint,
-   types, tests, build, smoke and the Playwright flows against its own
-   Postgres, and a migration drift check that fails when
-   `src/db/schema.ts` changed without a `drizzle/` migration.
+   types, tests, build and smoke against its own Postgres, and a
+   migration drift check that fails when `src/db/schema.ts` changed
+   without a `drizzle/` migration. The Playwright flows don't run on a PR
+   into `staging` (they would add about 16 minutes); run `pnpm gate`
+   locally (step 4) instead.
 6. **Check the Vercel preview** linked on the PR.
 7. **Merge into `staging`.** Vercel's build migrates the staging database,
    then deploys; a failed migration fails the deploy.
-8. **Ship to production:** open a PR from `staging` into `main`, merge it.
+8. **Ship to production:** open a PR from `staging` into `main`. Its CI
+   is the only one that runs the Playwright flows; if they fail, fix it on
+   a branch into `staging` first. Merge it once green.
    Production migrates and deploys. Check https://jg-war-week.vercel.app.
 
 ## Recipes
