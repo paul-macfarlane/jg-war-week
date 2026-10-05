@@ -77,7 +77,8 @@ line that no longer matches the app is a bug in this file.
   flat nav, Competitions, Discretionary points, Schedule, Roster,
   Announcements, Awards, FAQ, Finale, Settings, Organizers, Guide (a Host
   sees only Competitions and Guide); the phone bar
-  is Competitions, Discretionary points, Schedule, Announcements, More. The avatar button
+  reads Competitions, Points, Schedule, News, More (the short labels read
+  in full to assistive tech). The avatar button
   (**Account menu**) at the top right of both headers holds the account.
 - **Run order:** Public Pages, then Admin as an Organizer (it links the
   Participant account and assigns the Host the later sections use), then
