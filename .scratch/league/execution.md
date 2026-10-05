@@ -594,6 +594,8 @@ not ok; e2e 183 passed, 0 failed, 0 flaky (9.2m). Log:
 | DoD5 e2e screenshots 1440 and 390 committed | PASS | `git ls-files test-results/e2e/regression-r23-*` (four test dirs, 1440 and 390 each) |
 | DoD6 `pnpm format:check && pnpm gate`; CI on the PR | PASS locally (`gate.log`); CI on the PR: see the PR checks |
 
+PR: https://github.com/paul-macfarlane/jg-war-week/pull/139 into `staging`.
+
 Deviations and scope changes: Paul's Q1–Q4 answers and the Close
 [SCOPE CHANGE] (above); the acceptance-time deviations under
 [PROGRESS]; the review's F10 deviation; T1's resolution (a Swiss dead end
