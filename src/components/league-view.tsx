@@ -6,6 +6,7 @@ import { ResultsTable, type ResultsTableRow } from "@/components/results-table";
 import { TOP_PLACES, TopFinishers } from "@/components/top-finishers";
 import { Card } from "@/components/ui/card";
 import { formatMatchPoints } from "@/lib/league/standings";
+import { nextMatchText } from "@/lib/league/view-text";
 import { type ResultsStat, winnerKeys } from "@/lib/results-table";
 import type { LeagueView as LeagueData } from "@/queries/league";
 
@@ -138,9 +139,7 @@ export function LeagueView({
 
   const next = view.yourNextMatch;
   const nextText = next
-    ? next.opponent === null
-      ? `Round ${next.round} · You have a bye`
-      : `Round ${next.round} · v ${next.opponent}`
+    ? nextMatchText(next, view.competition.config.pairing)
     : null;
 
   return (

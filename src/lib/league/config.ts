@@ -18,6 +18,9 @@ export type LeagueConfig = {
   rounds: number | null;
 };
 
+/** The most rounds a Swiss League's settings take (the field's `max`). */
+export const LEAGUE_MAX_ROUNDS = 64;
+
 /** What a new League gets: a round robin (R12). */
 export const DEFAULT_LEAGUE_CONFIG: LeagueConfig = {
   pairing: "round-robin",

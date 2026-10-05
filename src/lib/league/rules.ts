@@ -179,30 +179,44 @@ export function clearPairingsError({
 
 /**
  * Why Close is refused, naming what's left, or null once the League is
- * complete (reading R10): every round paired (a Swiss League all its
- * rounds) and every Match that isn't a bye or sit-out has a result.
- * `matches` are in round and position order. A League of fewer than 2
- * Entrants has nothing to play.
+ * complete (reading R10): every Match that isn't a bye or sit-out has a
+ * result, and every round is paired, or (Swiss) the next round can't be
+ * paired without a repeat Match (`nextRoundPairable` false, a dead end:
+ * `EVERY_PAIRING_REPEATS` tells the Organizer to close). `matches` are in
+ * round and position order. A League of fewer than 2 Entrants can't close
+ * (pairing's own words), and a Swiss League's rounds out of range refuse
+ * with `roundsError`'s words rather than listing the rounds.
  */
 export function unplayedSummary({
   config,
   entrantCount,
   matches,
   nameOf,
+  nextRoundPairable,
 }: {
   config: LeagueConfig;
   entrantCount: number;
   matches: LeagueMatchFacts[];
   nameOf: (entrantId: string) => string;
+  /** False at a Swiss dead end (`nextRoundPairable` in the engine). */
+  nextRoundPairable: boolean;
 }): string | null {
-  if (entrantCount < 2 && matches.length === 0) return null;
+  if (entrantCount < 2) return NEEDS_TWO_ENTRANTS;
+  const outOfRange = roundsError(config, entrantCount);
+  if (outOfRange) return outOfRange;
   const unplayed = matches
     .filter(isUnplayed)
     .sort((x, y) => x.round - y.round)
     .map((m) => `Round ${m.round}: ${nameOf(m.a)} v ${nameOf(m.b!)}`);
   const paired = new Set(matches.map((m) => m.round));
+  // A Swiss League plays at most N − 1 rounds (`roundsError`).
+  const rounds =
+    config.pairing === "swiss"
+      ? Math.min(roundsOf(config, entrantCount), entrantCount - 1)
+      : roundsOf(config, entrantCount);
   const unpaired: number[] = [];
-  for (let round = 1; round <= roundsOf(config, entrantCount); round++) {
+  const deadEnd = config.pairing === "swiss" && !nextRoundPairable;
+  for (let round = 1; !deadEnd && round <= rounds; round++) {
     if (!paired.has(round)) unpaired.push(round);
   }
   if (unplayed.length === 0 && unpaired.length === 0) return null;

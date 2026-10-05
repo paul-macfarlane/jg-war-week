@@ -5,7 +5,11 @@
  */
 import { z } from "zod";
 
-import { LEAGUE_PAIRINGS, type LeagueConfig } from "@/lib/league/config";
+import {
+  LEAGUE_MAX_ROUNDS,
+  LEAGUE_PAIRINGS,
+  type LeagueConfig,
+} from "@/lib/league/config";
 
 export const leagueConfigSchema = z
   .strictObject({
@@ -16,6 +20,9 @@ export const leagueConfigSchema = z
       .number({ error: "Rounds is a whole number, or blank." })
       .int({ error: "Rounds is a whole number, or blank." })
       .min(1, { error: "A League plays at least 1 round." })
+      .max(LEAGUE_MAX_ROUNDS, {
+        error: `A League plays at most ${LEAGUE_MAX_ROUNDS} rounds.`,
+      })
       .nullable(),
   })
   .refine((config) => config.pairing === "swiss" || config.rounds === null, {

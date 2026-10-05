@@ -7,6 +7,7 @@ import {
   type LeagueEntrant,
   type LeagueMatchFacts,
   neverMet,
+  nextRoundPairable,
   rematches,
   roundRobin,
   swap,
@@ -180,6 +181,82 @@ describe("swissRound: a dead end", () => {
     expect(EVERY_PAIRING_REPEATS).toBe(
       "Every pairing would repeat a Match. Close the League.",
     );
+  });
+
+  it("stops searching at its step cap and refuses instead of searching on", () => {
+    const capped = swissRound({
+      entrants: seeded(["1", "2", "3", "4"]),
+      matches: [],
+      maxSteps: 1,
+    });
+    expect(capped).toMatchObject({ ok: false, error: EVERY_PAIRING_REPEATS });
+    expect(capped.steps).toBeLessThanOrEqual(1);
+    expect(
+      swissRound({ entrants: seeded(["1", "2", "3", "4"]), matches: [] }).ok,
+    ).toBe(true);
+  });
+});
+
+describe("nextRoundPairable: whether Close still waits for another Swiss round", () => {
+  const six = seeded(["1", "2", "3", "4", "5", "6"]);
+  const deadEnd: LeagueMatchFacts[] = [
+    [1, "1", "4"],
+    [1, "2", "5"],
+    [1, "3", "6"],
+    [2, "1", "5"],
+    [2, "2", "6"],
+    [2, "3", "4"],
+    [3, "1", "6"],
+    [3, "2", "4"],
+    [3, "3", "5"],
+  ].map(([round, a, b]) => ({
+    round: round as number,
+    a: a as string,
+    b: b as string,
+    result: "a" as const,
+  }));
+  const swiss5 = { pairing: "swiss", rounds: 5 } as const;
+
+  it("is false at a dead end: every round played, rounds left, and no next round without a repeat", () => {
+    expect(
+      nextRoundPairable({ config: swiss5, entrants: six, matches: deadEnd }),
+    ).toBe(false);
+  });
+
+  it("is true while a Match is unplayed, once every round is paired, before round 1, and for a round robin", () => {
+    const unplayed = deadEnd.map((m, i) =>
+      i === deadEnd.length - 1 ? { ...m, result: null } : m,
+    );
+    expect(
+      nextRoundPairable({ config: swiss5, entrants: six, matches: unplayed }),
+    ).toBe(true);
+    expect(
+      nextRoundPairable({
+        config: { pairing: "swiss", rounds: 3 },
+        entrants: six,
+        matches: deadEnd,
+      }),
+    ).toBe(true);
+    expect(
+      nextRoundPairable({ config: swiss5, entrants: six, matches: [] }),
+    ).toBe(true);
+    expect(
+      nextRoundPairable({
+        config: { pairing: "round-robin", rounds: null },
+        entrants: six,
+        matches: deadEnd,
+      }),
+    ).toBe(true);
+  });
+
+  it("is true when the next Swiss round can pair", () => {
+    expect(
+      nextRoundPairable({
+        config: swiss5,
+        entrants: six,
+        matches: deadEnd.filter((m) => m.round === 1),
+      }),
+    ).toBe(true);
   });
 });
 
@@ -391,6 +468,7 @@ describe("swapWarnings: the Edit pairings dialog's warning (R7, Q4)", () => {
         { a: "A", b: "B" },
         { a: "C", b: "D" },
       ],
+      secondByes: [],
     });
   });
 
@@ -404,6 +482,82 @@ describe("swapWarnings: the Edit pairings dialog's warning (R7, Q4)", () => {
         y: "C",
         roundRobin: false,
       }),
-    ).toEqual({ repeats: [], neverMeet: [] });
+    ).toEqual({ repeats: [], neverMeet: [], secondByes: [] });
+  });
+
+  // Swiss of 3: C has round 1's bye, B round 2's.
+  const swiss3 = [
+    {
+      round: 1,
+      matches: [
+        { a: "A", b: "B" },
+        { a: "C", b: null },
+      ],
+    },
+    {
+      round: 2,
+      matches: [
+        { a: "A", b: "C" },
+        { a: "B", b: null },
+      ],
+    },
+  ];
+
+  it("in a Swiss League, names an Entrant the swap gives a second bye", () => {
+    expect(
+      swapWarnings({
+        entrantIds: ["A", "B", "C"],
+        rounds: swiss3,
+        round: 2,
+        x: "B",
+        y: "C",
+        roundRobin: false,
+      }),
+    ).toEqual({
+      repeats: [{ a: "A", b: "B" }],
+      neverMeet: [],
+      secondByes: ["C"],
+    });
+  });
+
+  it("names no second bye for a swap that leaves the bye where it is, or a round robin's sit-out", () => {
+    const swiss5 = [
+      {
+        round: 1,
+        matches: [
+          { a: "A", b: "B" },
+          { a: "D", b: "E" },
+          { a: "C", b: null },
+        ],
+      },
+      {
+        round: 2,
+        matches: [
+          { a: "A", b: "C" },
+          { a: "B", b: "D" },
+          { a: "E", b: null },
+        ],
+      },
+    ];
+    expect(
+      swapWarnings({
+        entrantIds: ["A", "B", "C", "D", "E"],
+        rounds: swiss5,
+        round: 2,
+        x: "A",
+        y: "B",
+        roundRobin: false,
+      }).secondByes,
+    ).toEqual([]);
+    expect(
+      swapWarnings({
+        entrantIds: ["A", "B", "C"],
+        rounds: swiss3,
+        round: 2,
+        x: "B",
+        y: "C",
+        roundRobin: true,
+      }).secondByes,
+    ).toEqual([]);
   });
 });

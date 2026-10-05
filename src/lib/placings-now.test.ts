@@ -286,9 +286,27 @@ describe("SC1: a Head-to-head series closes once decided or drawn", () => {
 
 describe("leaguePlacingsNow (spec R23, decision 9; R10)", () => {
   const people = [
-    { id: "ea", name: "Ada", teamId: null, participantId: "ada" },
-    { id: "eb", name: "Bea", teamId: null, participantId: "bea" },
-    { id: "ec", name: "Cy", teamId: null, participantId: "cy" },
+    {
+      id: "ea",
+      seedPosition: 1,
+      name: "Ada",
+      teamId: null,
+      participantId: "ada",
+    },
+    {
+      id: "eb",
+      seedPosition: 2,
+      name: "Bea",
+      teamId: null,
+      participantId: "bea",
+    },
+    {
+      id: "ec",
+      seedPosition: 3,
+      name: "Cy",
+      teamId: null,
+      participantId: "cy",
+    },
   ];
   const roundRobin = { pairing: "round-robin" as const, rounds: null };
   const lm = (
@@ -359,7 +377,13 @@ describe("leaguePlacingsNow (spec R23, decision 9; R10)", () => {
   it("refuses a Swiss League with a round not yet paired", () => {
     const four = [
       ...people,
-      { id: "ed", name: "Di", teamId: null, participantId: "di" },
+      {
+        id: "ed",
+        seedPosition: 4,
+        name: "Di",
+        teamId: null,
+        participantId: "di",
+      },
     ];
     expect(
       leaguePlacingsNow(
@@ -374,5 +398,87 @@ describe("leaguePlacingsNow (spec R23, decision 9; R10)", () => {
       ok: false,
       error: "Finish every Match before closing. Not yet paired: round 2.",
     });
+  });
+
+  // 6 Entrants whose first three rounds played every pair across
+  // {Ada, Bea, Cy} and {Di, Ed, Flo}: two triangles are left, and a
+  // triangle can't pair a 4th round (EVERY_PAIRING_REPEATS).
+  const six = [
+    ...people,
+    {
+      id: "ed",
+      seedPosition: 4,
+      name: "Di",
+      teamId: null,
+      participantId: "di",
+    },
+    {
+      id: "ee",
+      seedPosition: 5,
+      name: "Ed",
+      teamId: null,
+      participantId: "ed",
+    },
+    {
+      id: "ef",
+      seedPosition: 6,
+      name: "Flo",
+      teamId: null,
+      participantId: "flo",
+    },
+  ];
+  const deadEnd = [
+    lm(1, "ea", "ed", "a"),
+    lm(1, "eb", "ee", "a"),
+    lm(1, "ec", "ef", "b"),
+    lm(2, "ea", "ee", "a"),
+    lm(2, "eb", "ef", "draw"),
+    lm(2, "ec", "ed", "b"),
+    lm(3, "ea", "ef", "a"),
+    lm(3, "eb", "ed", "b"),
+    lm(3, "ec", "ee", "a"),
+  ];
+
+  it("closes a Swiss League of 5 rounds at a dead end once round 3 is complete", () => {
+    const now = leaguePlacingsNow(
+      {
+        config: { pairing: "swiss", rounds: 5 },
+        entrants: six,
+        matches: deadEnd,
+      },
+      rules,
+    );
+    expect(now.ok).toBe(true);
+    // Ada won all three; 10 Placement Points for 1st.
+    expect(now.ok && now.points[0]).toEqual({
+      teamId: null,
+      participantId: "ada",
+      points: 10,
+    });
+  });
+
+  it("refuses a Swiss League whose rounds are out of range with the rounds rule", () => {
+    expect(
+      leaguePlacingsNow(
+        {
+          config: { pairing: "swiss", rounds: 1e9 },
+          entrants: six,
+          matches: deadEnd,
+        },
+        rules,
+      ),
+    ).toEqual({
+      ok: false,
+      error: "A Swiss League of 6 Entrants plays 1 to 5 rounds.",
+    });
+  });
+
+  it("refuses a League of fewer than 2 Entrants", () => {
+    expect(
+      leaguePlacingsNow(
+        { config: roundRobin, entrants: [people[0]], matches: [] },
+        rules,
+      ),
+    ).toEqual({ ok: false, error: "Add at least 2 Entrants before pairing." });
   });
 });

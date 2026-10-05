@@ -53,12 +53,13 @@ export type CompetitionSettingField =
  * started in the Competition's own Format (a Placement row, a logged Match
  * or Attempt, a Bracket Match Result, a League's round 1 paired; spec R21,
  * decision 3); once the Competition has a `logged` Match or Attempt; once
- * any `match-result` exists; once a League's round 1 is `paired`; or only
- * while `closed`. Every setting but the `never` ones also locks while
- * Closed.
+ * any `match-result` exists; or only while `closed`. Every setting but the
+ * `never` ones also locks while Closed. A League's Pairing and rounds,
+ * Score direction and Entrants also lock once its round 1 is paired
+ * (`LEAGUE_PAIRED_FIELDS`), whatever their lock here.
  */
 export type SettingLock =
-  "never" | "result" | "play" | "logged" | "match-result" | "paired" | "closed";
+  "never" | "result" | "play" | "logged" | "match-result" | "closed";
 
 /** Each setting's lock. */
 export const SETTING_LOCKS: Record<CompetitionSettingField, SettingLock> = {
@@ -79,8 +80,9 @@ export const SETTING_LOCKS: Record<CompetitionSettingField, SettingLock> = {
   seriesConfig: "logged",
   bestScoreConfig: "logged",
   bracketConfig: "match-result",
-  leagueConfig: "paired",
-  // A League's Entrants lock once round 1 is paired (`settingLockReason`).
+  // Locks once round 1 is paired (`LEAGUE_PAIRED_FIELDS`), else while Closed.
+  leagueConfig: "closed",
+  // A League's Entrants lock once round 1 is paired (`LEAGUE_PAIRED_FIELDS`).
   entrants: "match-result",
   bracket: "match-result",
   // They set who joins, so an Organizer can raise a limit mid-week.
@@ -106,7 +108,10 @@ export const LOCKED_BY_MATCH_RESULT = "Locked once a Match has a result.";
  */
 export const LOCKED_BY_PAIRING = "Locked once round 1 is paired.";
 
-/** The settings a League locks once round 1 is paired (reading R1). */
+/**
+ * The settings a League locks once round 1 is paired (reading R1): the one
+ * source of the League lock, checked before `SETTING_LOCKS`.
+ */
 const LEAGUE_PAIRED_FIELDS: readonly CompetitionSettingField[] = [
   "leagueConfig",
   "scoreDirection",

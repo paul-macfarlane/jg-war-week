@@ -18,11 +18,13 @@ import {
   roundsOf,
   swissDefaultRounds,
 } from "@/lib/league/config";
-import type { LeagueMatchFacts } from "@/lib/league/pairing";
+import {
+  EVERY_PAIRING_REPEATS,
+  type LeagueMatchFacts,
+  nextRoundPairable,
+} from "@/lib/league/pairing";
 import {
   type LeagueRecordFacet,
-  ROUND_HAS_RESULT,
-  SWAPPED_MATCH_HAS_RESULT,
   clearPairingsError,
   leagueRecordError,
   pairError,
@@ -34,14 +36,22 @@ import {
   leaguePlacings,
   leagueStandings,
 } from "@/lib/league/standings";
+import {
+  type LeagueNextMatch,
+  editDisabledReason,
+  isViewer,
+  yourNextMatch,
+} from "@/lib/league/view-rules";
 import { entryPointsFor } from "@/lib/results-table";
-import { COMPETITION_CLOSED, type MatchSide } from "@/lib/series/log-rule";
+import type { MatchSide } from "@/lib/series/log-rule";
 import { isUuid } from "@/lib/uuid";
 import { getBracketEntrants } from "@/queries/brackets";
 import { getCompetitionEntryPoints } from "@/queries/entry-points";
 import { getHostedCompetitions, isOrganizerEmail } from "@/queries/organizers";
 
 type Linked = { participantId: string; teamId: string | null } | null;
+
+export type { LeagueNextMatch };
 
 /** A League Competition's facts, explicit columns only. */
 export type LeagueCompetition = {
@@ -269,13 +279,17 @@ export async function getLeagueRecordFacts(
   };
 }
 
-/** What Close reads about a League: its Entrants by name, and its Matches. */
+/**
+ * What Close reads about a League: its Entrants by name and Seed Position
+ * (for whether a Swiss round can still pair), and its Matches.
+ */
 export async function getLeagueClose(
   competitionId: string,
   dbOrTx: DBOrTx = db,
 ): Promise<{
   entrants: {
     id: string;
+    seedPosition: number;
     name: string;
     teamId: string | null;
     participantId: string | null;
@@ -289,6 +303,7 @@ export async function getLeagueClose(
   return {
     entrants: entrants.map((e) => ({
       id: e.id,
+      seedPosition: e.seedPosition,
       name: e.label,
       teamId: e.teamId,
       participantId: e.participantId,
@@ -370,14 +385,6 @@ export type LeagueStandingsView = LeagueStandingsRow & {
   yours: boolean;
 };
 
-/** The viewer's next Match: its round and opponent, or a bye. */
-export type LeagueNextMatch = {
-  round: number;
-  matchId: string;
-  /** The opponent's name; null for a bye or sit-out. */
-  opponent: string | null;
-};
-
 export type LeagueView = {
   competition: LeagueCompetition;
   /** How many rounds the League plays with its Entrants (`roundsOf`). */
@@ -417,31 +424,6 @@ export type LeagueView = {
     reopen: LeagueOffer | null;
   };
 };
-
-/** Whether an Entrant row is the linked viewer (or their Team). */
-function isViewer(
-  scoring: "team" | "individual",
-  linked: Linked,
-  side: { teamId: string | null; participantId: string | null },
-): boolean {
-  if (!linked) return false;
-  return scoring === "team"
-    ? linked.teamId !== null && side.teamId === linked.teamId
-    : side.participantId === linked.participantId;
-}
-
-/** Why Edit pairings is off for `round`, or null (reading R7). */
-function editDisabledReason(
-  found: LeagueCompetition,
-  round: LeagueMatchRow[],
-): string | null {
-  if (found.closed) return COMPETITION_CLOSED;
-  if (found.config.pairing === "swiss") {
-    return round.some((m) => m.result !== null) ? ROUND_HAS_RESULT : null;
-  }
-  const open = round.filter((m) => m.result === null).length;
-  return open >= 2 ? null : SWAPPED_MATCH_HAS_RESULT;
-}
 
 /**
  * Everything a League's pages show, for `viewerEmail` (null when
@@ -527,7 +509,11 @@ export async function getLeagueView(
     return {
       round,
       matches: inRound.map(matchView),
-      editDisabledReason: editDisabledReason(found, inRound),
+      editDisabledReason: editDisabledReason({
+        closed: found.closed,
+        pairing: found.config.pairing,
+        round: inRound,
+      }),
     };
   });
 
@@ -566,26 +552,12 @@ export async function getLeagueView(
     };
   });
 
-  const yourNextMatch = ((): LeagueNextMatch | null => {
-    if (found.closed || yourEntrantId === null) return null;
-    const roundOpen = (round: number) =>
-      matches.some(
-        (m) => m.round === round && m.b !== null && m.result === null,
-      );
-    for (const m of matches) {
-      if (m.a !== yourEntrantId && m.b !== yourEntrantId) continue;
-      if (m.b === null) {
-        if (roundOpen(m.round)) {
-          return { round: m.round, matchId: m.id, opponent: null };
-        }
-        continue;
-      }
-      if (m.result !== null) continue;
-      const opponent = m.a === yourEntrantId ? m.b : m.a;
-      return { round: m.round, matchId: m.id, opponent: nameOf(opponent) };
-    }
-    return null;
-  })();
+  const next = yourNextMatch({
+    closed: found.closed,
+    yourEntrantId,
+    matches,
+    nameOf,
+  });
 
   const pairFacet = {
     closed: found.closed,
@@ -595,6 +567,12 @@ export async function getLeagueView(
   };
   const paired = matches.length > 0;
   const swiss = found.config.pairing === "swiss";
+  // False only at a Swiss dead end: Close is then open, Pair next round off.
+  const pairable = nextRoundPairable({
+    config: found.config,
+    entrants,
+    matches: facts,
+  });
   const offers: LeagueView["offers"] = runs
     ? {
         pair: paired
@@ -607,7 +585,9 @@ export async function getLeagueView(
           swiss && paired
             ? {
                 label: "Pair next round",
-                disabledReason: pairNextError(pairFacet),
+                disabledReason:
+                  pairNextError(pairFacet) ??
+                  (pairable ? null : EVERY_PAIRING_REPEATS),
               }
             : null,
         clearPairings: paired
@@ -628,6 +608,7 @@ export async function getLeagueView(
                 entrantCount: n,
                 matches: facts,
                 nameOf,
+                nextRoundPairable: pairable,
               }),
             },
         reopen: found.closed ? { label: "Reopen", disabledReason: null } : null,
@@ -652,7 +633,7 @@ export async function getLeagueView(
     runs,
     linked,
     yourEntrantId,
-    yourNextMatch,
+    yourNextMatch: next,
     offers,
   };
 }

@@ -593,7 +593,7 @@ async function assertLeagueMcp() {
         rounds[n - 1]?.matches.filter((m) => m.result !== null).length;
       const checks = {
         found: parsed.found === true,
-        format: parsed.competition?.format === "League",
+        format: parsed.competition?.format === "league",
         pairing: parsed.competition?.pairing === "swiss",
         rounds: parsed.competition?.rounds === 3,
         roundsPaired: parsed.competition?.roundsPaired === 3,

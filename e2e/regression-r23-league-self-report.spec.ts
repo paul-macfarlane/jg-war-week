@@ -110,10 +110,16 @@ test("r23 AC4 a League's players record and edit their own Match with self-repor
      where m.competition_id = $1 and p.display_name = $2`,
     [id, ASHLEY],
   );
-  const ashley = await participantPageAs(browser, ASHLEY);
-  const sam = await participantPageAs(browser, SAM);
-  const graham = await participantPageAs(browser, GRAHAM);
+  const opened: Awaited<ReturnType<typeof participantPageAs>>[] = [];
   try {
+    const open = async (displayName: string) => {
+      const session = await participantPageAs(browser, displayName);
+      opened.push(session);
+      return session;
+    };
+    const ashley = await open(ASHLEY);
+    const sam = await open(SAM);
+    const graham = await open(GRAHAM);
     // A player records their own Match.
     const mine = ashley.page;
     await mine.goto(`/xi/competitions/${id}`);
@@ -188,9 +194,7 @@ test("r23 AC4 a League's players record and edit their own Match with self-repor
     ).toHaveCount(0);
     await shoot(mine, testInfo, "self-report-off");
   } finally {
-    await graham.close();
-    await sam.close();
-    await ashley.close();
+    for (const session of opened.reverse()) await session.close();
     await deleteCompetitions(name);
   }
 });

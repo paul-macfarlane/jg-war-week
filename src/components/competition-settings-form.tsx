@@ -77,6 +77,7 @@ import {
   type LeagueConfig,
   PAIRING_LABELS,
 } from "@/lib/league/config";
+import { LEAGUE_MAX_ROUNDS } from "@/lib/league/config";
 import { roundsHelp } from "@/lib/league/view-text";
 import {
   BEST_OF_OPTIONS,
@@ -823,6 +824,7 @@ function LeagueConfigFields({
             type="number"
             inputMode="numeric"
             min={1}
+            max={LEAGUE_MAX_ROUNDS}
             placeholder="Default"
             className="h-11 sm:h-9"
             disabled={off}

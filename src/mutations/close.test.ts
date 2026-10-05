@@ -582,6 +582,90 @@ describe.skipIf(!isLocalDatabase)(
         });
       });
 
+      it("closes a Swiss League at a dead end: 3 of its 5 rounds played and no 4th round without a repeat Match", async () => {
+        await inRolledBackTransaction(async (tx) => {
+          const { closeCompetition } = await mutations();
+          const f = await loggedFixture(tx);
+          const { schema, ids } = f;
+          const [tank] = await tx
+            .insert(schema.participant)
+            .values({ warWeekId: f.warWeekId, displayName: "Tank" })
+            .returning({ id: schema.participant.id });
+          const [row] = await tx
+            .insert(schema.competition)
+            .values({
+              warWeekId: f.warWeekId,
+              name: "Swiss",
+              scoring: "individual",
+              format: "league",
+              leagueConfig: { pairing: "swiss", rounds: 5 },
+              placementPoints: [10, 6, 3],
+            })
+            .returning({ id: schema.competition.id });
+          const e = await tx
+            .insert(schema.entrant)
+            .values(
+              [
+                ids.neo,
+                ids.trinity,
+                ids.morpheus,
+                ids.cypher,
+                ids.dozer,
+                tank.id,
+              ].map((participantId, i) => ({
+                competitionId: row.id,
+                participantId,
+                seedPosition: i + 1,
+              })),
+            )
+            .returning({ id: schema.entrant.id });
+          // Every pair across {Neo, Trinity, Morpheus} and {Cypher, Dozer,
+          // Tank} has met: two triangles are left, and neither can pair.
+          const recordedAt = new Date("2027-02-22T12:00:00Z");
+          const rounds = [
+            [
+              [0, 3],
+              [1, 4],
+              [2, 5],
+            ],
+            [
+              [0, 4],
+              [1, 5],
+              [2, 3],
+            ],
+            [
+              [0, 5],
+              [1, 3],
+              [2, 4],
+            ],
+          ];
+          await tx.insert(schema.leagueMatch).values(
+            rounds.flatMap((pairs, r) =>
+              pairs.map(([a, b], position) => ({
+                competitionId: row.id,
+                round: r + 1,
+                position,
+                entrantAId: e[a].id,
+                entrantBId: e[b].id,
+                result: "a" as const,
+                recordedAt,
+              })),
+            ),
+          );
+          expect(await closeCompetition(row.id, f.ctx(HOST), tx)).toEqual({
+            ok: true,
+          });
+          // Neo, Trinity and Morpheus won all three: tied 1st.
+          expect(await generated(f, tx, row.id)).toEqual(
+            [
+              [ids.neo, 10, "From league"],
+              [ids.trinity, 10, "From league"],
+              [ids.morpheus, 10, "From league"],
+            ].sort((a, b) => String(a[0]).localeCompare(String(b[0]))),
+          );
+        });
+      });
+
       it("closes a complete League with Placement Points by standing, ties sharing full points; Reopen withdraws them", async () => {
         await inRolledBackTransaction(async (tx) => {
           const { closeCompetition, reopenCompetition } = await mutations();

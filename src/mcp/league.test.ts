@@ -145,7 +145,7 @@ describe("toLeagueResult", () => {
       found: true,
       competition: {
         name: "Chess",
-        format: "League",
+        format: "league",
         pairing: "swiss",
         rounds: 3,
         roundsPaired: 1,

@@ -85,6 +85,7 @@ describe("leagueConfigSchema", () => {
       { pairing: "round-robin", rounds: null },
       { pairing: "swiss", rounds: null },
       { pairing: "swiss", rounds: 4 },
+      { pairing: "swiss", rounds: 64 },
     ]) {
       expect(leagueConfigSchema.safeParse(config).success, config.pairing).toBe(
         true,
@@ -98,6 +99,8 @@ describe("leagueConfigSchema", () => {
       { pairing: "round-robin", rounds: 3 },
       { pairing: "swiss", rounds: 0 },
       { pairing: "swiss", rounds: 2.5 },
+      { pairing: "swiss", rounds: 65 },
+      { pairing: "swiss", rounds: 1e9 },
       { pairing: "swiss", rounds: null, colors: true },
     ]) {
       expect(

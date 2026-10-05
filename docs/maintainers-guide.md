@@ -931,8 +931,9 @@ Then in the run area:
 3. **Edit pairings** (per round) swaps two Entrants, either may be the bye or
    sit-out, until a Match in that round has a result (a round robin: until
    either affected Match does). The dialog **warns before saving** if the
-   swap repeats a pairing, and in a round robin names the pairs that will
-   then never meet. It is a warning, not a refusal.
+   swap repeats a pairing, in a round robin names the pairs that will then
+   never meet, and in Swiss names an Entrant who would have a second bye. It
+   is a warning, not a refusal.
 4. **Clear pairings** deletes every Match while none has a result, which
    unlocks the settings and Entrants again, so a wrong Entrant list can be
    fixed before play.
@@ -944,9 +945,13 @@ Then in the run area:
    Organizers record. A bye or sit-out never has a result. Corrections after
    the next Swiss round is paired are allowed; pairings already made stand.
 6. **Close** only when the League is finished: every round paired (Swiss: all
-   N rounds) and every Match recorded. Until then Close is disabled with
-   "Finish every Match before closing." naming the unplayed Matches, and the
-   server refuses it. Close writes Placement Points by final standing
+   N rounds) and every Match recorded. A Swiss League is also finished when
+   every played round is complete and no next round can be paired without a
+   repeat Match: Pair next round then reads "Every pairing would repeat a
+   Match. Close the League." and Close is open. Until then Close is disabled
+   with "Finish every Match before closing." naming the unplayed Matches and
+   rounds not yet paired, and the server refuses it. A League needs at least
+   2 Entrants to Close. Close writes Placement Points by final standing
    ("From league"); **Reopen** withdraws them.
 
 The Participant page shows Top finishers once Closed, the results table (Rank,

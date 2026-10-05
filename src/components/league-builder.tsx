@@ -112,6 +112,12 @@ export function LeagueBuilder({
   }
 
   const { pair, pairNext, clearPairings: clear, close, reopen } = offers;
+  // One solid button at a time: the next step. Pairing while a pairing
+  // offer is open; Close once none is.
+  const pairingOpen = [pair, pairNext].some(
+    (offer) => offer !== null && offer.disabledReason === null,
+  );
+  const closeVariant = pairingOpen ? "outline" : "default";
   return (
     <div className="flex flex-col gap-8">
       {closed && (
@@ -234,7 +240,13 @@ export function LeagueBuilder({
           </>
         ) : close?.disabledReason ? (
           <>
-            <Button type="button" size="lg" className="min-h-11" disabled>
+            <Button
+              type="button"
+              variant={closeVariant}
+              size="lg"
+              className="min-h-11"
+              disabled
+            >
               {close.label}
             </Button>
             <p data-slot="close-reason" className="text-foreground/70 text-sm">
@@ -250,7 +262,7 @@ export function LeagueBuilder({
             confirmLabel="Close"
             action={() => closeLeague(competition.id)}
             successMessage="Competition closed"
-            variant="default"
+            variant={closeVariant}
             size="lg"
             className="min-h-11"
           >
@@ -262,7 +274,10 @@ export function LeagueBuilder({
   );
 }
 
-/** A primary button, disabled with the rule's reason beside it when off. */
+/**
+ * A pairing button: solid while it's the next step, outline when off, with
+ * the rule's reason beside it.
+ */
 function OfferButton({
   label,
   reason,
@@ -278,6 +293,7 @@ function OfferButton({
     <div className="flex flex-wrap items-center gap-3">
       <Button
         type="button"
+        variant={reason === null ? "default" : "outline"}
         size="lg"
         className="min-h-11"
         disabled={pending || reason !== null}

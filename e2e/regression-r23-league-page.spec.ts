@@ -148,8 +148,10 @@ test("r23 AC7 a round robin's Participant page: table with tiebreaks and the Pro
   test.setTimeout(240_000);
   const name = `E2E R23 Page ${Date.now()}`;
   const id = await makeRoundRobin(name);
-  const brandon = await participantPageAs(browser, D);
+  const opened: Awaited<ReturnType<typeof participantPageAs>>[] = [];
   try {
+    const brandon = await participantPageAs(browser, D);
+    opened.push(brandon);
     const page = brandon.page;
     await page.setViewportSize(DESKTOP);
     await page.goto(`/xi/competitions/${id}`);
@@ -300,7 +302,7 @@ test("r23 AC7 a round robin's Participant page: table with tiebreaks and the Pro
     await expectNoSidewaysScroll(page);
     await shoot(page, testInfo, "page-table-phone");
   } finally {
-    await brandon.close();
+    for (const session of opened) await session.close();
     await deleteCompetitions(name);
   }
 });

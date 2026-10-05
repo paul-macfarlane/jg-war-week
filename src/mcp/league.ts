@@ -8,13 +8,13 @@ import {
 } from "@/mcp/score";
 import type { LeagueView } from "@/queries/league";
 
-export type LeagueResult =
+export type LeagueToolResult =
   | {
       found: true;
       competition: {
         name: string;
         scoring: Competition["scoring"];
-        format: "League";
+        format: "league";
         pairing: "round robin" | "swiss";
         /** How many rounds the League plays with its Entrants. */
         rounds: number;
@@ -61,17 +61,20 @@ export type LeagueResult =
       competition: {
         name: string;
         scoring: Competition["scoring"];
-        format: Competition["format"];
+        format: NotLeagueFormat;
       };
       league: null;
       message: string;
     }
   | { found: false; message: string };
 
+/** Every Format but League. */
+type NotLeagueFormat = Exclude<Competition["format"], "league">;
+
 const RESULT_WORDS = { a: "a won", b: "b won", draw: "draw" } as const;
 
 /** The tool that reads a Competition run in each other Format. */
-const OTHER_TOOLS: Record<Exclude<Competition["format"], "league">, string> = {
+const OTHER_TOOLS: Record<NotLeagueFormat, string> = {
   placement: "get_placements",
   bracket: "get_bracket",
   "head-to-head": "get_games",
@@ -84,10 +87,9 @@ const OTHER_TOOLS: Record<Exclude<Competition["format"], "league">, string> = {
  * League, and a pointer to the tool for its Format. Pure.
  */
 export function toNotLeagueResult(
-  found: Pick<Competition, "name" | "scoring" | "format">,
-): LeagueResult {
-  const tool =
-    found.format === "league" ? "get_leaderboard" : OTHER_TOOLS[found.format];
+  found: Pick<Competition, "name" | "scoring"> & { format: NotLeagueFormat },
+): LeagueToolResult {
+  const tool = OTHER_TOOLS[found.format];
   return {
     found: true,
     competition: {
@@ -110,7 +112,7 @@ export function toNotLeagueResult(
 export function toLeagueResult(
   view: LeagueView | undefined,
   name: string,
-): LeagueResult {
+): LeagueToolResult {
   if (!view) return { found: false, message: notFoundMessage(name) };
 
   const { competition } = view;
@@ -127,7 +129,7 @@ export function toLeagueResult(
     competition: {
       name: competition.name,
       scoring: competition.scoring,
-      format: "League",
+      format: "league",
       pairing: PAIRING_LABELS[competition.config.pairing].toLowerCase() as
         "round robin" | "swiss",
       rounds: view.roundsTotal,

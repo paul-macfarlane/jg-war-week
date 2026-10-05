@@ -332,7 +332,11 @@ const handler = createMcpHandler(
         const found = await getCompetitionByName(warWeek, competition);
         let result;
         if (found && found.format !== "league") {
-          result = toNotLeagueResult(found);
+          result = toNotLeagueResult({
+            name: found.name,
+            scoring: found.scoring,
+            format: found.format,
+          });
         } else {
           // Anonymous: no viewer, so nothing viewer-specific is read.
           const view = found ? await getLeagueView(found.id, null) : undefined;

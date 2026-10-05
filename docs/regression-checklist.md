@@ -417,7 +417,9 @@ on the matching War Week page.
       round is disabled until the round is done, and the standings follow
       (W, D, L, Match points, Buchholz). Close is disabled with "Finish every
       Match before closing." naming the unplayed Matches until the last
-      round is played; then Close writes Placement Points ("From league") to
+      round is played (or, Swiss, until every played round is complete and
+      no next round can pair without a repeat Match: Pair next round reads
+      "Every pairing would repeat a Match. Close the League."); then Close writes Placement Points ("From league") to
       the Standings and Reopen withdraws them. *(teams)* In Team scoring the
       points go to Teams.
 - [ ] **League: self-report and enroll.** With self-report on, a linked

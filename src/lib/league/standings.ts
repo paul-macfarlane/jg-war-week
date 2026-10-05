@@ -37,7 +37,7 @@ type Tally = {
   byes: number;
   matchPoints: number;
   /** Each played opponent with the points this Entrant took off them. */
-  games: { opponent: string; points: number }[];
+  matches: { opponent: string; points: number }[];
 };
 
 const POINTS = { a: [1, 0], b: [0, 1], draw: [0.5, 0.5] } as const;
@@ -50,7 +50,7 @@ function tallies(
   const table = new Map<string, Tally>(
     entrantIds.map((id) => [
       id,
-      { wins: 0, draws: 0, losses: 0, byes: 0, matchPoints: 0, games: [] },
+      { wins: 0, draws: 0, losses: 0, byes: 0, matchPoints: 0, matches: [] },
     ]),
   );
   const add = (id: string, points: number, opponent: string) => {
@@ -60,7 +60,7 @@ function tallies(
     if (points === 1) tally.wins++;
     else if (points === 0) tally.losses++;
     else tally.draws++;
-    tally.games.push({ opponent, points });
+    tally.matches.push({ opponent, points });
   };
   for (const match of matches) {
     if (match.b === null) {
@@ -93,7 +93,7 @@ export function leagueStandings(
   const roundRobin = pairing === "round-robin";
 
   const rows = entrantIds.map((entrantId) => {
-    const { games, ...tally } = table.get(entrantId)!;
+    const { matches: played, ...tally } = table.get(entrantId)!;
     const tiedWith = new Set(
       entrantIds.filter(
         (other) => other !== entrantId && pointsOf(other) === tally.matchPoints,
@@ -101,20 +101,20 @@ export function leagueStandings(
     );
     return {
       entrantId,
-      played: games.length,
+      played: played.length,
       ...tally,
       headToHead:
         roundRobin && tiedWith.size > 0
-          ? games
-              .filter((g) => tiedWith.has(g.opponent))
-              .reduce((sum, g) => sum + g.points, 0)
+          ? played
+              .filter((m) => tiedWith.has(m.opponent))
+              .reduce((sum, m) => sum + m.points, 0)
           : null,
       sonnebornBerger: roundRobin
-        ? games.reduce((sum, g) => sum + g.points * pointsOf(g.opponent), 0)
+        ? played.reduce((sum, m) => sum + m.points * pointsOf(m.opponent), 0)
         : null,
       buchholz: roundRobin
         ? null
-        : games.reduce((sum, g) => sum + pointsOf(g.opponent), 0),
+        : played.reduce((sum, m) => sum + pointsOf(m.opponent), 0),
       rank: 0,
     };
   });

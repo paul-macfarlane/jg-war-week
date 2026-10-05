@@ -301,6 +301,7 @@ describe("unplayedSummary: Close waits for a finished League", () => {
         entrantCount: 5,
         matches: [m(1, "A", "B", "a"), m(1, "C", "D", "b"), m(1, "E", null)],
         nameOf,
+        nextRoundPairable: true,
       }),
     ).toBeNull();
   });
@@ -317,6 +318,7 @@ describe("unplayedSummary: Close waits for a finished League", () => {
           m(2, "B", "C"),
         ],
         nameOf,
+        nextRoundPairable: true,
       }),
     ).toBe(
       "Finish every Match before closing. Unplayed: Round 2: Ada v Di; Round 2: Bo v Cy.",
@@ -330,6 +332,7 @@ describe("unplayedSummary: Close waits for a finished League", () => {
         entrantCount: 4,
         matches: [m(1, "A", "B", "a"), m(1, "C", "D")],
         nameOf,
+        nextRoundPairable: true,
       }),
     ).toBe(
       "Finish every Match before closing. Unplayed: Round 1: Cy v Di. Not yet paired: rounds 2, 3.",
@@ -340,6 +343,7 @@ describe("unplayedSummary: Close waits for a finished League", () => {
         entrantCount: 4,
         matches: [m(1, "A", "B", "a"), m(1, "C", "D", "a")],
         nameOf,
+        nextRoundPairable: true,
       }),
     ).toBe("Finish every Match before closing. Not yet paired: round 2.");
   });
@@ -351,15 +355,74 @@ describe("unplayedSummary: Close waits for a finished League", () => {
         entrantCount: 3,
         matches: [],
         nameOf,
+        nextRoundPairable: true,
       }),
     ).toBe(
       "Finish every Match before closing. Not yet paired: rounds 1, 2, 3.",
     );
   });
 
-  it("has nothing to finish with fewer than 2 Entrants", () => {
+  it("refuses a League of fewer than 2 Entrants with pairing's own words", () => {
+    for (const entrantCount of [0, 1]) {
+      expect(
+        unplayedSummary({
+          config: swiss,
+          entrantCount,
+          matches: [],
+          nameOf,
+          nextRoundPairable: true,
+        }),
+      ).toBe("Add at least 2 Entrants before pairing.");
+    }
+  });
+
+  // 6 Entrants whose first three rounds played every pair across {1,2,3}
+  // and {4,5,6}: two triangles are left, and a triangle can't pair.
+  const deadEnd = [
+    m(1, "A", "D", "a"),
+    m(1, "B", "E", "b"),
+    m(1, "C", "F", "draw"),
+    m(2, "A", "E", "a"),
+    m(2, "B", "F", "b"),
+    m(2, "C", "D", "draw"),
+    m(3, "A", "F", "a"),
+    m(3, "B", "D", "b"),
+    m(3, "C", "E", "draw"),
+  ];
+
+  it("is nothing for a Swiss League of 5 rounds at a dead end after round 3", () => {
     expect(
-      unplayedSummary({ config: swiss, entrantCount: 1, matches: [], nameOf }),
+      unplayedSummary({
+        config: { pairing: "swiss", rounds: 5 },
+        entrantCount: 6,
+        matches: deadEnd,
+        nameOf,
+        nextRoundPairable: false,
+      }),
     ).toBeNull();
+  });
+
+  it("still names the rounds left while the next round can pair", () => {
+    expect(
+      unplayedSummary({
+        config: { pairing: "swiss", rounds: 5 },
+        entrantCount: 6,
+        matches: deadEnd,
+        nameOf,
+        nextRoundPairable: true,
+      }),
+    ).toBe("Finish every Match before closing. Not yet paired: rounds 4, 5.");
+  });
+
+  it("refuses a Swiss League whose saved rounds are out of range with the rounds rule, not a list", () => {
+    expect(
+      unplayedSummary({
+        config: { pairing: "swiss", rounds: 1e9 },
+        entrantCount: 6,
+        matches: deadEnd,
+        nameOf,
+        nextRoundPairable: true,
+      }),
+    ).toBe("A Swiss League of 6 Entrants plays 1 to 5 rounds.");
   });
 });

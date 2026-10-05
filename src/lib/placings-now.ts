@@ -10,7 +10,7 @@ import { finalPlacings, isComplete } from "@/lib/bracket/formats";
 import { pointsFor } from "@/lib/bracket/points";
 import type { Bracket, Entrant } from "@/lib/bracket/types";
 import type { LeagueConfig } from "@/lib/league/config";
-import type { LeagueMatchFacts } from "@/lib/league/pairing";
+import { type LeagueMatchFacts, nextRoundPairable } from "@/lib/league/pairing";
 import { unplayedSummary } from "@/lib/league/rules";
 import { leaguePlacings, leagueStandings } from "@/lib/league/standings";
 import {
@@ -160,7 +160,8 @@ export function seriesPlacingsNow(
 
 /**
  * A League (spec R23, decision 9; reading R10): refused until complete,
- * naming the unplayed Matches and unpaired rounds (`unplayedSummary`);
+ * naming the unplayed Matches and unpaired rounds (`unplayedSummary`; a
+ * Swiss League at a dead end, `nextRoundPairable` false, is complete);
  * then each Entrant's standing's Placement Points, tied Entrants sharing a
  * place's full points, to its Team or Participant.
  */
@@ -169,6 +170,7 @@ export function leaguePlacingsNow(
     config: LeagueConfig;
     entrants: {
       id: string;
+      seedPosition: number;
       name: string;
       teamId: string | null;
       participantId: string | null;
@@ -183,6 +185,7 @@ export function leaguePlacingsNow(
     entrantCount: league.entrants.length,
     matches: league.matches,
     nameOf: (id) => byId.get(id)?.name ?? "Unknown",
+    nextRoundPairable: nextRoundPairable(league),
   });
   if (error) return { ok: false, error };
   const rows = leagueStandings(

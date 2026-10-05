@@ -4,6 +4,7 @@ import {
   byeLine,
   decidedResult,
   matchLine,
+  nextMatchText,
   roundsHelp,
   scoresText,
   swapWarningLines,
@@ -41,6 +42,16 @@ describe("scoresText", () => {
   });
 });
 
+describe("nextMatchText: Your next Match", () => {
+  it("names the round and the opponent, a Swiss bye, or a round-robin sit-out", () => {
+    const match = { round: 2, matchId: "m", opponent: "Bo" };
+    const none = { ...match, opponent: null };
+    expect(nextMatchText(match, "swiss")).toBe("Round 2 · v Bo");
+    expect(nextMatchText(none, "swiss")).toBe("Round 2 · You have a bye");
+    expect(nextMatchText(none, "round-robin")).toBe("Round 2 · You sit out");
+  });
+});
+
 describe("byeLine and roundsHelp", () => {
   it("names a Swiss bye and a round-robin sit-out", () => {
     expect(byeLine("Ada", "swiss")).toBe("Ada has a bye");
@@ -64,16 +75,26 @@ describe("swapWarningLines", () => {
         {
           repeats: [{ a: "a", b: "b" }],
           neverMeet: [{ a: "a", b: "c" }],
+          secondByes: [],
         },
         nameOf,
       ),
     ).toEqual(["Ada and Bo would meet twice.", "Ada and Cy would never meet."]);
   });
 
+  it("names an Entrant a Swiss swap gives a second bye", () => {
+    expect(
+      swapWarningLines(
+        { repeats: [], neverMeet: [], secondByes: ["c"] },
+        nameOf,
+      ),
+    ).toEqual(["Cy would have a second bye."]);
+  });
+
   it("is empty when the swap causes neither", () => {
-    expect(swapWarningLines({ repeats: [], neverMeet: [] }, nameOf)).toEqual(
-      [],
-    );
+    expect(
+      swapWarningLines({ repeats: [], neverMeet: [], secondByes: [] }, nameOf),
+    ).toEqual([]);
   });
 });
 

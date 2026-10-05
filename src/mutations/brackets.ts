@@ -75,8 +75,8 @@ export const REOPEN_FIRST = "Reopen the Competition first.";
 const NO_SQUADS_IN_HEAD_TO_HEAD = "Squads aren't entered in a Head-to-head.";
 export const HEAD_TO_HEAD_NEEDS_TWO =
   "A Head-to-head needs exactly 2 Entrants.";
-/** Best score takes no Entrant list (spec R21, decision 5). */
 const NO_SQUADS_IN_LEAGUE = "Squads aren't entered in a League.";
+/** Best score takes no Entrant list (spec R21, decision 5). */
 export const BEST_SCORE_NO_ENTRANTS =
   "Best score has no Entrant list: anyone can log an Attempt.";
 const NOT_HEAD_TO_HEAD = "This Competition isn't run as Head-to-head.";

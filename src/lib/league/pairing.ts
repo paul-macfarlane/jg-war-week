@@ -7,6 +7,7 @@
  * Positions (`shuffleSeedPositions`) and save the rows.
  */
 import type { LeagueResult } from "@/lib/enums";
+import { type LeagueConfig, roundsOf } from "@/lib/league/config";
 import { leagueStandings } from "@/lib/league/standings";
 
 /** An Entrant of the League, at its Seed Position. */
@@ -30,6 +31,9 @@ export type PairedRound = { round: number; matches: Pairing[] };
 export const EVERY_PAIRING_REPEATS =
   "Every pairing would repeat a Match. Close the League.";
 
+/** `swissRound`'s search budget: opponents tried, bye retries included. */
+export const SWISS_MAX_STEPS = 200_000;
+
 const bySeed = (entrants: LeagueEntrant[]) =>
   [...entrants].sort((x, y) => x.seedPosition - y.seedPosition);
 
@@ -47,15 +51,15 @@ export function roundRobin(entrants: LeagueEntrant[]): PairedRound[] {
   const rounds: PairedRound[] = [];
   let circle = ids;
   for (let round = 1; round < size; round++) {
-    const games: Pairing[] = [];
+    const matches: Pairing[] = [];
     const sitOuts: Pairing[] = [];
     for (let i = 0; i < size / 2; i++) {
       const [x, y] = [circle[i], circle[size - 1 - i]];
       if (x === null) sitOuts.push({ a: y!, b: null });
       else if (y === null) sitOuts.push({ a: x, b: null });
-      else games.push({ a: x, b: y });
+      else matches.push({ a: x, b: y });
     }
-    rounds.push({ round, matches: [...games, ...sitOuts] });
+    rounds.push({ round, matches: [...matches, ...sitOuts] });
     circle = [circle[0], circle[size - 1], ...circle.slice(1, size - 1)];
   }
   return rounds;
@@ -76,14 +80,19 @@ export type SwissPairing =
  * position, the rest of its group, then lower groups top first (a float
  * down), never a previous opponent, backtracking when a later Entrant
  * can't be paired. Round 1 is one group, so it is seed 1 v 1 + ⌊N/2⌋…
- * `steps` counts the opponents tried, for the search budget.
+ * `steps` counts the opponents tried, across every bye tried; once it
+ * reaches `maxSteps` the search stops and the round is a dead end
+ * (`EVERY_PAIRING_REPEATS`) rather than searching on.
  */
 export function swissRound({
   entrants,
   matches,
+  maxSteps = SWISS_MAX_STEPS,
 }: {
   entrants: LeagueEntrant[];
   matches: LeagueMatchFacts[];
+  /** The search budget; tests inject a small one. */
+  maxSteps?: number;
 }): SwissPairing {
   const seedOf = new Map(entrants.map((e) => [e.id, e.seedPosition]));
   const table = new Map(
@@ -121,6 +130,7 @@ export function swissRound({
     if (remaining.length === 0) return [];
     const [top, ...rest] = remaining;
     for (const opponent of candidates(top, rest)) {
+      if (steps >= maxSteps) return null;
       steps++;
       if (played.has(pairKey(top, opponent))) continue;
       const others = pairAll(rest.filter((id) => id !== opponent));
@@ -138,12 +148,41 @@ export function swissRound({
   const hadBye = new Set(matches.filter((m) => m.b === null).map((m) => m.a));
   const byeOrder = [...ranked].reverse().filter((id) => !hadBye.has(id));
   for (const bye of byeOrder) {
+    if (steps >= maxSteps) break;
     const pairs = pairAll(ranked.filter((id) => id !== bye));
     if (pairs) {
       return { ok: true, matches: [...pairs, { a: bye, b: null }], steps };
     }
   }
   return { ok: false, error: EVERY_PAIRING_REPEATS, steps };
+}
+
+/**
+ * Whether a Swiss League could pair its next round now: false only at a
+ * dead end, where every paired Match has a result, rounds are left, and
+ * `swissRound` can't pair the next one without a repeat Match. True for a
+ * round robin, before round 1, while a Match is unplayed and once every
+ * round is paired. Close counts a dead end as finished (`unplayedSummary`).
+ */
+export function nextRoundPairable({
+  config,
+  entrants,
+  matches,
+}: {
+  config: LeagueConfig;
+  entrants: LeagueEntrant[];
+  matches: LeagueMatchFacts[];
+}): boolean {
+  if (config.pairing !== "swiss" || entrants.length < 2) return true;
+  if (matches.length === 0) return true;
+  if (matches.some((m) => m.b !== null && m.result === null)) return true;
+  const latest = Math.max(...matches.map((m) => m.round));
+  const rounds = Math.min(
+    roundsOf(config, entrants.length),
+    entrants.length - 1,
+  );
+  if (latest >= rounds) return true;
+  return swissRound({ entrants, matches }).ok;
 }
 
 /**
@@ -187,8 +226,10 @@ export function neverMet(entrantIds: string[], matches: Pairing[]): Pairing[] {
 /**
  * What swapping `x` and `y` in `round` would newly cause, for the Edit
  * pairings dialog's warning (reading R7; Paul, Q4): the pairs that would
- * then meet twice, and (a round robin) the pairs that would then never
- * meet. Pairs already repeated or missing before the swap aren't named.
+ * then meet twice, (a round robin) the pairs that would then never meet,
+ * and (Swiss) an Entrant the swap moves the bye onto who already had a bye
+ * in another round. Pairs already repeated or missing before the swap, and
+ * a bye the swap leaves where it is, aren't named.
  */
 export function swapWarnings({
   entrantIds,
@@ -204,11 +245,18 @@ export function swapWarnings({
   x: string;
   y: string;
   roundRobin: boolean;
-}): { repeats: Pairing[]; neverMeet: Pairing[] } {
+}): { repeats: Pairing[]; neverMeet: Pairing[]; secondByes: string[] } {
   const key = (p: Pairing) => pairKey(p.a, p.b!);
   const before = rounds.flatMap((r) => r.matches);
   const after = rounds.flatMap((r) =>
     r.round === round ? swap(r.matches, x, y) : r.matches,
+  );
+  const byesIn = (matches: Pairing[]) =>
+    matches.filter((m) => m.b === null).map((m) => m.a);
+  const swapped = rounds.find((r) => r.round === round)?.matches ?? [];
+  const byeBefore = new Set(byesIn(swapped));
+  const hadBye = new Set(
+    byesIn(rounds.filter((r) => r.round !== round).flatMap((r) => r.matches)),
   );
   const repeatedBefore = new Set(rematches(before).map(key));
   const missingBefore = new Set(neverMet(entrantIds, before).map(key));
@@ -217,5 +265,10 @@ export function swapWarnings({
     neverMeet: isRoundRobin
       ? neverMet(entrantIds, after).filter((p) => !missingBefore.has(key(p)))
       : [],
+    secondByes: isRoundRobin
+      ? []
+      : byesIn(swap(swapped, x, y)).filter(
+          (id) => !byeBefore.has(id) && hadBye.has(id),
+        ),
   };
 }

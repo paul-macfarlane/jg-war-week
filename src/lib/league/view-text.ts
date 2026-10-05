@@ -65,19 +65,37 @@ export function roundsHelp(entrantCount: number): string {
 }
 
 /**
- * The Edit pairings warning, one line per pair (reading R7; Paul, Q4): the
- * pairs that would meet twice and, in a round robin, the pairs that would
- * never meet. Empty when the swap causes neither.
+ * The Edit pairings warning, one line per pair or Entrant (reading R7;
+ * Paul, Q4): the pairs that would meet twice, in a round robin the pairs
+ * that would never meet, and in a Swiss League an Entrant who would have a
+ * second bye. Empty when the swap causes none of them.
  */
 export function swapWarningLines(
-  warnings: { repeats: Pairing[]; neverMeet: Pairing[] },
+  warnings: { repeats: Pairing[]; neverMeet: Pairing[]; secondByes: string[] },
   nameOf: (id: string) => string,
 ): string[] {
   const pair = (p: Pairing) => `${nameOf(p.a)} and ${nameOf(p.b!)}`;
   return [
     ...warnings.repeats.map((p) => `${pair(p)} would meet twice.`),
     ...warnings.neverMeet.map((p) => `${pair(p)} would never meet.`),
+    ...warnings.secondByes.map(
+      (id) => `${nameOf(id)} would have a second bye.`,
+    ),
   ];
+}
+
+/**
+ * "Your next Match": "Round 2 · v Bo", or with no opponent "Round 2 · You
+ * have a bye" (Swiss) or "Round 2 · You sit out" (round robin).
+ */
+export function nextMatchText(
+  next: { round: number; opponent: string | null },
+  pairing: LeaguePairing,
+): string {
+  if (next.opponent !== null) return `Round ${next.round} · v ${next.opponent}`;
+  return pairing === "swiss"
+    ? `Round ${next.round} · You have a bye`
+    : `Round ${next.round} · You sit out`;
 }
 
 /**
