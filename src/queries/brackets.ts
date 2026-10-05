@@ -332,7 +332,7 @@ export async function getBracket(
     !found ||
     isLoggedFormat(found.format) ||
     found.format === "participation" ||
-    // R23: a League is never a Bracket; S2 adds its own view
+    // A League is never a Bracket: its view is `getLeagueView`
     // (`src/queries/league.ts`).
     found.format === "league"
   ) {

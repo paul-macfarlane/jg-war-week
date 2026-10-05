@@ -11,12 +11,14 @@ import {
 import { postedAttemptParticipantId } from "@/lib/best-score/input";
 import { ATTEMPT_MISSING } from "@/lib/best-score/log-rule";
 import { SQUAD_MISSING } from "@/lib/bracket/enroll-rule";
+import { MATCH_MISSING as LEAGUE_MATCH_MISSING } from "@/lib/league/rules";
 import { NOT_LOGGED_FORMAT } from "@/lib/logged-results";
 import { postedMatchPlayerIds } from "@/lib/series/input";
 import { MATCH_MISSING } from "@/lib/series/log-rule";
 import { isUuid } from "@/lib/uuid";
 import type { MutationContext } from "@/mutations/types";
 import { type EnrollFacts, getEnrollFacts } from "@/queries/enrollment";
+import { type LeagueCompetition, getLeagueRecordFacts } from "@/queries/league";
 import {
   type LoggedCompetition,
   getAttemptLogFacts,
@@ -342,6 +344,58 @@ export async function authorizeResultWrite(
     warWeek: target.warWeek,
     ctx: { warWeekId: target.warWeek.id, actorEmail: actor.email },
     competition: found,
+  };
+}
+
+/** Not imported from the mutations: a "use server" module's tests mock them. */
+const NOT_A_LEAGUE = "This Competition isn't run as a League.";
+
+/**
+ * The authorize step for recording (or changing) and clearing a League
+ * Match's result (spec R23, decision 8), in ADR 0003's order:
+ * authenticate; both ids shaped like row ids; load the Competition and its
+ * War Week; load the League's facts for the actor's email (whether they
+ * run it, account linking) and the Match within this Competition only
+ * (P3a); run `can("league.record" | "league.clear")`, which binds
+ * Organizers and Hosts too when Closed. Returns the League, whose Score
+ * direction the caller parses its input with only after this. Never
+ * throws on a refusal.
+ */
+export async function authorizeLeagueRecord(
+  action: "league.record" | "league.clear",
+  competitionId: unknown,
+  matchId: unknown,
+): Promise<
+  | {
+      ok: true;
+      actor: NonNullable<Actor>;
+      warWeek: TargetWarWeek;
+      ctx: MutationContext;
+      competition: LeagueCompetition;
+    }
+  | Refused
+> {
+  const actor = await getActor();
+  if (!actor) return { ok: false, error: SIGN_IN_REFUSAL };
+  const [competitionNotFound, load] = TARGETS.competition;
+  if (!isUuid(competitionId)) return { ok: false, error: competitionNotFound };
+  if (!isUuid(matchId)) return { ok: false, error: LEAGUE_MATCH_MISSING };
+  const target = await load(competitionId);
+  if (!target) return { ok: false, error: competitionNotFound };
+  const facts = await getLeagueRecordFacts(competitionId, matchId, actor.email);
+  if (!facts) return { ok: false, error: NOT_A_LEAGUE };
+  const refusal = can(actor, action, {
+    warWeekId: target.warWeek.id,
+    competitionId: target.competitionId,
+    leagueRecord: facts.leagueRecord,
+  });
+  if (refusal) return { ok: false, error: refusal };
+  return {
+    ok: true,
+    actor,
+    warWeek: target.warWeek,
+    ctx: { warWeekId: target.warWeek.id, actorEmail: actor.email },
+    competition: facts.competition,
   };
 }
 

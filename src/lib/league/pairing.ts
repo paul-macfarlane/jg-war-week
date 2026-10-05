@@ -183,3 +183,39 @@ export function neverMet(entrantIds: string[], matches: Pairing[]): Pairing[] {
       .map((b) => ({ a, b })),
   );
 }
+
+/**
+ * What swapping `x` and `y` in `round` would newly cause, for the Edit
+ * pairings dialog's warning (reading R7; Paul, Q4): the pairs that would
+ * then meet twice, and (a round robin) the pairs that would then never
+ * meet. Pairs already repeated or missing before the swap aren't named.
+ */
+export function swapWarnings({
+  entrantIds,
+  rounds,
+  round,
+  x,
+  y,
+  roundRobin: isRoundRobin,
+}: {
+  entrantIds: string[];
+  rounds: PairedRound[];
+  round: number;
+  x: string;
+  y: string;
+  roundRobin: boolean;
+}): { repeats: Pairing[]; neverMeet: Pairing[] } {
+  const key = (p: Pairing) => pairKey(p.a, p.b!);
+  const before = rounds.flatMap((r) => r.matches);
+  const after = rounds.flatMap((r) =>
+    r.round === round ? swap(r.matches, x, y) : r.matches,
+  );
+  const repeatedBefore = new Set(rematches(before).map(key));
+  const missingBefore = new Set(neverMet(entrantIds, before).map(key));
+  return {
+    repeats: rematches(after).filter((p) => !repeatedBefore.has(key(p))),
+    neverMeet: isRoundRobin
+      ? neverMet(entrantIds, after).filter((p) => !missingBefore.has(key(p)))
+      : [],
+  };
+}

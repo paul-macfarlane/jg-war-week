@@ -57,6 +57,9 @@ describe("generated Points Entries", () => {
       "This Points Entry comes from a Head-to-head Competition. Change it there.",
     );
   });
+  it("say league for a League", () => {
+    expect(generatedNote("league")).toBe("From league");
+  });
   it("say participation for a participation Competition", () => {
     expect(generatedNote("participation")).toBe("From participation");
     expect(generatedRefusal("participation")).toBe(

@@ -1,4 +1,4 @@
-import { and, eq } from "drizzle-orm";
+import { and, eq, isNotNull } from "drizzle-orm";
 
 import { DBOrTx, db } from "@/db";
 import {
@@ -6,6 +6,7 @@ import {
   attempt,
   bracketMatch,
   entrant,
+  leagueMatch,
   participation,
   placement,
   pointsEntry,
@@ -45,6 +46,15 @@ export async function getCompetitionResults(
       matches > 0 &&
       isBracketFormat(found.format) &&
       hasResults(await loadBracket(id, dbOrTx, found)),
+    leagueMatches: await dbOrTx.$count(
+      leagueMatch,
+      eq(leagueMatch.competitionId, id),
+    ),
+    leagueResult:
+      (await dbOrTx.$count(
+        leagueMatch,
+        and(eq(leagueMatch.competitionId, id), isNotNull(leagueMatch.result)),
+      )) > 0,
     generatedPointsEntries: await dbOrTx.$count(
       pointsEntry,
       and(eq(pointsEntry.competitionId, id), eq(pointsEntry.generated, true)),

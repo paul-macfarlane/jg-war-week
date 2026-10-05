@@ -94,6 +94,7 @@ const FIELD_LABELS: Record<SettingsField, string> = {
   seriesConfig: "Head-to-head settings",
   bestScoreConfig: "Team score",
   bracketConfig: "Match settings",
+  leagueConfig: "Pairing",
   selfEnroll: "Participants can enroll",
   entrantLimit: "Entrant limit",
   selfReport: "Participants can log their own results",

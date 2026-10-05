@@ -23,6 +23,7 @@ function competition(over: Partial<Props["competition"]> = {}) {
     placementPoints: [3, 2, 1],
     decided: false,
     seriesWinner: null,
+    closeError: null,
     ...over,
   };
 }
@@ -59,6 +60,13 @@ describe("LoggedResultsBuilder", () => {
   it("prominently prompts Close when the series is decided", () => {
     const html = render({ decided: true, seriesWinner: "Ashley" });
     expect(html).toContain("Best of decided: Ashley — Close it.");
+  });
+
+  it("disables Close with the server's reason while the series is undecided (SC1)", () => {
+    const html = render({ closeError: "Finish the series before closing." });
+    expect(html).toContain("Finish the series before closing.");
+    expect(html).toMatch(/<button[^>]*disabled=""[^>]*>Close<\/button>/);
+    expect(render()).not.toContain("Finish the series before closing.");
   });
 
   it("shows Reopen, not Close, once the Competition is closed", () => {

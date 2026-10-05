@@ -14,6 +14,7 @@ import {
   EntrantsPicker,
   type EntrantsPickerItem,
 } from "@/components/entrants-picker";
+import { Button } from "@/components/ui/button";
 import type { EntrantKind } from "@/lib/bracket/squads";
 import { hasPlacementPoints } from "@/lib/competitions";
 import type { LoggedFormat } from "@/lib/enums";
@@ -48,6 +49,11 @@ export function LoggedResultsBuilder({
     placementPoints: number[] | null;
     decided: boolean;
     seriesWinner: string | null;
+    /**
+     * Why Close is disabled (a Head-to-head series neither decided nor
+     * drawn), the server's own refusal; null when it can close.
+     */
+    closeError: string | null;
   };
   /** A Head-to-head's saved Entrants, by Team or Participant id. */
   entrants: { teamId: string | null; participantId: string | null }[];
@@ -154,6 +160,15 @@ export function LoggedResultsBuilder({
             >
               Reopen
             </ConfirmActionButton>
+          </>
+        ) : competition.closeError ? (
+          <>
+            <Button type="button" size="lg" className="min-h-11" disabled>
+              Close
+            </Button>
+            <p className="text-foreground/70 text-sm">
+              {competition.closeError}
+            </p>
           </>
         ) : (
           <ConfirmActionButton

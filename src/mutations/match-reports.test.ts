@@ -115,7 +115,7 @@ describe.skipIf(!isLocalDatabase)("setSelfReport", () => {
       expect(await setSelfReport(f.pointsId, { on: true }, f.ctx, tx)).toEqual({
         ok: false,
         error:
-          "Only a Bracket, Head-to-head or Best score Competition lets Participants log their own results.",
+          "Only a Bracket, Head-to-head, Best score or League Competition lets Participants log their own results.",
       });
       expect(await f.selfReportOf(f.pointsId)).toBe(false);
 

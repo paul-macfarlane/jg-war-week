@@ -131,6 +131,7 @@ describe("toLoggedResultsAnswer", () => {
       attemptCounts: {},
       decided: false,
       seriesWinner: null,
+      closeError: null,
       playerOptions: [
         { id: "p1", name: "Ashley Schuliger", color: null },
         { id: "p2", name: "Sam Schantz", color: null },
@@ -242,6 +243,7 @@ describe("toLoggedResultsAnswer", () => {
       attemptCounts: {},
       decided: false,
       seriesWinner: null,
+      closeError: null,
       playerOptions: [{ id: "p1", name: "Alec Haring", color: null }],
     };
 
@@ -307,6 +309,7 @@ describe("toLoggedResultsAnswer", () => {
         attemptCounts: {},
         decided: false,
         seriesWinner: null,
+        closeError: null,
         playerOptions: [],
       },
       "Darts",
@@ -392,6 +395,7 @@ describe("toLoggedResultsAnswer", () => {
       attemptCounts: {},
       decided: false,
       seriesWinner: null,
+      closeError: null,
       playerOptions: [
         { id: "p1", name: "Ashley Schuliger", color: null },
         { id: "p2", name: "Sam Schantz", color: null },

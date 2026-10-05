@@ -3,14 +3,19 @@ import { describe, expect, it } from "vitest";
 import { kindOf } from "@/lib/bracket/config";
 import { applyResult, generate } from "@/lib/bracket/formats";
 import type { Bracket } from "@/lib/bracket/types";
+import type { LeagueMatchFacts } from "@/lib/league/pairing";
 import type { ResultFact } from "@/lib/logged-results";
 import {
   FINISH_EVERY_MATCH,
+  FINISH_THE_SERIES,
   type PlacingsNow,
   bracketPlacingsNow,
+  leaguePlacingsNow,
   loggedPlacingsNow,
   participationPlacingsNow,
   placementPlacingsNow,
+  seriesCloseError,
+  seriesPlacingsNow,
 } from "@/lib/placings-now";
 import { rankSeries } from "@/lib/series/standings";
 
@@ -220,5 +225,154 @@ const cases: { name: string; now: () => PlacingsNow; expected: PlacingsNow }[] =
 describe("placings now, by Format", () => {
   it.each(cases)("$name", ({ now, expected }) => {
     expect(now()).toEqual(expected);
+  });
+});
+
+describe("SC1: a Head-to-head series closes once decided or drawn", () => {
+  const bestOf3 = { drawsAllowed: true, bestOf: 3 as const };
+  const series = (matches: ResultFact[]) => ({
+    config: bestOf3,
+    matches,
+    entrantIds: ["ana", "ben"],
+  });
+  const individual = { ...rules, scoring: "individual" as const };
+
+  it("refuses a series nobody has won and not every Match is played", () => {
+    expect(FINISH_THE_SERIES).toBe("Finish the series before closing.");
+    expect(seriesPlacingsNow(series([]), individual)).toEqual({
+      ok: false,
+      error: "Finish the series before closing.",
+    });
+    expect(
+      seriesPlacingsNow(
+        series([beat("ana", "ben"), drew("ana", "ben")]),
+        individual,
+      ),
+    ).toEqual({ ok: false, error: FINISH_THE_SERIES });
+    expect(seriesCloseError(bestOf3, [beat("ben", "ana")])).toBe(
+      FINISH_THE_SERIES,
+    );
+  });
+
+  it("closes a decided series: the Winner 1st, the other 2nd", () => {
+    expect(
+      seriesPlacingsNow(
+        series([beat("ana", "ben"), beat("ana", "ben")]),
+        individual,
+      ),
+    ).toEqual({
+      ok: true,
+      points: [
+        { teamId: null, participantId: "ana", points: 10 },
+        { teamId: null, participantId: "ben", points: 6 },
+      ],
+    });
+  });
+
+  it("closes a drawn series (win, Draw, Draw): both take 1st's full points", () => {
+    const now = seriesPlacingsNow(
+      series([beat("ana", "ben"), drew("ana", "ben"), drew("ana", "ben")]),
+      individual,
+    );
+    expect(now).toEqual({
+      ok: true,
+      points: expect.arrayContaining([
+        { teamId: null, participantId: "ana", points: 10 },
+        { teamId: null, participantId: "ben", points: 10 },
+      ]),
+    });
+  });
+});
+
+describe("leaguePlacingsNow (spec R23, decision 9; R10)", () => {
+  const people = [
+    { id: "ea", name: "Ada", teamId: null, participantId: "ada" },
+    { id: "eb", name: "Bea", teamId: null, participantId: "bea" },
+    { id: "ec", name: "Cy", teamId: null, participantId: "cy" },
+  ];
+  const roundRobin = { pairing: "round-robin" as const, rounds: null };
+  const lm = (
+    round: number,
+    a: string,
+    b: string | null,
+    result: LeagueMatchFacts["result"],
+  ): LeagueMatchFacts => ({ round, a, b, result });
+  // Ada beats both; Bea and Cy draw. MP: Ada 2, Bea ½, Cy ½; Bea and Cy
+  // level on head-to-head (½ each) and Sonneborn-Berger (¼ each).
+  const complete = [
+    lm(1, "ea", "eb", "a"),
+    lm(1, "ec", null, null),
+    lm(2, "ea", "ec", "a"),
+    lm(2, "eb", null, null),
+    lm(3, "eb", "ec", "draw"),
+    lm(3, "ea", null, null),
+  ];
+
+  it("gives each standing's Placement Points, Entrants still tied sharing a place's full points", () => {
+    expect(
+      leaguePlacingsNow(
+        { config: roundRobin, entrants: people, matches: complete },
+        rules,
+      ),
+    ).toEqual({
+      ok: true,
+      points: [
+        { teamId: null, participantId: "ada", points: 10 },
+        { teamId: null, participantId: "bea", points: 6 },
+        { teamId: null, participantId: "cy", points: 6 },
+      ],
+    });
+  });
+
+  it("gives a team League's points to each Entrant's Team", () => {
+    const teams = people.map((e) => ({
+      ...e,
+      teamId: `team-${e.participantId}`,
+      participantId: null,
+    }));
+    const now = leaguePlacingsNow(
+      { config: roundRobin, entrants: teams, matches: complete },
+      rules,
+    );
+    expect(now.ok && now.points[0]).toEqual({
+      teamId: "team-ada",
+      participantId: null,
+      points: 10,
+    });
+  });
+
+  it("refuses with a Match unplayed, naming it", () => {
+    const unplayed = complete.map((m) =>
+      m.round === 3 && m.b !== null ? { ...m, result: null } : m,
+    );
+    expect(
+      leaguePlacingsNow(
+        { config: roundRobin, entrants: people, matches: unplayed },
+        rules,
+      ),
+    ).toEqual({
+      ok: false,
+      error: "Finish every Match before closing. Unplayed: Round 3: Bea v Cy.",
+    });
+  });
+
+  it("refuses a Swiss League with a round not yet paired", () => {
+    const four = [
+      ...people,
+      { id: "ed", name: "Di", teamId: null, participantId: "di" },
+    ];
+    expect(
+      leaguePlacingsNow(
+        {
+          config: { pairing: "swiss", rounds: 2 },
+          entrants: four,
+          matches: [lm(1, "ea", "ec", "a"), lm(1, "eb", "ed", "draw")],
+        },
+        rules,
+      ),
+    ).toEqual({
+      ok: false,
+      error: "Finish every Match before closing. Not yet paired: round 2.",
+    });
   });
 });

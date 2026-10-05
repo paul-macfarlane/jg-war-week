@@ -13,6 +13,7 @@ import {
   type MatchReportFacet,
   matchReportError,
 } from "@/lib/bracket/match-report-rule";
+import { type LeagueRecordFacet, leagueRecordError } from "@/lib/league/rules";
 import {
   type CheckInFacet,
   checkInError,
@@ -98,7 +99,7 @@ export type WarWeekAction =
   | "bracket.reopen"
   | "bracket.squads"
   | "competition.self-report"
-  /** Closing and reopening a Head-to-head or Best score Competition. */
+  /** Closing and reopening a Head-to-head, Best score or League Competition. */
   | "results.close"
   | "results.reopen"
   | "competition.self-enroll"
@@ -127,6 +128,15 @@ export type WarWeekAction =
   | "attempts.log"
   | "attempts.edit"
   | "attempts.delete"
+  /**
+   * A League's pairing (spec R23): Pair rounds, Pair round 1, Pair next
+   * round, Edit pairings and Clear pairings. An Organizer or the Host of
+   * this Competition.
+   */
+  | "league.pair"
+  /** Recording (or changing) and clearing a League Match's result. */
+  | "league.record"
+  | "league.clear"
   /** Self-enrollment (ADR 0006). */
   | "competition.enroll"
   | "competition.withdraw"
@@ -140,13 +150,15 @@ export type WarWeekAction =
  * family needs it the row's current Competition (`competitionId`) and, for
  * the Participant writes, their facts: a Bracket Match's
  * (`matchReport`), a Head-to-head Match's (`seriesLog`), an Attempt's
- * (`attemptLog`), enrollment's (`enroll`) or Check in's (`checkIn`).
+ * (`attemptLog`), a League Match's (`leagueRecord`), enrollment's
+ * (`enroll`) or Check in's (`checkIn`).
  */
 export type AccessTarget = {
   warWeekId: string;
   competitionId?: string | null;
   matchReport?: MatchReportFacet;
   seriesLog?: SeriesLogFacet;
+  leagueRecord?: LeagueRecordFacet;
   attemptLog?: AttemptLogFacet;
   enroll?: EnrollFacet;
   checkIn?: CheckInFacet;
@@ -302,6 +314,14 @@ export function can(
       ? attemptLogError(target.attemptLog)
       : attemptChangeError(target.attemptLog);
   }
+  if (action === "league.record" || action === "league.clear") {
+    // Before the Organizer shortcut, as a Head-to-head Match: a closed
+    // League binds everyone; the facet's `runs` is the Host's way in, and
+    // with self-report on a player (or their Team) records their Match.
+    if (!actor || !isJahnelGroupEmail(actor.email)) return SIGN_IN_REFUSAL;
+    if (!target?.leagueRecord) return ADMIN_REFUSAL;
+    return leagueRecordError(target.leagueRecord);
+  }
   if (action === "competition.enroll" || action === "competition.withdraw") {
     // Before the Organizer shortcut: enrollment binds everyone.
     if (!actor || !isJahnelGroupEmail(actor.email)) return SIGN_IN_REFUSAL;
@@ -338,8 +358,12 @@ export function can(
     case "results.close":
     case "results.reopen":
     case "competition.self-enroll":
-      // A Head-to-head or Best score Competition's close, and the enroll
-      // switch: the Host of this Competition, beside their Bracket twins.
+      // A Head-to-head, Best score or League Competition's close, and the
+      // enroll switch: the Host of this Competition, beside their Bracket
+      // twins.
+      return hostsCurrent ? null : NOT_HOST;
+    case "league.pair":
+      // A League's pairings: the Host of this Competition, like Generate.
       return hostsCurrent ? null : NOT_HOST;
     case "participation.settings":
     case "participation.mark":

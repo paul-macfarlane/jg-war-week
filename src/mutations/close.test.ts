@@ -402,6 +402,217 @@ describe.skipIf(!isLocalDatabase)(
       });
     });
 
+    it("Head-to-head (SC1): refuses a series neither decided nor drawn and writes nothing", async () => {
+      await inRolledBackTransaction(async (tx) => {
+        const { closeCompetition } = await mutations();
+        const f = await loggedFixture(tx);
+        const { schema, ids } = f;
+        const refused = {
+          ok: false,
+          error: "Finish the series before closing.",
+        };
+        // No Match yet.
+        expect(await closeCompetition(ids.pong, f.ctx(HOST), tx)).toEqual(
+          refused,
+        );
+        const entrants = await tx
+          .select({
+            id: schema.entrant.id,
+            participantId: schema.entrant.participantId,
+          })
+          .from(schema.entrant)
+          .where(eq(schema.entrant.competitionId, ids.pong));
+        const entrantOf = (participantId: string) =>
+          entrants.find((e) => e.participantId === participantId)!.id;
+        const [match] = await tx
+          .insert(schema.seriesMatch)
+          .values({ competitionId: ids.pong, loggedByEmail: HOST })
+          .returning({ id: schema.seriesMatch.id });
+        await tx.insert(schema.seriesMatchEntrant).values([
+          { seriesMatchId: match.id, entrantId: entrantOf(ids.neo), place: 1 },
+          {
+            seriesMatchId: match.id,
+            entrantId: entrantOf(ids.trinity),
+            place: 2,
+          },
+        ]);
+        // 1–0 in a Best of 3: nobody has the majority yet.
+        expect(await closeCompetition(ids.pong, f.ctx(HOST), tx)).toEqual(
+          refused,
+        );
+        expect(await generated(f, tx, ids.pong)).toEqual([]);
+        expect(await closedAtOf(f, tx, ids.pong)).toBeNull();
+      });
+    });
+
+    describe("League (spec R23, decision 9; R10; SC1)", () => {
+      /**
+       * "Chess", an individual round robin of Neo, Trinity and Morpheus
+       * (3 rounds, one sitting out each): Neo beats both, and Trinity and
+       * Morpheus draw unless `lastDraw` is false (then it's unplayed).
+       */
+      async function chess(f: LoggedFixture, tx: DBTx, lastDraw = true) {
+        const { schema, ids } = f;
+        const [row] = await tx
+          .insert(schema.competition)
+          .values({
+            warWeekId: f.warWeekId,
+            name: "Chess",
+            scoring: "individual",
+            format: "league",
+            leagueConfig: { pairing: "round-robin", rounds: null },
+            placementPoints: [10, 6, 3],
+          })
+          .returning({ id: schema.competition.id });
+        const [neo, trinity, morpheus] = await tx
+          .insert(schema.entrant)
+          .values(
+            [ids.neo, ids.trinity, ids.morpheus].map((participantId, i) => ({
+              competitionId: row.id,
+              participantId,
+              seedPosition: i + 1,
+            })),
+          )
+          .returning({ id: schema.entrant.id });
+        const at = new Date("2027-02-22T12:00:00Z");
+        const played = (result: "a" | "b" | "draw" | null) =>
+          result === null
+            ? { result: null, recordedAt: null }
+            : { result, recordedAt: at };
+        await tx.insert(schema.leagueMatch).values(
+          [
+            { round: 1, position: 0, a: neo.id, b: trinity.id, ...played("a") },
+            { round: 1, position: 1, a: morpheus.id, b: null, ...played(null) },
+            {
+              round: 2,
+              position: 0,
+              a: neo.id,
+              b: morpheus.id,
+              ...played("a"),
+            },
+            { round: 2, position: 1, a: trinity.id, b: null, ...played(null) },
+            {
+              round: 3,
+              position: 0,
+              a: trinity.id,
+              b: morpheus.id,
+              ...played(lastDraw ? "draw" : null),
+            },
+            { round: 3, position: 1, a: neo.id, b: null, ...played(null) },
+          ].map(({ a, b, ...m }) => ({
+            ...m,
+            competitionId: row.id,
+            entrantAId: a,
+            entrantBId: b,
+          })),
+        );
+        return row.id;
+      }
+
+      it("refuses with a Match unplayed, naming it, and writes nothing", async () => {
+        await inRolledBackTransaction(async (tx) => {
+          const { closeCompetition } = await mutations();
+          const f = await loggedFixture(tx);
+          const id = await chess(f, tx, false);
+          expect(await closeCompetition(id, f.ctx(HOST), tx)).toEqual({
+            ok: false,
+            error:
+              "Finish every Match before closing. Unplayed: Round 3: Trinity v Morpheus.",
+          });
+          expect(await generated(f, tx, id)).toEqual([]);
+          expect(await closedAtOf(f, tx, id)).toBeNull();
+        });
+      });
+
+      it("refuses a Swiss League with a round not yet paired", async () => {
+        await inRolledBackTransaction(async (tx) => {
+          const { closeCompetition } = await mutations();
+          const f = await loggedFixture(tx);
+          const { schema, ids } = f;
+          const [row] = await tx
+            .insert(schema.competition)
+            .values({
+              warWeekId: f.warWeekId,
+              name: "Swiss",
+              scoring: "individual",
+              format: "league",
+              leagueConfig: { pairing: "swiss", rounds: 2 },
+              placementPoints: [10, 6, 3],
+            })
+            .returning({ id: schema.competition.id });
+          const [a, b, c, d] = await tx
+            .insert(schema.entrant)
+            .values(
+              [ids.neo, ids.trinity, ids.morpheus, ids.dozer].map(
+                (participantId, i) => ({
+                  competitionId: row.id,
+                  participantId,
+                  seedPosition: i + 1,
+                }),
+              ),
+            )
+            .returning({ id: schema.entrant.id });
+          const recordedAt = new Date("2027-02-22T12:00:00Z");
+          await tx.insert(schema.leagueMatch).values([
+            {
+              competitionId: row.id,
+              round: 1,
+              position: 0,
+              entrantAId: a.id,
+              entrantBId: c.id,
+              result: "a",
+              recordedAt,
+            },
+            {
+              competitionId: row.id,
+              round: 1,
+              position: 1,
+              entrantAId: b.id,
+              entrantBId: d.id,
+              result: "draw",
+              recordedAt,
+            },
+          ]);
+          expect(await closeCompetition(row.id, f.ctx(HOST), tx)).toEqual({
+            ok: false,
+            error:
+              "Finish every Match before closing. Not yet paired: round 2.",
+          });
+          expect(await generated(f, tx, row.id)).toEqual([]);
+        });
+      });
+
+      it("closes a complete League with Placement Points by standing, ties sharing full points; Reopen withdraws them", async () => {
+        await inRolledBackTransaction(async (tx) => {
+          const { closeCompetition, reopenCompetition } = await mutations();
+          const f = await loggedFixture(tx);
+          const id = await chess(f, tx);
+          expect(await closeCompetition(id, f.ctx(HOST), tx)).toEqual({
+            ok: true,
+          });
+          // Trinity and Morpheus: ½ each, level on head-to-head and SB.
+          expect(await generated(f, tx, id)).toEqual(
+            [
+              [f.ids.neo, 10, "From league"],
+              [f.ids.trinity, 6, "From league"],
+              [f.ids.morpheus, 6, "From league"],
+            ].sort(
+              (a, b) =>
+                (b[1] as number) - (a[1] as number) ||
+                String(a[0]).localeCompare(String(b[0])),
+            ),
+          );
+          expect(await closedAtOf(f, tx, id)).not.toBeNull();
+
+          expect(await reopenCompetition(id, f.ctx(HOST), tx)).toEqual({
+            ok: true,
+          });
+          expect(await generated(f, tx, id)).toEqual([]);
+          expect(await closedAtOf(f, tx, id)).toBeNull();
+        });
+      });
+    });
+
     it("refuses a Competition of another War Week or one that doesn't exist", async () => {
       await inRolledBackTransaction(async (tx) => {
         const { closeCompetition, reopenCompetition } = await mutations();

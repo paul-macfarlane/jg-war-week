@@ -139,6 +139,7 @@ describe("shownSettings", () => {
       ["bracket", true],
       ["head-to-head", true],
       ["best-score", true],
+      ["league", true],
       ["placement", false],
       ["participation", false],
     ] as const) {
@@ -170,7 +171,35 @@ describe("shownSettings", () => {
     ).toBe("3");
   });
 
-  it("offers enrollment only on a Bracket", () => {
+  it("shows a League its Pairing, Score direction and unit, self-report and enrollment (spec R23, decision 11)", () => {
+    const values = settingsValuesOf({
+      ...PLACEMENT,
+      format: "league",
+      leagueConfig: { pairing: "swiss", rounds: 4 },
+      selfEnroll: true,
+    });
+    expect(values.leagueConfig).toEqual({ pairing: "swiss", rounds: 4 });
+    const shown = shownSettings(values, "teams");
+    for (const field of [
+      "leagueConfig",
+      "scoreDirection",
+      "scoreUnit",
+      "selfReport",
+      "selfEnroll",
+      "entrantLimit",
+    ] as const) {
+      expect(shown, field).toContain(field);
+    }
+    expect(shown).not.toContain("bracketConfig");
+    expect(shown).not.toContain("seriesConfig");
+    // A League with no saved config reads as the default round robin.
+    expect(
+      settingsValuesOf({ ...PLACEMENT, format: "league" }).leagueConfig,
+    ).toEqual({ pairing: "round-robin", rounds: null });
+    expect(settingsValuesOf(PLACEMENT).leagueConfig).toBeNull();
+  });
+
+  it("offers enrollment only on a Bracket or a League", () => {
     for (const format of [
       "placement",
       "head-to-head",

@@ -10,6 +10,7 @@ import {
   rematches,
   roundRobin,
   swap,
+  swapWarnings,
   swissRound,
 } from "@/lib/league/pairing";
 
@@ -342,5 +343,67 @@ describe("rematches and neverMet", () => {
       { a: "B", b: "C" },
       { a: "B", b: "D" },
     ]);
+  });
+});
+
+describe("swapWarnings: the Edit pairings dialog's warning (R7, Q4)", () => {
+  const rounds = [
+    {
+      round: 1,
+      matches: [
+        { a: "A", b: "B" },
+        { a: "C", b: "D" },
+      ],
+    },
+    {
+      round: 2,
+      matches: [
+        { a: "A", b: "C" },
+        { a: "B", b: "D" },
+      ],
+    },
+    {
+      round: 3,
+      matches: [
+        { a: "A", b: "D" },
+        { a: "B", b: "C" },
+      ],
+    },
+  ];
+
+  it("names the pairs a round-robin swap repeats and the pairs that then never meet", () => {
+    // Round 1 becomes A–C, B–D: both already meet in round 2.
+    expect(
+      swapWarnings({
+        entrantIds: ["A", "B", "C", "D"],
+        rounds,
+        round: 1,
+        x: "B",
+        y: "C",
+        roundRobin: true,
+      }),
+    ).toEqual({
+      repeats: [
+        { a: "A", b: "C" },
+        { a: "B", b: "D" },
+      ],
+      neverMeet: [
+        { a: "A", b: "B" },
+        { a: "C", b: "D" },
+      ],
+    });
+  });
+
+  it("names nothing for a swap that repeats no one, and no never-meet pairs in a Swiss League", () => {
+    expect(
+      swapWarnings({
+        entrantIds: ["A", "B", "C", "D"],
+        rounds: [rounds[0]],
+        round: 1,
+        x: "B",
+        y: "C",
+        roundRobin: false,
+      }),
+    ).toEqual({ repeats: [], neverMeet: [] });
   });
 });

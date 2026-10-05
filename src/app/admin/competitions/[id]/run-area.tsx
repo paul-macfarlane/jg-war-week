@@ -145,6 +145,7 @@ export async function CompetitionRunArea({
             placementPoints: view.competition.placementPoints,
             decided: view.decided,
             seriesWinner: view.seriesWinner,
+            closeError: view.closeError,
           }}
           entrants={entrants.map(({ teamId, participantId }) => ({
             teamId,

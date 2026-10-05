@@ -29,6 +29,8 @@ const SELF_REPORT_OFF = "Self-report is off for this Competition.";
 const ATTEMPT_COMPETITION = "Tuesday Stairs";
 /** The series view's result for the smoke Match. */
 const LOGGED = `Winner: ${PLAYER}`;
+/** Close's refusal for a series neither decided nor drawn (SC1). */
+const SERIES_UNFINISHED = "Finish the series before closing.";
 
 async function xiCompetitionIdByName(name: string): Promise<string> {
   const [row] = await runQuery<{ id: string }>(
@@ -83,9 +85,11 @@ const LOG_BUTTON = />Log a Match</;
  * are refused with the server's message; with it on, a Match between
  * Bouncy Pong's two Entrants succeeds and shows in its series, and an
  * Attempt as themselves on Tuesday Stairs succeeds and they delete it;
- * closed and with XI ended, the page still renders the series with no Log
- * a Match. Then everything is undone, so a rerun never meets a decided
- * Best of 3: the Match deleted, the Competition reopened, self-report off
+ * Close is refused until the series is decided ("Finish the series before
+ * closing."), then the Organizer logs the deciding wins; closed and with
+ * XI ended, the page still renders the series with no Log a Match. Then
+ * everything is undone, so a rerun never meets a decided Best of 3: the
+ * Matches deleted, the Competition reopened, self-report off
  * again, XI `live` with no Winner, the email cleared.
  */
 export async function assertLoggedResultsLoop(sessions: {
@@ -258,8 +262,32 @@ export async function assertLoggedResultsLoop(sessions: {
     // Its own sequential step: never alongside the lifecycle check, which
     // also changes XI's status.
     await runCheck(
-      "logged results: closed and with XI ended, the page still renders the series and its Match, with no Log a Match",
+      "logged results: Close is refused until the series is decided; decided, closed and with XI ended, the page still renders the series and its Matches, with no Log a Match",
       async () => {
+        const [config] = await runQuery<{ bestOf: number }>(
+          `select (series_config->>'bestOf')::int as "bestOf" from competition where id = $1`,
+          [id],
+        );
+        // The smoke Participant's one win; a Best of 1 is decided by it.
+        const majority = Math.floor(config.bestOf / 2) + 1;
+        if (majority > 1) {
+          const early = await callAction(
+            ids.closeLoggedResults,
+            [id],
+            sessions.organizer,
+          );
+          if (early.ok || early.error !== SERIES_UNFINISHED) {
+            return `close before decided: ${JSON.stringify(early)}`;
+          }
+        }
+        for (let won = 1; won < majority; won++) {
+          const more = await callAction(
+            ids.logResult,
+            [id, input],
+            sessions.organizer,
+          );
+          if (!more.ok) return `logResult to decide: ${JSON.stringify(more)}`;
+        }
         const closed = await callAction(
           ids.closeLoggedResults,
           [id],
@@ -339,11 +367,11 @@ export async function assertLoggedResultsLoop(sessions: {
       };
       await restore()
         .then(() =>
-          ok("logged results: reopen Bouncy Pong and delete the smoke Match"),
+          ok("logged results: reopen Bouncy Pong and delete the smoke Matches"),
         )
         .catch((error) =>
           fail(
-            "logged results: reopen Bouncy Pong and delete the smoke Match",
+            "logged results: reopen Bouncy Pong and delete the smoke Matches",
             String(error),
           ),
         );

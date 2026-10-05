@@ -708,7 +708,7 @@ describe.skipIf(!isLocalDatabase)("saveCompetitionSetting: locks", () => {
         ).toMatchObject({
           ok: false,
           error:
-            "Only a Bracket, Head-to-head or Best score Competition lets Participants log their own results.",
+            "Only a Bracket, Head-to-head, Best score or League Competition lets Participants log their own results.",
         });
         expect((await f.row(id)).selfReport).toBe(false);
       }

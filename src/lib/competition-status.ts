@@ -1,13 +1,15 @@
 /**
  * A Competition's status on the Participant Competitions list (ticket 105):
- * Not started, Underway (a Bracket adds its Round in play), Closed, or
- * Done · Winner. Pure: the list query loads the facts.
+ * Not started, Underway (a Bracket or League adds its Round in play),
+ * Closed, or Done · Winner. Pure: the list query loads the facts.
  */
 import { finalRoundOf } from "@/lib/bracket/final";
 import { isBye } from "@/lib/bracket/formats";
 import { isDecided } from "@/lib/bracket/match-status";
 import type { Bracket, Format } from "@/lib/bracket/types";
 import type { COMPETITION_SCORINGS } from "@/lib/enums";
+import { type LeagueConfig, roundsOf } from "@/lib/league/config";
+import type { LeagueMatchFacts } from "@/lib/league/pairing";
 
 /** The Round a Bracket is playing, out of its Rounds; the last is the final. */
 export type BracketRoundInPlay = { round: number; of: number };
@@ -22,6 +24,8 @@ export type CompetitionStatusFacts = {
   hasResult: boolean;
   /** A generated Bracket's Round in play (`bracketRoundInPlay`); else null. */
   bracketRound: BracketRoundInPlay | null;
+  /** A paired League's round in play (`leagueRoundInPlay`); else null. */
+  leagueRound?: BracketRoundInPlay | null;
   /**
    * The 1st place's names (`finalWinners`, the rule Recent results uses);
    * more than one on a tie, none before Close or Close.
@@ -67,7 +71,15 @@ export function competitionStatus(
   if (!facts.hasResult) {
     return { kind: "not-started", label: "Not started", detail: null };
   }
-  // R23: S2 adds a League's "Round n of m".
+  // A League has no final: its last round is "Round m of m".
+  const league = facts.leagueRound ?? null;
+  if (league) {
+    return {
+      kind: "underway",
+      label: "Underway",
+      detail: `Round ${league.round} of ${league.of}`,
+    };
+  }
   const round = facts.bracketRound;
   return {
     kind: "underway",
@@ -78,6 +90,30 @@ export function competitionStatus(
         : `Round ${round.round} of ${round.of}`
       : null,
   };
+}
+
+/**
+ * The round a League is playing, out of its rounds (`roundsOf`): the first
+ * round with a Match still to play (a bye or sit-out never is one); once
+ * every paired round is played, the next round to pair, or the last. Null
+ * before round 1 is paired.
+ */
+export function leagueRoundInPlay(
+  config: LeagueConfig,
+  entrantCount: number,
+  matches: Pick<LeagueMatchFacts, "round" | "b" | "result">[],
+): BracketRoundInPlay | null {
+  if (matches.length === 0) return null;
+  const of = Math.max(
+    roundsOf(config, entrantCount),
+    ...matches.map((m) => m.round),
+  );
+  const unplayed = matches.filter((m) => m.b !== null && m.result === null);
+  if (unplayed.length > 0) {
+    return { round: Math.min(...unplayed.map((m) => m.round)), of };
+  }
+  const latest = Math.max(...matches.map((m) => m.round));
+  return { round: Math.min(latest + 1, of), of };
 }
 
 /** "Underway · Round 2 of 4", "Done · Winner: Zion", "Not started". */

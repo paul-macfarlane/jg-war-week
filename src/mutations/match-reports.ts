@@ -18,13 +18,15 @@ export const SELF_REPORT_FORMATS: readonly string[] = [
   "bracket",
   "head-to-head",
   "best-score",
+  "league",
 ];
 export const NO_SELF_REPORT =
-  "Only a Bracket, Head-to-head or Best score Competition lets Participants log their own results.";
+  "Only a Bracket, Head-to-head, Best score or League Competition lets Participants log their own results.";
 
 /**
  * Turns "Participants can log their own results" on or off (spec R21,
- * decision 4) for a Bracket, Head-to-head or Best score Competition;
+ * decision 4) for a Bracket, Head-to-head, Best score or League
+ * Competition;
  * Placement and Participation never take it. Takes the Competition's row
  * lock, so a report in flight runs before or after it and its in-lock
  * re-check sees the new setting. Results already in stand when it's

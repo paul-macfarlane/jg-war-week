@@ -9,12 +9,15 @@ import {
 } from "@/db/schema";
 import { isBracketFormat } from "@/lib/bracket/view";
 import { isLoggedFormat } from "@/lib/enums";
+import { leagueConfigOf } from "@/lib/league/config";
 import {
   type PlacingsNow,
   bracketPlacingsNow,
+  leaguePlacingsNow,
   loggedPlacingsNow,
   participationPlacingsNow,
   placementPlacingsNow,
+  seriesPlacingsNow,
 } from "@/lib/placings-now";
 import { generatedNote } from "@/lib/points-entry";
 import {
@@ -26,7 +29,8 @@ import {
 } from "@/mutations/brackets";
 import type { MutationContext, MutationResult } from "@/mutations/types";
 import { getBracketEntrants } from "@/queries/brackets";
-import { getLoggedStandings } from "@/queries/logged-results";
+import { getLeagueClose } from "@/queries/league";
+import { getLoggedStandings, getSeriesResults } from "@/queries/logged-results";
 import { getPlacementRows } from "@/queries/placements";
 
 /** The Competition, locked, with everything any Format's Close reads. */
@@ -43,6 +47,7 @@ async function lockedForClose(
       scoring: competition.scoring,
       format: competition.format,
       bracketConfig: competition.bracketConfig,
+      leagueConfig: competition.leagueConfig,
       placementPoints: competition.placementPoints,
       participationPoints: competition.participationPoints,
       closedAt: competition.closedAt,
@@ -83,12 +88,20 @@ async function placingsNow(
       .where(eq(participation.competitionId, found.id));
     return participationPlacingsNow(tookPart, found);
   }
+  if (found.format === "head-to-head") {
+    const series = await getSeriesResults(found.id, tx);
+    if (!series) return { ok: false, error: COMPETITION_NOT_FOUND };
+    return seriesPlacingsNow(series, found);
+  }
   if (isLoggedFormat(found.format)) {
     return loggedPlacingsNow(await getLoggedStandings(found.id, tx), found);
   }
   if (found.format === "league") {
-    // R23: S2 closes a League by its standings (`leaguePlacingsNow`).
-    return { ok: false, error: COMPETITION_NOT_FOUND };
+    const league = await getLeagueClose(found.id, tx);
+    return leaguePlacingsNow(
+      { config: leagueConfigOf(found), ...league },
+      found,
+    );
   }
   if (isBracketFormat(found.format)) {
     const bracket = await bracketOf(tx, found as BracketRun);
@@ -108,8 +121,9 @@ async function placingsNow(
  * Format's own pure rule), noted "From <format>", and marks it Closed.
  * Closing again rewrites the generated entries from the current results
  * and keeps the first Close's `closed_at`. A Format that isn't ready
- * (a Bracket with Matches to play, a Placement sheet with a Score and no
- * Place) refuses and writes nothing.
+ * (a Bracket or League with Matches to play, a Head-to-head series neither
+ * decided nor drawn, a Placement sheet with a Score and no Place) refuses
+ * and writes nothing.
  */
 export async function closeCompetition(
   competitionId: string,
