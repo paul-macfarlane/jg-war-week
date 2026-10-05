@@ -216,6 +216,26 @@ test("r23 AC7 a round robin's Participant page: table with tiebreaks and the Pro
       ).toBeVisible();
     }
     await expect(table.getByRole("columnheader")).toHaveCount(9);
+    // No header spills over its neighbour (XI's monospace "War Week points"
+    // once covered SB on CI's narrower page).
+    const boxes = await table.getByRole("columnheader").evaluateAll((headers) =>
+      headers
+        .map((th) => th.querySelector("button"))
+        .filter((b) => b !== null && b.getBoundingClientRect().width > 0)
+        .map((b) => ({
+          name: b!.textContent ?? "",
+          left: b!.getBoundingClientRect().left,
+          right: b!.getBoundingClientRect().right,
+        })),
+    );
+    for (const [before, after] of boxes
+      .slice(0, -1)
+      .map((b, i) => [b, boxes[i + 1]])) {
+      expect(
+        before.right,
+        `${before.name} overlaps ${after.name}`,
+      ).toBeLessThanOrEqual(after.left + 0.5);
+    }
     expect(await names(table)).toEqual(RANK_ORDER);
     const rows = table.locator('tr[data-slot="results-row"]');
     for (const person of RANK_ORDER) {

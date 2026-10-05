@@ -149,7 +149,7 @@ function SortButton({
       type="button"
       variant="ghost"
       size="sm"
-      className={`${end ? "-mr-2.5" : "-ml-2.5"} h-auto min-h-7 py-1 whitespace-normal`}
+      className={`${end ? "-mr-2.5" : "-ml-2.5"} h-auto min-h-7 max-w-full py-1 whitespace-normal`}
       onClick={() => onSort(column)}
     >
       {children}
@@ -272,7 +272,7 @@ export function ResultsTable({
           ))}
           <TableHead
             aria-sort={ariaSortFor(sort, "points")}
-            className="hidden h-auto py-1 text-right sm:table-cell"
+            className="hidden h-auto py-1 text-right whitespace-normal sm:table-cell"
           >
             {pointsSort(true)}
           </TableHead>
