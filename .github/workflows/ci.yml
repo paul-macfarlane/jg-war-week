@@ -77,17 +77,17 @@ jobs:
       # The Playwright flows (sign-in, Points Entry, Bracket, Heats Bracket
       # with the End War Week warning, Finale, Archive, forms, theme) in
       # Chromium over the same build and Postgres service.
-      # e2e runs on pushes to staging and main (after each merge) and on PRs
-      # into main (before production), not on PRs into staging: a feature
-      # PR waits only for the checks above. A browser regression that lands
-      # on staging fails that push's run and blocks staging -> main.
-      - if: github.event_name != 'pull_request' || github.base_ref == 'main'
+      # e2e runs only on PRs into main (staging -> main, before production):
+      # a PR into staging and a push to staging or main run only the checks
+      # above. A browser regression on staging fails the next staging -> main
+      # PR, so fix it there before shipping.
+      - if: github.event_name == 'pull_request' && github.base_ref == 'main'
         run: pnpm exec playwright install --with-deps chromium
 
-      - if: github.event_name != 'pull_request' || github.base_ref == 'main'
+      - if: github.event_name == 'pull_request' && github.base_ref == 'main'
         run: pnpm e2e
 
-      - if: failure() && (github.event_name != 'pull_request' || github.base_ref == 'main')
+      - if: failure() && (github.event_name == 'pull_request' && github.base_ref == 'main')
         uses: actions/upload-artifact@v7
         with:
           name: playwright-results
