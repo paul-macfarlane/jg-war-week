@@ -27,7 +27,7 @@ five places that work at XI's size but break at XII's:
   Entrant three times (Entrants, Seed Positions, the Round 1 Preview) before
   the tree. That is about 12,000 px at 1440.
 - **Bracket tree (111).** The tree sits in the page's narrow column at 1440,
-  so only Rounds 1–3 of 7 show. A Participant has no quick way to find their
+  so only Rounds 1–3 of 6 show. A Participant has no quick way to find their
   own Match.
 - **Admin bottom bar (112).** In XI's monospace font preset at 390, the five
   tabs are wider than the screen and "More" is clipped.
@@ -120,8 +120,10 @@ Pong Bracket) unless noted, screenshotted at 1440 and 390 under
   result, there is no Round 1 Preview list. The Entrants and Seed Positions
   are collapsed under one trigger with the count, open by keyboard, and the
   lock reason is visible while collapsed. On an unlocked Bracket both
-  sections are expanded. The page is at least half as tall as before at
-  1440, recorded in the closeout (`regression-r24-bracket-admin`).
+  sections are expanded. The page's height at 1440 before and after is
+  recorded in the closeout, and the spec bounds it below 70% of before
+  (`regression-r24-bracket-admin`). *Amended 2026-10-04, approved by Paul:
+  was "at least half as tall"; the rest is the 64-Entrant tree itself.*
 - [ ] **Bracket tree.** At 1440 the tree is wider than the page's text
   column and shows at least five Rounds without sideways scrolling. As a
   Participant who is an Entrant, "Jump to your Match" scrolls their Match
@@ -161,3 +163,10 @@ Pong Bracket) unless noted, screenshotted at 1440 and 390 under
 - One PR from `feat/r24-scale` into `staging`.
 
 ## Comments
+
+- 2026-10-04, orchestrator: two amendments approved by Paul during
+  delivery. The Bracket admin height criterion now records heights (about
+  12,000 → 7,662 px) instead of asking for half. "News" stays as the bar's
+  short label, with a `CONTEXT.md` banned-terms exception. Also corrected
+  "7 Rounds" to 6: a 64-Entrant Bracket has six. See
+  [`execution.md`](./execution.md) `[SCOPE CHANGE]`.

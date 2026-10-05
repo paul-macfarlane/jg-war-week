@@ -98,3 +98,37 @@ Human gates: none. There is no deploy or reseed, and no access change.
 
 - 2026-10-04: worktrees, databases and the execution plan are ready; lanes
   A and B dispatched.
+- 2026-10-04: D1 `480cabda`, D4 `71db6a76` and D5 `70cc24ca` were accepted
+  on lane A. D5 got an orchestrator fix, `8dd68d7d` on lane A: the "more"
+  count now counts only left-out rows with points, because a Team on 0
+  points is listed but didn't score.
+- 2026-10-04: D2 `b6753fd0`/`832242c9` and D3 `7d22e9f6` were accepted on
+  lane B.
+- 2026-10-04: lane B was merged (`7bf3876f`), then lane A (`d81f98d3`). D6
+  docs landed as `d7b72e0c`.
+- 2026-10-04: the 17 s finding. The countdown is capped at 8 s
+  (`FINALE_MAX_MS`). The issue's "17 s for 17 rows" came from the r19 scale
+  spec playing the countdown twice (1440 and 390) and waiting for Replay
+  each time, not from one countdown.
+- 2026-10-04: the predicted lane B file overlap was real. D2 and D3 both
+  touched the bracket e2e specs and `regression-r19-scale.spec.ts` (D3
+  had to open D2's collapsible). Lane A's and lane B's files didn't
+  overlap except in `regression-r19-scale.spec.ts`, which merged
+  cleanly.
+
+## [SCOPE CHANGE]
+
+Both changes were approved by Paul in chat on 2026-10-04.
+
+1. **"News" short label.** `CONTEXT.md` bans "News". Paul kept it as the
+   phone bar's short label for Announcements, and `CONTEXT.md` now notes
+   the exception. The accessible name, page, nav and route stay
+   Announcements.
+2. **Bracket admin height.** The AC asked for "at least half as tall". The
+   page went from about 12,000 to 7,662 px at 1440, which is 64%, and the
+   rest is the 64-Entrant tree, which the spec doesn't change. Paul
+   accepted it. The AC was amended to record the heights, and the e2e
+   bounds the page below 70% of before.
+
+Correction, not a scope change: a 64-Entrant Bracket has 6 Rounds, not 7.
+The spec's Summary was fixed. The AC's "at least five Rounds" is unchanged.
