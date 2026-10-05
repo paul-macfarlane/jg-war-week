@@ -243,14 +243,18 @@ redirect to their new homes.
   from the avatar **account menu** at the top right of every header.
 - **`/admin/schedule`**: the War Week's Days (with Day Themes and an
   optional short Day description) and each Day's Schedule Items on one
-  page. **`/admin/roster`**: Teams and Participants, with an Organizer-only
-  Import (paste from Google Sheets or upload a CSV, preview, then Import).
+  page. **`/admin/roster`**: Teams and Participants, with Add Participant and an
+  Organizer-only Import (paste from Google Sheets or upload a CSV, preview,
+  then Import) at the top, and a search box that filters the list by name or
+  email ("N of M").
   **`/admin/competitions`**: Competitions, with their Hosts (a Host sees only
   the ones they host). A row's **Edit**
   opens the Competition's own page (see [Run a Competition from its
   page](#run-a-competition-from-its-page)).
 - **On a phone**, the admin sections are a bar fixed to the bottom of the
-  screen (Competitions, Discretionary points, Schedule, Announcements, More); More opens a
+  screen (labelled Competitions, Points, Schedule, News, More, in Inter whatever the
+  font preset; the accessible names, the side column and the More Sheet keep
+  "Discretionary points" and "Announcements"); More opens a
   Sheet with the other sections you can see and the edition switcher.
   Display, the way back to the War Week, Slack and Sign out are in the
   avatar account menu in the header. From `md` up it is the side column and
@@ -478,6 +482,11 @@ Competition's page, sees "Organizers and Hosts only."
   picked (the latter is marked "Can't sign in"); a Host with no email gets
   access once you add one in Roster. A Host sees the Hosts read-only, by
   name, and no emails.
+- **Bracket admin** folds the Squads, Entrants and Seed Positions into one
+  closed "Entrants and Seed Positions (N)" collapsible once a Match has a
+  result (the lock reason stays visible); there is no Round 1 preview. The
+  Participant tree uses the full width from `md` up, and an Entrant gets a
+  "Jump to your Match" button (`currentMatchFor`).
 - **The run area** is below: Record placements (Placement), Entrants and
   Bracket tree (Bracket), Entrants and Matches with **Log a Match** (Head-to-head), Entrants and Attempts with **Log an Attempt** (Best score, Edit and Delete in each person's expanded row), or Who took part
   (Participation), with Close and Reopen. Every Format uses the same two words: **Close** writes the points, **Reopen** withdraws them.
@@ -661,7 +670,10 @@ it. The Awards slide always reveals one Award per step; there is no layout
 setting. Every change saves at once. Only Organizers can open it: a Host can't open
 `/admin/finale`. A slide with nothing to show is skipped, and with every
 slide hidden the Finale says "Nothing to show yet." The rules are under
-"Finale rules" in `CONTEXT.md`.
+"Finale rules" in `CONTEXT.md`. The Standings countdown covers only the
+rows ranked 10th or better (ties at 10th included), then says "…and N more
+Participants scored" (Teams in a teams War Week); the leaderboard lists
+everyone (`finaleTopRows` in `src/lib/finale.ts`).
 
 Schema: slides live in the `finale_slide` table (unique on War Week, kind and
 heading, so each built-in is once per War Week and a Custom slide is unique

@@ -142,7 +142,7 @@ Do not use these words in code (identifiers, comments, UI copy). Use the
 | ELO         | Points, Points Entry, Standings                                      |
 | Placeholder | "Coming in a later slice", stub, or name the concrete future feature |
 | Tournament  | Competition                                                          |
-| News        | Announcement (the page, nav item and route are all "Announcements")  |
+| News        | Announcement (the page, nav item and route are all "Announcements"). The one exception: "News" is the admin phone bottom bar's short tab label for Announcements (approved, R24 decision 4); its accessible name, the page, the nav and the route stay "Announcements" |
 | Admin (a person or role) | Organizer or Host; "Admin" names only the `/admin` area   |
 
 (Exception: "the Jahnel Group admins" on Privacy and Terms means the
@@ -868,6 +868,10 @@ Now/next is computed on the ET clock, whatever the viewer's timezone.
   - Totals count up from 0.
   - Every list ends together, so each first place lands at the end.
   - The whole countdown is under 8 s.
+  - It counts down only the rows ranked 10th or better (every row tied at
+    10th included), then a line "…and N more Participants scored" (or
+    Teams) counts the left-out rows that have points, and is hidden at 0.
+    The leaderboard still lists everyone.
   - Next while it plays jumps to its final state; Next once it's done goes
     on. Replay plays it again and never advances. Arriving by Back shows
     the final state.

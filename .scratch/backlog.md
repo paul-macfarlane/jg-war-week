@@ -10,10 +10,11 @@ ticket opens or closes. Last reviewed 2026-10-04.
 
 ## Ready for an agent
 
-Regression feedback "10/3", grilled 2026-10-04 ([grilling record](./regression-2026-10/grilling-2026-10-04.md)). One work package per spec; both change the schema and are red-teamed.
+Regression feedback "10/3", grilled 2026-10-04 ([grilling record](./regression-2026-10/grilling-2026-10-04.md)), and the scale-pass findings 109–113 (R24, grilled 2026-10-04 in session). One work package per spec; R22 and R23 change the schema and are red-teamed, R24 does not.
 
 - [x] **Epic R22, People and admin**: Hosts are roster Participants (no email needed, not copied to the next War Week), Hosts see only their Competitions and the guide, one name-only `ParticipantPicker` with avatars (closes 108), the Team shows in team events (absorbs 83), Award presets replace Categories, no Bracket Finale, `/about` stills in XII. Delivered: [PR #138](https://github.com/paul-macfarlane/jg-war-week/pull/138) into `staging`. [`people-and-admin/spec.md`](./people-and-admin/spec.md) (`done`)
 - [x] **Epic R23, League (round robin and Swiss)**: a new Format for chess-style tournaments, with draws, 1 / ½ / 0, tiebreaks and Swiss pairing; Close now waits for a finished League or Head-to-head series. Delivered: [PR #139](https://github.com/paul-macfarlane/jg-war-week/pull/139) into `staging`. [`league/spec.md`](./league/spec.md) (`done`)
+- [x] **Epic R24, War Week at full size**: Roster search and actions on top, a shorter Bracket admin page, a full-width Bracket tree with "Jump to your Match", short bottom-bar labels in the sans font, and a top-10 Finale Standings countdown. No schema change. Absorbs 109–113. Delivered: [PR #140](https://github.com/paul-macfarlane/jg-war-week/pull/140) into `staging` (see [`scale/execution.md`](./scale/execution.md)). [`scale/spec.md`](./scale/spec.md) (`done`)
 
 Done: Epics R9–R14 (`regression-2026-09`, PRs through #122); Epics R15–R19 (`regression-2026-10`, PRs #124–#131); Epic R20 (`competition-results`, PR #133); Epic R21 (`competition-setup`, PR #135, absorbed backlog 25). All merged into `staging`.
 
@@ -23,11 +24,6 @@ Done: Epics R9–R14 (`regression-2026-09`, PRs through #122); Epics R15–R19 (
 
 ## Needs a decision, info or grilling before a plan
 
-- [ ] **Roster admin at 100 Participants**: one long list, no search, actions below the last row. [`regression-2026-10/issues/109`](./regression-2026-10/issues/109-roster-at-a-hundred.md) (`needs-triage`)
-- [ ] **Bracket admin at 64 Entrants**: every Entrant listed three times before the tree. [`regression-2026-10/issues/110`](./regression-2026-10/issues/110-bracket-admin-at-sixty-four.md) (`needs-triage`)
-- [ ] **Bracket tree at 64 Entrants**: narrow on desktop, 4,700 px tall, no jump to your Heat. [`regression-2026-10/issues/111`](./regression-2026-10/issues/111-bracket-tree-at-sixty-four.md) (`needs-triage`)
-- [ ] **Admin bottom bar with a wide font**: "More" clipped at 390 in XI's monospace preset. [`regression-2026-10/issues/112`](./regression-2026-10/issues/112-admin-bottom-bar-wide-font.md) (`needs-triage`)
-- [ ] **Finale Standings with many scorers**: rows below the screen never show; the countdown runs a second a row. [`regression-2026-10/issues/113`](./regression-2026-10/issues/113-finale-standings-at-scale.md) (`needs-triage`)
 - [ ] **Move to Jahnel Group ownership**: GitHub, Vercel, Neon, the GCP OAuth project, the domain and any other secret or bill; who owns and pays for each, cutover order, whether Paul keeps admin. [`hardening/issues/20`](./hardening/issues/20-transfer-to-jahnel-group-ownership.md) (`needs-triage`)
 - [ ] **Stairs integration**: wayfinder map charted; mirror Stairs climbs so Hosts can score a stair Competition without re-typing. Work the frontier tickets. [`stairs/map`](./stairs/map.md)
 - [ ] **Beytopia integration**: read beyblade rip results instead of re-entering them; needs owner, access and an API or export. [`beytopia/issues/01`](./beytopia/issues/01-beytopia-integration.md) (`needs-info`)
