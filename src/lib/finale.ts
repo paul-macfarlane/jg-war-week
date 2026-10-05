@@ -12,6 +12,22 @@ const COUNT_UP_MS = 1_500;
 /** The longest gap between one rank appearing and the next. */
 const MAX_STEP_MS = 1_200;
 
+/** The Standings countdown shows and counts down ranks up to this one. */
+export const FINALE_TOP_RANK = 10;
+
+/**
+ * The rows the Standings countdown plays: those ranked 10th or better, every
+ * row tied at 10th included, exactly as given (same objects, same order;
+ * nothing is reordered or recomputed). `moreCount` is how many rows are left
+ * out.
+ */
+export function finaleTopRows<T extends { rank: number }>(
+  rows: T[],
+): { shown: T[]; moreCount: number } {
+  const shown = rows.filter((row) => row.rank <= FINALE_TOP_RANK);
+  return { shown, moreCount: rows.length - shown.length };
+}
+
 export type RowFinale = { shown: boolean; progress: number };
 
 /** The distinct ranks in a list, from last place to first. */

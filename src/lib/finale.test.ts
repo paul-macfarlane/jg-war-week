@@ -5,6 +5,7 @@ import {
   countUpTotal,
   finaleDurationMs,
   finaleRows,
+  finaleTopRows,
 } from "@/lib/finale";
 
 describe("countUpTotal", () => {
@@ -105,5 +106,42 @@ describe("finaleDurationMs", () => {
     const short = [1, 2];
     const long = [1, 2, 3, 4, 5, 6];
     expect(finaleDurationMs(long)).toBeGreaterThan(finaleDurationMs(short));
+  });
+});
+
+describe("finaleTopRows", () => {
+  const rowsWith = (ranks: number[]) =>
+    ranks.map((rank, i) => ({ id: `p${i}`, rank }));
+  const ranked = (n: number) =>
+    rowsWith(Array.from({ length: n }, (_, i) => i + 1));
+
+  it("shows everyone with fewer than 10 scorers and no more line", () => {
+    const rows = ranked(7);
+    expect(finaleTopRows(rows)).toEqual({ shown: rows, moreCount: 0 });
+  });
+
+  it("shows exactly 10 scorers with nothing left out", () => {
+    const { shown, moreCount } = finaleTopRows(ranked(10));
+    expect(shown).toHaveLength(10);
+    expect(moreCount).toBe(0);
+  });
+
+  it("includes every row tied at 10th, past 10 rows", () => {
+    const rows = rowsWith([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 10, 10, 13, 14]);
+    const { shown, moreCount } = finaleTopRows(rows);
+    expect(shown).toHaveLength(12);
+    expect(moreCount).toBe(2);
+  });
+
+  it("cuts 100 scorers to 10 with 90 more", () => {
+    const { shown, moreCount } = finaleTopRows(ranked(100));
+    expect(shown).toHaveLength(10);
+    expect(moreCount).toBe(90);
+  });
+
+  it("returns the input's first rows by identity and order", () => {
+    const rows = ranked(30);
+    const { shown } = finaleTopRows(rows);
+    shown.forEach((row, i) => expect(row).toBe(rows[i]));
   });
 });

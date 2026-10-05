@@ -8,6 +8,7 @@ import {
 } from "@/components/standings";
 import { Button } from "@/components/ui/button";
 import { useFinale } from "@/components/use-finale";
+import { finaleTopRows } from "@/lib/finale";
 
 import { SlideEyebrow } from "./slide-eyebrow";
 import type { FinaleSlideProps } from "./types";
@@ -30,11 +31,15 @@ export function StandingsSlide({
 }: FinaleSlideProps<"standings">) {
   const { standings, teamLabel, primaryColor } = data;
   const main = standings.main;
-  const [ranks] = useState(() =>
-    (main === "team" ? standings.team : standings.individual).map(
-      (row) => row.rank,
-    ),
+  // Only the top 10 (ties included) count down; the rest are one line.
+  const [top] = useState(() =>
+    main === "team"
+      ? finaleTopRows(standings.team)
+      : finaleTopRows(standings.individual),
   );
+  const [ranks] = useState(() => top.shown.map((row) => row.rank));
+  const noun = main === "team" ? teamLabel : "Participant";
+  const moreLine = `\u2026and ${top.moreCount} more ${noun}${top.moreCount === 1 ? "" : "s"} scored`;
   const { phase, start, finish, rows, startedAt } = useFinale(
     ranks,
     final ? "done" : "playing",
@@ -66,14 +71,22 @@ export function StandingsSlide({
           rows, order and values untouched). */}
       <div className="flex w-full max-w-[min(64rem,92vw)] flex-col gap-6 min-[1800px]:[zoom:1.5] md:text-lg lg:[zoom:1.25] xl:text-2xl">
         {main === "team" ? (
-          <TeamStandingsList rows={standings.team} finale={rows} />
+          <TeamStandingsList
+            rows={standings.team.slice(0, top.shown.length)}
+            finale={rows}
+          />
         ) : (
           <IndividualStandingsList
-            rows={standings.individual}
+            rows={standings.individual.slice(0, top.shown.length)}
             finale={rows}
             primaryColor={primaryColor}
           />
         )}
+        {top.moreCount > 0 ? (
+          <p data-finale-more className="text-foreground/70 text-center">
+            {moreLine}
+          </p>
+        ) : null}
         {phase === "done" ? (
           <div className="flex justify-center">
             <Button
