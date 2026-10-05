@@ -61,10 +61,5 @@ No schema changes, nothing to migrate 😴
 ---
 >     updated_at timestamp without time zone DEFAULT now() NOT NULL
 >     updated_at timestamp without time zone DEFAULT now() NOT NULL
-711,712c711,712
-< \restrict NkiHuXplaxSUd8qE869zySF4iiF3YxqVw955oNIIDEipBUj8fU3F4Q7bh6oe41F
-< \unrestrict NkiHuXplaxSUd8qE869zySF4iiF3YxqVw955oNIIDEipBUj8fU3F4Q7bh6oe41F
----
-> \restrict WW2Q8PgS76ONiohkFhkaZGKiWl5lYMWtJSH52dWbbTcwIjCnwGTXZCELNnhZrP8
-> \unrestrict WW2Q8PgS76ONiohkFhkaZGKiWl5lYMWtJSH52dWbbTcwIjCnwGTXZCELNnhZrP8
-== only column order within a CREATE TABLE (trailing commas) and pg_dump estrict tokens differ: schema parity holds ==
+(pg_dump's random \restrict / \unrestrict session tokens, different on every dump, removed.)
+== only column order within a CREATE TABLE (trailing commas) and the pg_dump session tokens differ: schema parity holds ==

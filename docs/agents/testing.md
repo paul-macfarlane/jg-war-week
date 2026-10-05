@@ -39,6 +39,7 @@ rereading this guide.
 - Integration and non-UI behavior: captured vitest and smoke output when an artifact is needed beyond the command result.
 - External integration: smoke result against the Vercel deployment when a slice includes deploy.
 - Sensitive data: never include secrets, env values, OAuth tokens, or real employee personal data beyond names already on the public JG wiki.
+- Saved `pg_dump` output: drop its `\restrict <token>` / `\unrestrict <token>` lines before committing. They are random per dump, prove nothing, and trip the pre-commit secret scan (any 40+ character run), which then blocks every later merge from `staging`.
 - Any screenshot, video, test report, captured output, or other artifact cited as
   `PASS` evidence is saved beneath `test-results` and committed
   on the feature branch. The PR links to the committed path; it never describes
