@@ -8,8 +8,8 @@ counts as a pass, so the run doesn't depend on remembering what to look at.
 ## What it covers, and what it doesn't
 
 - **`pnpm gate` comes first.** Typecheck, lint, unit tests, build, smoke and
-  the Playwright e2e flows run in CI on every PR and assert the core flows
-  automatically. This checklist doesn't repeat their assertions.
+  the Playwright e2e flows run in CI (on pushes to `staging` and `main` and
+  on PRs into `main`) and assert the core flows automatically. This checklist doesn't repeat their assertions.
 - **This checklist covers what the gate can't judge:** every page, at
   both viewports, as every role. It checks that each page wears the right
   theme, fits a phone, says true and current things, and shows only what its
