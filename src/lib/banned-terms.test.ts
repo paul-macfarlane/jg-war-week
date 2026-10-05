@@ -63,6 +63,13 @@ const ALLOWLIST: Allowed[] = [
     reason:
       "Spec R21 decision 13 names the Team score setting's options Best member and Sum of members.",
   },
+  {
+    file: "src/lib/admin-sections.ts",
+    term: "News",
+    text: "News",
+    reason:
+      "Spec R24 decision 4 names the Announcements bottom-bar tab's short label News; its accessible name stays Announcements.",
+  },
 ];
 
 // Property names under here are MCP output fields (and its input

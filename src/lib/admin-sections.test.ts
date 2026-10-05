@@ -56,6 +56,27 @@ describe("adminNavFor", () => {
     ]);
   });
 
+  it("gives the Discretionary points and Announcements tabs the short labels Points and News, and keeps the full labels", () => {
+    const { tabs } = adminNavFor(true, "Competitions");
+    expect(tabs.map((t) => t.tabLabel)).toEqual([
+      "Competitions",
+      "Points",
+      "Schedule",
+      "News",
+    ]);
+    expect(labels(tabs)).toEqual([
+      "Competitions",
+      "Discretionary points",
+      "Schedule",
+      "Announcements",
+    ]);
+  });
+
+  it("keeps full labels for the More sections", () => {
+    const { more } = adminNavFor(true, "Competitions");
+    expect(more.map((m) => m.tabLabel)).toEqual(labels(more));
+  });
+
   it("puts the rest of an Organizer's sections in More, in nav order", () => {
     const { more } = adminNavFor(true, "Competitions");
     expect(labels(more)).toEqual([
