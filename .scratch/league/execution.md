@@ -485,3 +485,131 @@ have been completed. Same with Head to Head best ofs."
   twice and two never meet. Plan: allow it and have the Edit pairings
   dialog name those pairs before saving. Alternative: refuse a swap that
   creates a repeat in a round robin.
+
+## [PROGRESS]
+
+- 2026-10-04: claimed (`4ab4e89b`). The proof-root clear (`git rm -r test-results`)
+  was refused by the auto-mode guard, as in R21; R23 writes evidence only
+  under `test-results/r23/` and `test-results/e2e/regression-r23-*/`
+  (plus the two renamed `regression-r21-*` dirs its spec edits produced).
+- Deliverables, in integration order (all on `feat/23-league`):
+
+| # | Deliverable | Worker / model | Commit(s) | Checkout |
+|---|---|---|---|---|
+| S1 | Model and engine (0034, `src/lib/league/*`, P2) | atlas-worker / opus | `c0f976bb` | integration worktree |
+| S2 | Server, access, Close rules, Head-to-head scope change | atlas-worker / opus | `74d6ed8f` | integration worktree |
+| S3 | UI (results-table stats, settings, run area, Participant page) | atlas-worker / sonnet | `7cd34c80` | `war-weeker-a` (db `war_weeker_r23a`), fast-forwarded |
+| S4 | Seeds, MCP `get_league`, smoke | atlas-worker / sonnet | `58d86b51` (cherry-pick of `ae695dd3`) | `war-weeker-b` (db `war_weeker_r23b`) |
+| S5 | e2e (AC 3, 4, 6, 7), full suite | atlas-worker / sonnet | `52bc5fde`, `bc9a5528`, `1272ff26` | integration worktree |
+| S6 | Docs, CONTEXT, /about card and still | atlas-worker / sonnet | `a5484847` | integration worktree |
+| R1-FIX | Aggregate review fixes | atlas-worker / opus | `9e722d60` | integration worktree |
+
+- Approved deviations recorded at acceptance: S1 removed League from the
+  banned-term scan early (P10) and set `formatDefaults` (P5) so the new
+  CHECK holds; `leagueConfigSchema` in `config-schema.ts` (zod off the
+  access path); League Close/Reopen reuse `results.close`/`results.reopen`;
+  saving `leagueConfig` doesn't check rounds against Entrants (pairing and
+  Close refuse out-of-range rounds). S3 ∥ S4 parallelism: no file collided
+  (S3 touched `src/app/**`, `src/components/**`, `src/lib/results-table.ts`,
+  `src/lib/league/view-text.ts`; S4 `src/mcp/**`, `src/seed/**`,
+  `seeds/**`, `scripts/smoke/**`, `src/lib/setup.ts`, README); S4
+  cherry-picked cleanly onto S3.
+
+## [AI CODE REVIEW]
+
+Range `734f28e7..1272ff26` read by two fresh reviewers (opus), docs
+(`a5484847`) read by the orchestrator; findings adjudicated by the
+orchestrator from the cited hunks. Fixes in `9e722d60`.
+
+### Axis 1: technical implementation and spec conformity
+
+| # | Severity | Paths | Finding | Disposition |
+|---|---|---|---|---|
+| T1 | blocking | `src/lib/league/rules.ts`, `pairing.ts`, `queries/league.ts`, `placings-now.ts` | A Swiss dead end ("Every pairing would repeat a Match. Close the League.") left a League that R10 refused to Close (rounds locked, Clear pairings refused after a result, delete refused) | Resolved: a Swiss League is also complete when every paired Match has a result and `nextRoundPairable` is false; page reason and server refusal share it; dead-end Close tested (vitest + DB close test); CONTEXT, guide, checklist say so |
+| T2 | blocking | `rules.ts`, `config.ts`, `config-schema.ts` | Unbounded Swiss rounds made `unplayedSummary` loop to the saved value on every admin/page view and Close | Resolved: rounds clamped to N−1, out-of-range rounds refuse with `roundsError`'s words, `LEAGUE_MAX_ROUNDS = 64` in the schema and input; tested at 1e9 |
+| T3 | non-blocking | `pairing.ts` | No runtime step cap in the Swiss search under `FOR UPDATE` | Resolved: `SWISS_MAX_STEPS` 200 000, refuses at the cap; tested |
+| T4 | non-blocking | `pairing.ts`, `view-text.ts` | A swap could give a second Swiss bye silently | Resolved: Edit pairings warns "<name> would have a second bye."; tested |
+| T5 | non-blocking | `rules.ts` | A League of fewer than 2 Entrants could Close | Resolved: Close refused with pairing's own words; tested |
+| T6 | non-blocking | `league-view.tsx` | A round-robin sit-out read "You have a bye" | Resolved: "You sit out" (`nextMatchText`); tested |
+| T7 | non-blocking | `test-results/r23/` | Schema-parity and final gate evidence missing | Resolved by the orchestrator in verification |
+
+Clean per the reviewer: migration 0034 vs P1, round robin, Swiss engine and
+bye rule, standings and tiebreaks (R5), result parsing (R2, AC 5), access
+and self-report (decision 8, ADR 0003 order), P3a scoping, R1/Q1 locks,
+the Close scope change for Head-to-head and Bracket, seeds P9, MCP P8/R13,
+P2/P5 plumbing, AC 1–8 mapping.
+
+### Axis 2: coding standards
+
+| # | Severity | Paths | Finding | Disposition |
+|---|---|---|---|---|
+| F1 | non-blocking | `src/queries/league.ts` | Business rules (`editDisabledReason`, `yourNextMatch`, `isViewer`) in the query layer (ADR 0001); the inline edit rule disagreed with `swapError` for a one-Match round | Resolved: `src/lib/league/view-rules.ts` with vitests, agreeing with `swapError` |
+| F2 | non-blocking | `src/mutations/brackets.ts` | JSDoc attached to the wrong constant | Resolved |
+| F3 | non-blocking | `src/lib/competition-locks.ts` | Unused `"paired"` lock beside `LEAGUE_PAIRED_FIELDS` | Resolved: one source of truth, documented |
+| F4 | non-blocking | `src/components/league-builder.tsx` | Two solid buttons at once | Resolved: only the next step is solid |
+| F5–F7 | non-blocking | `src/mcp/league.ts`, `route.ts` | MCP `format` label vs slug; a dead wrong branch; `LeagueResult` type name clash | Resolved: `format: "league"`, narrowed type, `LeagueToolResult` |
+| F8 | non-blocking | `src/lib/league/pairing.ts`, `standings.ts` | Banned term in identifiers (`games`) | Resolved: `matches` / `played` |
+| F9 | non-blocking | `e2e/regression-r23-league-{self-report,page}.spec.ts` | `participantPageAs` opened before `try` (team rule: restore seeded data) | Resolved: opened inside `try`, all closed in `finally` |
+| F10 | non-blocking | `src/lib/league/view-text.ts` | zod reaches client components through `view-text.ts` → `result.ts` | Deviation approved: P3's rule (nothing zod on the `access.ts` path) holds; `result-form.tsx` → `series/input.ts` is the precedent |
+
+Clean per the reviewer: ADR 0003 action order, War Week from the row,
+`can` ordering, mutation layering, no `cursor-*` / `pointer-events-none`,
+shadcn and app wrappers only, sonner toasts, no banned copy in UI or MCP,
+e2e assertions that can fail, module layout.
+
+Remaining risks: a Swiss League saved with rounds above N−1 still displays
+that number in "Round n of m" and the round count (Close, Pair and Pair
+next refuse with `roundsError`); `nextRoundPairable` runs a bounded Swiss
+search on each League page view once a Swiss round is complete with rounds
+left; migration 0034 must be renumbered if `feat/r24-scale` merges a
+migration first (P11).
+
+## [CLOSEOUT]
+
+Verified head `9e722d60` on `feat/23-league`, local Postgres
+`war_weeker_r23`, Chromium. Verified run command:
+
+`DATABASE_URL=postgres://postgres:postgres@localhost:2345/war_weeker_r23?sslmode=disable DATABASE_DRIVER=pg SMOKE_PORT=3150 E2E_PORT=3250 pnpm format:check && pnpm gate`
+
+Result: format clean; typecheck clean; lint 0 errors (9 existing `<img>`
+warnings); vitest 221 files, 4168 tests passed; build ok; smoke 411 ok, 0
+not ok; e2e 183 passed, 0 failed, 0 flaky (9.2m). Log:
+`test-results/r23/gate.log` (its first line is the head it ran on).
+
+| Criterion | Verdict | Evidence |
+|---|---|---|
+| AC1 Round robin of 5 | PASS | vitest `src/lib/league/{pairing,standings}.test.ts` (A–E fixture, every pair once, one sit-out per round worth 0, shared place 1, 1, 3); `test-results/r23/s1-league-vitest.log`, `gate.log` |
+| AC2 Swiss of 9 over 4 rounds | PASS | vitest `pairing.test.ts` (200 seeded runs + fixed run: no rematch, bye to lowest-ranked without one, worth 1, never twice; 64 × 6 within the step budget), `standings.test.ts` (1–9 Buchholz fixture); `gate.log` |
+| AC3 Swiss League run to Close, 1440 and 390 | PASS | e2e `regression-r23-league-swiss` in the full run; screenshots `test-results/e2e/regression-r23-league-swis-*` |
+| AC4 Self-report | PASS | e2e `regression-r23-league-self-report`; smoke "league: with self-report on/off …" lines in `gate.log`; screenshots `test-results/e2e/regression-r23-league-self-*` |
+| AC5 Score decides | PASS | vitest `src/lib/league/result.test.ts`; `gate.log` |
+| AC6 Pairing edits before a result, refused after | PASS | e2e `regression-r23-league-swiss` (swap before, disabled after); `src/mutations/league.test.ts`; smoke "league: swapPairing …" in `gate.log` |
+| AC7 Participant page, axe both schemes | PASS | e2e `regression-r23-league-page` (table, sorts, rounds, Your next Match, no sideways scroll at 390, axe light and dark); screenshots `test-results/e2e/regression-r23-league-page-*` |
+| AC8 MCP `get_league`, no `@` | PASS | smoke "league: MCP get_league(Chess Swiss / Chess Round Robin) … with no @" and redirects in `gate.log`; vitest `src/mcp/league.test.ts` |
+| SC1 Close waits (Head-to-head, League) | PASS | vitest `placings-now.test.ts`, `close.test.ts` (incl. the Swiss dead end); smoke "Close is refused until the series is decided"; e2e `series.spec.ts`; `test-results/r23/s2-close-league-vitest.log`, `gate.log` |
+| DoD1 Red-team before implementation | PASS | [EXECUTION PLAN] red-team cycle 1 (no blocking) and Paul's answers, committed `53493e02` before any code |
+| DoD2 Migration + demo seed; smoke on seeded local Postgres | PASS | 0034 with its migration test; smoke loads every seed twice (League rows unchanged), the new CHECKs refused; schema parity `test-results/r23/schema-parity.txt` (`db:generate` no changes; push vs migrated dumps differ only in column order and pg_dump tokens) |
+| DoD3 CONTEXT.md terms; League off the banned list | PASS | `CONTEXT.md` (`a5484847`, `9e722d60`); banned-term scan green in `gate.log` |
+| DoD4 /about card and still, guide, regression checklist | PASS | `src/lib/about.ts` League card, `public/about/league{,-dark}.png` (viewed: Chess Swiss standings, no email), `docs/maintainers-guide.md`, `docs/regression-checklist.md`, `docs/agents/testing.md` |
+| DoD5 e2e screenshots 1440 and 390 committed | PASS | `git ls-files test-results/e2e/regression-r23-*` (four test dirs, 1440 and 390 each) |
+| DoD6 `pnpm format:check && pnpm gate`; CI on the PR | PASS locally (`gate.log`); CI on the PR: see the PR checks |
+
+Deviations and scope changes: Paul's Q1–Q4 answers and the Close
+[SCOPE CHANGE] (above); the acceptance-time deviations under
+[PROGRESS]; the review's F10 deviation; T1's resolution (a Swiss dead end
+counts as finished) refines R10 and is in CONTEXT, the guide and the
+checklist. The proof root was not cleared (guard refusal), so
+`test-results/` still holds earlier work packages' evidence; this PR adds
+only R23's (`test-results/r23/`, `test-results/e2e/regression-r23-*`) and
+the two `regression-r21-*` dirs whose test titles R23 changed.
+
+Isolation: integration worktree `.claude/worktrees/r23-league/war-weeker`;
+S3 and S4 in parallel in `war-weeker-a` / `war-weeker-b`. No predicted
+collision, and none happened (S4 cherry-picked cleanly onto S3).
+
+Human gates after merge: Paul reviews and merges the PR into `staging`;
+then runs `migrate.yml` (additive 0034) and `seed.yml` for the XII demo.
+Post-check: `/xii/competitions` lists Chess Round Robin and Chess Swiss,
+both pages answer 200, MCP `get_league` answers. Roll back only after
+deleting League Competitions. If `feat/r24-scale` merges a migration
+first, renumber 0034 on the latest `staging` (P11).

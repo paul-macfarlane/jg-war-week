@@ -1,6 +1,6 @@
 ---
 title: League, round robin and Swiss (Epic R23)
-status: ai-review
+status: done
 claimed: atlas-implement, Paul Macfarlane, 2026-10-04
 grilled: 2026-10-04 (see ../regression-2026-10/grilling-2026-10-04.md)
 created: 2026-10-04
@@ -13,7 +13,7 @@ source: Paul's regression feedback "10/3", item 13.1 (chess tournaments)
 (`../competition-setup/spec.md`) merged into `staging`. League reuses its
 self-report setting, its scoring config and the Close / Reopen lifecycle ·
 **Red-team:** required (Drizzle schema change) · **Status:**
-ai-review
+done
 
 ## Summary
 
