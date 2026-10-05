@@ -24,6 +24,7 @@ const FORMAT_LABELS: Record<Format, string> = {
   "head-to-head": "Head-to-head",
   "best-score": "Best score",
   participation: "Participation",
+  league: "League",
 };
 
 /** A Format as Organizers read it. */

@@ -58,13 +58,16 @@ export function competitionStatus(
         detail: `${winners.length > 1 ? "Winners" : "Winner"}: ${winners.join(", ")}`,
       };
     }
-    return facts.format === "placement" || facts.format === "bracket"
+    return facts.format === "placement" ||
+      facts.format === "bracket" ||
+      facts.format === "league"
       ? { kind: "done", label: "Done", detail: null }
       : { kind: "closed", label: "Closed", detail: null };
   }
   if (!facts.hasResult) {
     return { kind: "not-started", label: "Not started", detail: null };
   }
+  // R23: S2 adds a League's "Round n of m".
   const round = facts.bracketRound;
   return {
     kind: "underway",

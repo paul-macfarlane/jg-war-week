@@ -86,6 +86,10 @@ async function placingsNow(
   if (isLoggedFormat(found.format)) {
     return loggedPlacingsNow(await getLoggedStandings(found.id, tx), found);
   }
+  if (found.format === "league") {
+    // R23: S2 closes a League by its standings (`leaguePlacingsNow`).
+    return { ok: false, error: COMPETITION_NOT_FOUND };
+  }
   if (isBracketFormat(found.format)) {
     const bracket = await bracketOf(tx, found as BracketRun);
     const entrants = await getBracketEntrants(found.id, tx);

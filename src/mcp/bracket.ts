@@ -158,6 +158,12 @@ export function toBracketResult(
     return toParticipationBracketResult(view.competition);
   }
 
+  if (view.competition.format === "league") {
+    // R23: S4 answers a League with `bracket: null` and a pointer to
+    // `get_league`; until then, as not found (`getBracket` loads none).
+    return { found: false, message: notFoundMessage(name) };
+  }
+
   if (view.competition.format === "placement") {
     return {
       found: true,

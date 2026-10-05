@@ -33,12 +33,14 @@ import {
   COMPETITION_SCORINGS,
   FINALE_SLIDE_KINDS,
   FONT_PRESETS,
+  LEAGUE_RESULTS,
   MATCH_STATUSES,
   SCHEDULE_ITEM_CATEGORIES,
   SCORE_DIRECTIONS,
   WAR_WEEK_MODES,
   WAR_WEEK_STATUSES,
 } from "@/lib/enums";
+import type { LeagueConfig } from "@/lib/league/config";
 import type { Content } from "@/lib/rich-text/content";
 import type { SeriesConfig } from "@/lib/series/config";
 
@@ -71,6 +73,8 @@ export const bracketMatchStatus = pgEnum(
 );
 
 export const scoreDirection = pgEnum("score_direction", SCORE_DIRECTIONS);
+
+export const leagueResult = pgEnum("league_result", LEAGUE_RESULTS);
 
 export const finaleSlideKind = pgEnum("finale_slide_kind", FINALE_SLIDE_KINDS);
 
@@ -240,8 +244,11 @@ export const competition = pgTable(
     bestScoreConfig: jsonb("best_score_config").$type<BestScoreConfig | null>(),
     // Best score only: the most Attempts per person; null for no limit.
     maxAttempts: integer("max_attempts"),
-    // Bracket only (the CHECK below): Participants may enroll themselves as
-    // Entrants (ticket 15).
+    // League only, and always set there (the CHECKs below): its Pairing
+    // and, for Swiss, its rounds (`src/lib/league/config.ts`).
+    leagueConfig: jsonb("league_config").$type<LeagueConfig | null>(),
+    // Bracket and League only (the CHECK below): Participants may enroll
+    // themselves as Entrants (ticket 15).
     selfEnroll: boolean("self_enroll").notNull().default(false),
     // Enrollment closes once this many Entrants are in; null for no limit.
     entrantLimit: integer("entrant_limit"),
@@ -287,9 +294,27 @@ export const competition = pgTable(
       "competition_max_attempts",
       sql`${table.maxAttempts} is null or (${table.maxAttempts} >= 1 and ${table.format}::text = 'best-score')`,
     ),
+    // Enrollment is a Bracket's and a League's; the name predates League.
     check(
       "competition_self_enroll_bracket_only",
-      sql`${table.format}::text = 'bracket' or (not ${table.selfEnroll} and ${table.entrantLimit} is null)`,
+      sql`${table.format}::text in ('bracket', 'league') or (not ${table.selfEnroll} and ${table.entrantLimit} is null)`,
+    ),
+    check(
+      "competition_league_config_league",
+      sql`(${table.leagueConfig} is not null) = (${table.format}::text = 'league')`,
+    ),
+    // Pairing is Round robin or Swiss; `rounds` is absent or null, or (Swiss
+    // only) a whole number from 1. The CASE keeps the cast off a non-number.
+    check(
+      "competition_league_config_shape",
+      sql`${table.leagueConfig} is null or (
+        ${table.leagueConfig}->>'pairing' in ('round-robin', 'swiss')
+        and case when jsonb_typeof(${table.leagueConfig}->'rounds') = 'number'
+          then (${table.leagueConfig}->>'rounds')::numeric >= 1
+            and (${table.leagueConfig}->>'rounds')::numeric = floor((${table.leagueConfig}->>'rounds')::numeric)
+            and ${table.leagueConfig}->>'pairing' = 'swiss'
+          else coalesce(jsonb_typeof(${table.leagueConfig}->'rounds'), 'null') = 'null'
+          end)`,
     ),
     check(
       "competition_entrant_limit_above_1",
@@ -705,6 +730,77 @@ export const attempt = pgTable(
     index("attempt_team_id_idx").on(table.teamId),
     index("attempt_logged_by_participant_id_idx").on(
       table.loggedByParticipantId,
+    ),
+  ],
+);
+
+/**
+ * One Match of a League (CONTEXT.md, League): a pairing of two Entrants in
+ * a round, and its result once recorded. A row with no `entrantB` is a bye
+ * (Swiss, worth 1) or a sit-out (round robin, worth 0), and never has a
+ * result. "An Entrant plays once per round" spans rows, so it is the
+ * pairing engine's rule (`src/lib/league/pairing.ts`), not a constraint.
+ */
+export const leagueMatch = pgTable(
+  "league_match",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    competitionId: uuid("competition_id")
+      .notNull()
+      .references(() => competition.id, { onDelete: "cascade" }),
+    round: integer("round").notNull(),
+    // The Match's order in its round, from 0.
+    position: integer("position").notNull(),
+    entrantAId: uuid("entrant_a_id")
+      .notNull()
+      .references(() => entrant.id, { onDelete: "cascade" }),
+    // Null for a bye or sit-out.
+    entrantBId: uuid("entrant_b_id").references(() => entrant.id, {
+      onDelete: "cascade",
+    }),
+    result: leagueResult("result"),
+    scoreA: numeric("score_a", { precision: 12, scale: 3, mode: "number" }),
+    scoreB: numeric("score_b", { precision: 12, scale: 3, mode: "number" }),
+    // When the result was last saved; null until it has one.
+    recordedAt: timestamp("recorded_at", { withTimezone: true }),
+    // Kept for audit and never read back to a page or MCP (CONTEXT.md,
+    // Access rules).
+    recordedByEmail: varchar("recorded_by_email", { length: 254 }),
+    // The linked Participant who recorded it; null for a Host or Organizer.
+    recordedByParticipantId: uuid("recorded_by_participant_id").references(
+      () => participant.id,
+      { onDelete: "set null" },
+    ),
+    // Set only on rows that came from a seed file; see CONTEXT.md.
+    seedKey: varchar("seed_key", { length: 80 }),
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+    updatedAt: timestamp("updated_at").notNull().defaultNow(),
+  },
+  (table) => [
+    unique().on(table.competitionId, table.round, table.position),
+    unique().on(table.competitionId, table.seedKey),
+    index("league_match_entrant_a_id_idx").on(table.entrantAId),
+    index("league_match_entrant_b_id_idx").on(table.entrantBId),
+    index("league_match_recorded_by_participant_id_idx").on(
+      table.recordedByParticipantId,
+    ),
+    check("league_match_round_from_1", sql`${table.round} >= 1`),
+    check("league_match_position_from_0", sql`${table.position} >= 0`),
+    check(
+      "league_match_two_entrants",
+      sql`${table.entrantBId} is null or ${table.entrantBId} <> ${table.entrantAId}`,
+    ),
+    check(
+      "league_match_bye_no_result",
+      sql`${table.entrantBId} is not null or (${table.result} is null and ${table.scoreA} is null and ${table.scoreB} is null)`,
+    ),
+    check(
+      "league_match_recorded",
+      sql`(${table.result} is null) = (${table.recordedAt} is null)`,
+    ),
+    check(
+      "league_match_scores_need_result",
+      sql`${table.result} is not null or (${table.scoreA} is null and ${table.scoreB} is null)`,
     ),
   ],
 );
@@ -1144,6 +1240,7 @@ export type BracketMatchEntrantRow = InferSelectModel<
 export type SeriesMatchRow = InferSelectModel<typeof seriesMatch>;
 export type SeriesMatchEntrantRow = InferSelectModel<typeof seriesMatchEntrant>;
 export type AttemptRow = InferSelectModel<typeof attempt>;
+export type LeagueMatchRow = InferSelectModel<typeof leagueMatch>;
 export type ParticipationRow = InferSelectModel<typeof participation>;
 export type Organizer = InferSelectModel<typeof organizer>;
 export type Profile = InferSelectModel<typeof profile>;

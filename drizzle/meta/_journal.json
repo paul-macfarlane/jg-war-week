@@ -239,6 +239,13 @@
       "when": 1791145409025,
       "tag": "0033_fluffy_vanisher",
       "breakpoints": true
+    },
+    {
+      "idx": 34,
+      "version": "7",
+      "when": 1791158310392,
+      "tag": "0034_shocking_tarot",
+      "breakpoints": true
     }
   ]
 }

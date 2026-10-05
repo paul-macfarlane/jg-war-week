@@ -126,6 +126,8 @@ export default async function CompetitionPage({
   const found = await getCompetitionPage(edition, id);
   if (!found) notFound();
   const { warWeek, competition } = found;
+  // `getBracket` loads nothing for a League. R23: S3 renders its
+  // LeagueView, and S2 its enrollment, on this page.
   const bracket = await getBracket(competition.id);
   const isBracket = bracket && bracket.competition.format !== "placement";
   const [participantTeams, participantSquads] = isBracket

@@ -24,7 +24,6 @@ const TERMS: Term[] = [
     instead: "Close / Closed / Reopen",
   },
   { term: "Event", pattern: /\bevents?\b/i, instead: "Competition" },
-  { term: "League", pattern: /\bleagues?\b/i, instead: "War Week" },
   { term: "Member", pattern: /\bmembers?\b/i, instead: "Participant" },
   { term: "ELO", pattern: /\belo\b/i, instead: "Points" },
   { term: "Placeholder", pattern: /\bplaceholders?\b/i, instead: "stub" },

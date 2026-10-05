@@ -179,4 +179,6 @@ export const FORMAT_DESCRIPTIONS: Record<Format, string> = {
     "Each Attempt records a Score; a person's best counts. Anyone logs Attempts as themselves and a leaderboard ranks them.",
   participation:
     "Points for taking part: the Host ticks who took part, or Participants check in.",
+  league:
+    "Entrants play each other one Match at a time, round robin or Swiss, for match points.",
 };

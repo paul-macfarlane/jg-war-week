@@ -487,7 +487,7 @@ describe("parseCreateCompetitionInput", () => {
   it("refuses an unknown Format", () => {
     expectRefused(
       parseCreateCompetitionInput({ ...competition, format: "swiss" }),
-      "Format must be one of placement, bracket, head-to-head, best-score, participation.",
+      "Format must be one of placement, bracket, head-to-head, best-score, participation, league.",
     );
   });
 
@@ -514,7 +514,7 @@ describe("parseCreateCompetitionInput", () => {
         ...competition,
         format: 123 as unknown as string,
       }),
-      "Format must be one of placement, bracket, head-to-head, best-score, participation.",
+      "Format must be one of placement, bracket, head-to-head, best-score, participation, league.",
     );
   });
 });

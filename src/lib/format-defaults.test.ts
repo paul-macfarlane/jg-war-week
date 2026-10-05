@@ -19,6 +19,7 @@ describe("formatDefaults", () => {
       },
       seriesConfig: null,
       bestScoreConfig: null,
+      leagueConfig: null,
       scoreDirection: "none",
       participationPoints: null,
       placementPoints: [10, 7, 5, 3],
@@ -49,6 +50,7 @@ describe("formatDefaults", () => {
       bracketConfig: null,
       seriesConfig: { drawsAllowed: false, bestOf: 3 },
       bestScoreConfig: null,
+      leagueConfig: null,
       scoreDirection: "none",
       participationPoints: null,
       placementPoints: [3, 2, 1],
@@ -86,6 +88,23 @@ describe("formatDefaults", () => {
     ).toMatchObject({ participationPoints: 1, placementPoints: null });
   });
 
+  it("gives a League a round robin with its rounds blank, keeping its Placement Points", () => {
+    expect(
+      formatDefaults("league", {
+        scoring: "individual",
+        placementPoints: [10, 7, 5, 3, 1],
+      }),
+    ).toEqual({
+      bracketConfig: null,
+      seriesConfig: null,
+      bestScoreConfig: null,
+      leagueConfig: { pairing: "round-robin", rounds: null },
+      scoreDirection: "none",
+      participationPoints: null,
+      placementPoints: [10, 7, 5, 3, 1],
+    });
+  });
+
   it("keeps a Placement Competition's Placement Points", () => {
     expect(
       formatDefaults("placement", {
@@ -96,6 +115,7 @@ describe("formatDefaults", () => {
       bracketConfig: null,
       seriesConfig: null,
       bestScoreConfig: null,
+      leagueConfig: null,
       scoreDirection: "none",
       participationPoints: null,
       placementPoints: [9, 8, 7, 6, 5],

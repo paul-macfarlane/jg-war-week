@@ -952,7 +952,8 @@ export function competitionGuardError(
     // reuses `closed_at` (R3 decision 1); so does a Closed Placement.
     if (existing.format === "placement") return PLACEMENT_IS_CLOSED;
     return (existing.format !== undefined && isLoggedFormat(existing.format)) ||
-      existing.format === "participation"
+      existing.format === "participation" ||
+      existing.format === "league"
       ? "This Competition is closed. Reopen the Competition first."
       : "This Competition's Bracket is closed. Reopen the Bracket first.";
   }

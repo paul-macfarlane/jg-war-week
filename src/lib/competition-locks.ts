@@ -147,8 +147,15 @@ export function hasPlay(results: CompetitionResults, format: Format): boolean {
       return results.logged > 0;
     case "participation":
       return false;
-    default:
+    case "league":
+      // R23: S2 makes it "round 1 is paired" (`leagueMatches`).
+      return false;
+    case "bracket":
       return results.matchResult;
+    default: {
+      const unknown: never = format;
+      return unknown;
+    }
   }
 }
 

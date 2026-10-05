@@ -30,6 +30,8 @@ import { getTargetOptions } from "@/queries/target-options";
 export function runAreaTitle(format: Competition["format"]): string {
   if (format === "placement") return "Record placements";
   if (format === "participation") return "Who took part";
+  // R23: S3 confirms the League run area's heading.
+  if (format === "league") return "Entrants and rounds";
   if (format === "best-score") return resultNoun(format).many;
   if (isLoggedFormat(format)) return `Entrants and ${resultNoun(format).many}`;
   return "Entrants and Bracket";
@@ -172,6 +174,11 @@ export async function CompetitionRunArea({
         />
       </div>
     );
+  }
+
+  if (competition.format === "league") {
+    // R23: S3 renders the League builder and rounds here.
+    return null;
   }
 
   const [view, options, squads, reporters] = await Promise.all([
