@@ -464,8 +464,7 @@ const PUBLIC_PATHS = ["/about", "/privacy", "/terms"];
  * better-auth's own routes and the About, Privacy and Terms pages (copy and
  * media; they read only the current War Week's Appearance Theme, no other War
  * Week data). Everything else needs a Jahnel Group
- * sign-in, except that `/api/mcp` also takes `canUseMcp` (see CONTEXT.md,
- * "Access rules"). A prefix matches itself or a `/`-separated subpath,
+ * sign-in. A prefix matches itself or a `/`-separated subpath,
  * never `/sign-inx`.
  */
 export function isPublicPath(pathname: string): boolean {
@@ -491,42 +490,4 @@ export function safeCallbackPath(value: string | null | undefined): string {
   } catch {
     return "/";
   }
-}
-
-export type McpAccessInput = {
-  /** A signed-in Jahnel Group session. */
-  hasSession: boolean;
-  /** The request's `Authorization` header, if any. */
-  authorization: string | null | undefined;
-  /** `MCP_TOKEN`; unset or blank turns token auth off. */
-  mcpToken: string | undefined;
-};
-
-/**
- * Who may use `/api/mcp`: a Jahnel Group session, or a request carrying
- * `Authorization: Bearer <MCP_TOKEN>` (see CONTEXT.md, "Access rules").
- * Every MCP tool is read-only and returns only what a signed-in Participant
- * sees.
- */
-export function canUseMcp({
-  hasSession,
-  authorization,
-  mcpToken,
-}: McpAccessInput): boolean {
-  if (hasSession) return true;
-
-  const expected = mcpToken?.trim();
-  if (!expected || !authorization) return false;
-  const match = /^Bearer\s+(.+)$/i.exec(authorization.trim());
-  return match ? constantTimeEqual(match[1].trim(), expected) : false;
-}
-
-/** Compares every character whatever the input, so timing doesn't leak it. */
-function constantTimeEqual(a: string, b: string): boolean {
-  const length = Math.max(a.length, b.length);
-  let diff = a.length ^ b.length;
-  for (let i = 0; i < length; i++) {
-    diff |= (a.charCodeAt(i) || 0) ^ (b.charCodeAt(i) || 0);
-  }
-  return diff === 0;
 }

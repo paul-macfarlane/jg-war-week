@@ -180,7 +180,6 @@ test("r22 4 a Host sees only their Competitions and the Guide, and the server re
       for (const [slug, path] of [
         ["schedule", "/admin/schedule"],
         ["announcements", "/admin/announcements"],
-        ["new-announcement", "/admin/announcements/new"],
         ["finale", "/admin/finale"],
         ["other-competition", `/admin/competitions/${other}`],
       ] as const) {

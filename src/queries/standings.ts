@@ -17,8 +17,8 @@ import {
 } from "@/queries/profile-join";
 
 /**
- * Loads a War Week's Standings, the same rows for Participants, Organizers,
- * MCP and the Finale.
+ * Loads a War Week's Standings, the same rows for Participants, Organizers
+ * and the Finale.
  */
 export async function getStandings(
   warWeek: Pick<WarWeek, "id" | "mode">,

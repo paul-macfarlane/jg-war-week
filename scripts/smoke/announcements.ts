@@ -498,7 +498,7 @@ export async function assertAnnouncementUnsafeContentStripped(sessions: {
   }
 }
 
-/** /admin/announcements, its New form and the edit form for a seeded row. */
+/** /admin/announcements, and that its old New and edit pages answer 404. */
 export async function assertAnnouncementAdminPages(sessions: {
   organizer: SmokeSession;
   notOrganizer: SmokeSession;
@@ -538,14 +538,14 @@ export async function assertAnnouncementAdminPages(sessions: {
     fail(listCheck, String(error));
   }
 
+  // Create and edit are one dialog on the list: the old pages are gone.
   const newCheck =
-    "GET /admin/announcements/new as an Organizer shows the Announcement form";
+    "GET /admin/announcements/new as an Organizer answers 404 (the dialog on the list replaced the page)";
   try {
     const res = await fetch(`${BASE_URL}/admin/announcements/new`, {
       headers: { cookie: sessions.organizer.cookie },
     });
-    const body = await res.text();
-    if (res.status === 200 && body.includes('aria-label="Announcement"')) {
+    if (res.status === 404) {
       ok(newCheck);
     } else {
       fail(newCheck, `status=${res.status}`);
@@ -555,7 +555,7 @@ export async function assertAnnouncementAdminPages(sessions: {
   }
 
   const editCheck =
-    "GET /admin/announcements/[id] as an Organizer shows Edit Announcement for the seeded welcome Announcement";
+    "GET /admin/announcements/[id] for the seeded welcome Announcement as an Organizer answers 404";
   try {
     const [welcome] = await runQuery<{ id: string }>(
       `select a.id from announcement a join war_week w on w.id = a.war_week_id
@@ -564,8 +564,7 @@ export async function assertAnnouncementAdminPages(sessions: {
     const res = await fetch(`${BASE_URL}/admin/announcements/${welcome.id}`, {
       headers: { cookie: sessions.organizer.cookie },
     });
-    const body = await res.text();
-    if (res.status === 200 && body.includes("Edit Announcement")) {
+    if (res.status === 404) {
       ok(editCheck);
     } else {
       fail(editCheck, `status=${res.status}`);

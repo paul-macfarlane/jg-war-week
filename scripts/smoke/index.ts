@@ -71,7 +71,6 @@ import {
 } from "./league";
 import { assertPostedWarWeekWins, assertWarWeekLifecycle } from "./lifecycle";
 import { assertLoggedResultsLoop } from "./logged-results";
-import { assertMcp } from "./mcp";
 import {
   assertAboutPage,
   assertCompetitionDetail,
@@ -85,7 +84,7 @@ import {
   assertHomeNowNext,
   assertInstallable,
   assertLeaderboard,
-  assertLlmsTxt,
+  assertMcpAndLlmsGone,
   assertMoreLinks,
   assertParticipationColumnsConstraint,
   assertPlacementPointsSeeded,
@@ -211,7 +210,6 @@ async function main() {
       await assertHomeNowNext();
       await assertMoreLinks();
       await assertInstallable();
-      await assertLlmsTxt();
       await assertHistory();
       await assertArchiveDetail();
       await assertAwardHistoryRoute();
@@ -220,7 +218,7 @@ async function main() {
       await assertTeams();
       await assertFreeForAllRoster();
       await assertYouHighlight(sessions);
-      await assertMcp();
+      await assertMcpAndLlmsGone(sessions);
       await assertAboutPage();
       await assertPrivacyAndTermsPages();
       await assertSignInPage();

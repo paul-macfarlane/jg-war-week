@@ -4,7 +4,6 @@ import Link from "next/link";
 
 import { AboutFeatureGrid } from "@/components/about-feature-grid";
 import { AboutFinaleDemo } from "@/components/about-finale-demo";
-import { AboutStandingsDemo } from "@/components/about-standings-demo";
 import { SiteFooter } from "@/components/site-footer";
 import { ThemeRoot } from "@/components/theme-root";
 import { buttonVariants } from "@/components/ui/button";
@@ -62,7 +61,7 @@ export default async function AboutPage() {
       </header>
 
       <main className="relative mx-auto flex w-full max-w-6xl flex-1 flex-col gap-20 px-4 pt-6 pb-20 sm:gap-28 sm:px-6 sm:pt-10">
-        <section className="animate-in fade-in grid grid-cols-1 items-center gap-12 duration-700 motion-reduce:animate-none md:grid-cols-[minmax(0,1fr)_auto] md:gap-16">
+        <section className="animate-in fade-in flex flex-col duration-700 motion-reduce:animate-none">
           <div className="flex min-w-0 flex-col gap-6">
             <p className="text-primary text-xs font-semibold tracking-[0.2em] uppercase">
               Jahnel Group War Week · since 2016
@@ -85,7 +84,6 @@ export default async function AboutPage() {
               </a>
             </div>
           </div>
-          <AboutStandingsDemo />
         </section>
 
         <section className="border-border bg-background/60 flex flex-col gap-4 rounded-2xl border p-6 sm:p-10">

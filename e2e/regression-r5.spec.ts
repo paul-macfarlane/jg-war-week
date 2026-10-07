@@ -8,6 +8,7 @@ import {
 
 import {
   addCompetition,
+  expectEntrantsSaved,
   expectSaved,
   openCompetitionPage,
 } from "./competition-page";
@@ -255,7 +256,8 @@ test("r5 34 admin controls are 44px on a phone", async ({
       page.getByRole("button", { name: /^Edit / }).first(),
     ).toBeVisible();
     await shoot(page, testInfo, "after-1280-faq", true);
-    await page.goto("/admin/announcements/new");
+    await page.goto("/admin/announcements");
+    await page.getByRole("button", { name: "New Announcement" }).click();
     await expect(page.getByRole("toolbar")).toBeVisible();
     await shoot(page, testInfo, "after-1280-announcements-new", true);
 
@@ -288,7 +290,8 @@ test("r5 34 admin controls are 44px on a phone", async ({
     );
     await shoot(page, testInfo, "announcements-375");
 
-    await page.goto("/admin/announcements/new");
+    await page.goto("/admin/announcements");
+    await page.getByRole("button", { name: "New Announcement" }).click();
     const toolbar = page.getByRole("toolbar", { name: "Formatting" });
     await expectTouchTarget(
       toolbar.getByRole("button", { name: "Bold" }),
@@ -779,9 +782,7 @@ test("r5 32 admin lists fit a phone; free-for-all drops Team", async ({
         }
       }
       const edits = rowLists[name]
-        ? list.getByRole(name === "announcements" ? "link" : "button", {
-            name: /^Edit /,
-          })
+        ? list.getByRole("button", { name: /^Edit / })
         : list.getByRole("link", { name: "Edit", exact: true });
       expect(await edits.count(), `${name} Edit links`).toBeGreaterThan(0);
       for (let i = 0; i < (await edits.count()); i++) {
@@ -939,10 +940,7 @@ test("r5 38 Escape keeps chosen Entrants; Tree shows Recorded <time>; Format hel
       .getByRole("option", { name: new RegExp(`^${teams[3].name}`) })
       .click();
     await page.keyboard.press("Escape");
-    await page.getByRole("button", { name: "Save Entrants" }).click();
-    await expect(
-      page.getByText("Entrants saved", { exact: true }),
-    ).toBeVisible();
+    await expectEntrantsSaved(page);
     await page.getByRole("button", { name: "Generate" }).click();
     await expect(page.getByText("Bracket generated")).toBeVisible();
 
@@ -1063,13 +1061,16 @@ test("r5 37 pinned Announcement card fits its content", async ({
     await page.setViewportSize(PHONE);
 
     // Through the real editor, as an Organizer would: one line, pinned.
-    await page.goto("/admin/announcements/new");
+    await page.goto("/admin/announcements");
+    await page.getByRole("button", { name: "New Announcement" }).click();
     await page.getByLabel("Title").fill(title);
     await page.locator(".ProseMirror").click();
     await page.keyboard.type("Doors open at nine.");
     await page.getByRole("switch", { name: /Pinned/ }).click();
     await page.getByRole("button", { name: "Post Announcement" }).click();
-    await expect(page).toHaveURL(/\/admin\/announcements$/);
+    await expect(
+      page.getByRole("dialog", { name: "New Announcement" }),
+    ).toBeHidden();
 
     const [stored] = await runQuery<{ body: unknown }>(
       `select body from announcement where title = $1`,

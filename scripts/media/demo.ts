@@ -29,7 +29,7 @@ export type DemoServer = {
 
 /**
  * Starts the production build (`pnpm start`) on `port`, signing sessions
- * with `authSecret` and with Google sign-in and MCP off. Exits when there
+ * with `authSecret` and with Google sign-in off. Exits when there
  * is no build; throws when something already listens on the port.
  */
 export async function startDemoServer(
@@ -56,7 +56,6 @@ export async function startDemoServer(
       BETTER_AUTH_URL: baseUrl,
       GOOGLE_CLIENT_ID: "",
       GOOGLE_CLIENT_SECRET: "",
-      MCP_TOKEN: "",
     },
     stdio: "ignore",
     detached: true,

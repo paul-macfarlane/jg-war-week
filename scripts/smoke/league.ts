@@ -13,7 +13,6 @@ import {
   serverActionIds,
 } from "./harness";
 import { deleteSmokeHosts } from "./hosts";
-import { mcpTool } from "./mcp";
 import { assertNoRosterEmailInLeagues } from "./pickers";
 
 // Literals from src/lib/league/rules.ts and src/lib/bracket/match-report-rule.ts,
@@ -402,7 +401,7 @@ export async function assertLeagueLoop(sessions: {
 }
 
 // ---------------------------------------------------------------------------
-// XII's seeded Leagues: seeds twice, a reload over a re-paired League, MCP
+// XII's seeded Leagues: seeds twice, a reload over a re-paired League
 // ---------------------------------------------------------------------------
 
 const XII_ROUND_ROBIN = "Chess Round Robin";
@@ -428,32 +427,12 @@ type Counts = {
 
 const counts = async () => (await runQuery<Counts>(XII_COUNTS))[0];
 
-type McpLeague = {
-  found?: boolean;
-  competition?: Record<string, unknown>;
-  standings?: {
-    rank: number;
-    name: string;
-    matchPoints: number;
-    tiebreaks: Record<string, number | null>;
-    points: number | null;
-    provisional: boolean;
-  }[];
-  rounds?: {
-    round: number;
-    matches: { a: string; b: string | null; result: string | null }[];
-  }[];
-};
-
 /**
  * XII's demo Leagues (Chess Round Robin, Closed; Chess Swiss, in play),
  * which only XII's demo seed holds: ends XI by SQL so XII (the demo is
  * live; the lifecycle step has deleted the committed XII) is the current
  * War Week, loads `seeds/demo/xii.json` twice (no row count changes), re-pairs an unplayed Swiss Match by SQL and reloads (the
- * pairing stays and nothing throws), reads both over MCP (`get_league`:
- * pairing, rounds, Matches with results, standings with tiebreaks, no
- * `@`; `get_bracket`, `get_games`, `get_placements` and `get_participation`
- * point to it) and checks their Participant and admin pages hold no roster
+ * pairing stays and nothing throws), and checks their Participant and admin pages hold no roster
  * email. Then XI is live again and XII is back to its committed seed.
  */
 export async function assertLeagueSeeds(sessions: {
@@ -536,7 +515,6 @@ export async function assertLeagueSeeds(sessions: {
       },
     );
 
-    await assertLeagueMcp();
     await assertNoRosterEmailInLeagues(
       sessions,
       [XII_ROUND_ROBIN, XII_SWISS],
@@ -571,138 +549,4 @@ export async function assertLeagueSeeds(sessions: {
       .then(() => ok("league: XI is live again"))
       .catch((error) => fail("league: restore XI live", String(error)));
   }
-}
-
-/** `get_league` on both XII Leagues and the redirects to it (AC 8); the tool list is `assertMcp`'s. */
-async function assertLeagueMcp() {
-  const call = async (name: string, competition: string) => {
-    const { text, parsed } = await mcpTool(name, { competition });
-    return { text, parsed } as {
-      text: string;
-      parsed: McpLeague & Record<string, unknown>;
-    };
-  };
-
-  await runCheck(
-    "league: MCP get_league(Chess Swiss) returns the pairing, 3 rounds of 4 Matches with results, and standings with Buchholz, with no @",
-    async () => {
-      const { text, parsed } = await call("get_league", XII_SWISS);
-      const rounds = parsed.rounds ?? [];
-      const standings = parsed.standings ?? [];
-      const played = (n: number) =>
-        rounds[n - 1]?.matches.filter((m) => m.result !== null).length;
-      const checks = {
-        found: parsed.found === true,
-        format: parsed.competition?.format === "league",
-        pairing: parsed.competition?.pairing === "swiss",
-        rounds: parsed.competition?.rounds === 3,
-        roundsPaired: parsed.competition?.roundsPaired === 3,
-        closed: parsed.competition?.closed === false,
-        threeRounds: rounds.length === 3,
-        round1: rounds[0]?.matches.length === 4 && played(1) === 4,
-        round2: rounds[1]?.matches.length === 4 && played(2) === 4,
-        round3: rounds[2]?.matches.length === 4 && played(3) === 1,
-        standings: standings.length === 8,
-        first: standings[0]?.rank === 1 && standings[0]?.name === "Ada Anvil",
-        buchholz: standings.every(
-          (s) => typeof s.tiebreaks.buchholz === "number",
-        ),
-        // Only the places that earn Placement Points have any, and they are
-        // Provisional until Closed.
-        provisional:
-          standings.filter((s) => s.points !== null).length === 3 &&
-          standings.every((s) => s.provisional === (s.points !== null)),
-        noAt: !text.includes("@"),
-      };
-      return Object.values(checks).every(Boolean)
-        ? null
-        : JSON.stringify(checks);
-    },
-  );
-
-  await runCheck(
-    "league: MCP get_league(Chess Round Robin) returns 5 rounds of Matches with results and the standings with head-to-head and Sonneborn-Berger, Closed with its points, with no @",
-    async () => {
-      const { text, parsed } = await call("get_league", XII_ROUND_ROBIN);
-      const rounds = parsed.rounds ?? [];
-      const standings = parsed.standings ?? [];
-      const byName = Object.fromEntries(standings.map((s) => [s.name, s]));
-      const checks = {
-        found: parsed.found === true,
-        pairing: parsed.competition?.pairing === "round robin",
-        rounds: parsed.competition?.rounds === 5 && rounds.length === 5,
-        closed: parsed.competition?.closed === true,
-        results:
-          rounds
-            .flatMap((r) => r.matches)
-            .filter((m) => m.b !== null && m.result !== null).length === 10,
-        sitOuts:
-          rounds.flatMap((r) => r.matches).filter((m) => m.b === null)
-            .length === 5,
-        order:
-          JSON.stringify(standings.map((s) => [s.rank, s.name])) ===
-          JSON.stringify([
-            [1, "Ada Anvil"],
-            [2, "Bo Banner"],
-            [3, "Eli Ember"],
-            [4, "Cass Comet"],
-            [5, "Dot Dynamo"],
-          ]),
-        matchPoints:
-          JSON.stringify(standings.map((s) => s.matchPoints)) ===
-          JSON.stringify([2.5, 2.5, 2, 2, 1]),
-        headToHead:
-          byName["Ada Anvil"]?.tiebreaks.headToHead === 1 &&
-          byName["Bo Banner"]?.tiebreaks.headToHead === 0 &&
-          byName["Dot Dynamo"]?.tiebreaks.headToHead === null,
-        sonnebornBerger:
-          byName["Cass Comet"]?.tiebreaks.sonnebornBerger === 3.25 &&
-          byName["Eli Ember"]?.tiebreaks.sonnebornBerger === 4,
-        points:
-          JSON.stringify(standings.map((s) => s.points)) ===
-          JSON.stringify([5, 3, 1, null, null]),
-        final: standings.every((s) => s.provisional === false),
-        noAt: !text.includes("@"),
-      };
-      return Object.values(checks).every(Boolean)
-        ? null
-        : JSON.stringify(checks);
-    },
-  );
-
-  for (const [tool, field] of [
-    ["get_bracket", "bracket"],
-    ["get_games", "matches"],
-    ["get_placements", "placements"],
-    ["get_participation", "participation"],
-  ] as const) {
-    await runCheck(
-      `league: MCP ${tool}(Chess Swiss) answers ${field}: null and points to get_league`,
-      async () => {
-        const { text, parsed } = await call(tool, XII_SWISS);
-        return parsed.found === true &&
-          parsed[field] === null &&
-          String((parsed as { message?: string }).message).includes(
-            "get_league",
-          ) &&
-          !text.includes("@")
-          ? null
-          : text.slice(0, 300);
-      },
-    );
-  }
-
-  await runCheck(
-    "league: MCP get_league(Mile Run) answers league: null and points to get_placements",
-    async () => {
-      const { parsed } = await call("get_league", "Mile Run");
-      return parsed.found === true &&
-        parsed.league === null &&
-        String((parsed as { message?: string }).message).includes(
-          "get_placements",
-        )
-        ? null
-        : JSON.stringify(parsed);
-    },
-  );
 }

@@ -15,7 +15,11 @@ import {
   useFocusFirstInvalid,
 } from "@/components/form-field-errors";
 import { RichTextEditor } from "@/components/rich-text-editor";
-import { Button } from "@/components/ui/button";
+import {
+  SetupRowError,
+  SetupSaveButton,
+  SetupSheetFooter,
+} from "@/components/setup-row";
 import {
   Field,
   FieldError,
@@ -37,14 +41,16 @@ type Initial = {
 };
 
 /**
- * Write or edit one Announcement: title, rich-text body (videos go in it)
- * and whether it's pinned.
+ * Write or edit one Announcement, in its dialog on the Announcements page:
+ * title, rich-text body (videos go in it) and whether it's pinned.
+ * `onSaved` closes the dialog.
  */
 export function AnnouncementForm({
   warWeekId,
   announcementId,
   initial,
   canPin = false,
+  onSaved,
 }: {
   /** The War Week this page was rendered for; creates post it. */
   warWeekId: string;
@@ -53,6 +59,7 @@ export function AnnouncementForm({
   /** Set when editing an existing Announcement. */
   announcementId?: string;
   initial?: Initial;
+  onSaved?: () => void;
 }) {
   const router = useRouter();
   const formRef = useRef<HTMLFormElement>(null);
@@ -78,7 +85,7 @@ export function AnnouncementForm({
         return saved;
       }
       toast.success("Announcement saved");
-      router.push("/admin/announcements");
+      onSaved?.();
       router.refresh();
       return saved;
     },
@@ -95,7 +102,7 @@ export function AnnouncementForm({
       className="flex flex-col gap-5"
       aria-label="Announcement"
     >
-      <FieldGroup>
+      <FieldGroup className="px-4">
         <Field data-invalid={!!fieldErrors.title}>
           <FieldLabel htmlFor="announcement-title">Title</FieldLabel>
           <Input
@@ -139,30 +146,13 @@ export function AnnouncementForm({
         )}
       </FieldGroup>
 
-      <div className="flex items-center gap-3">
-        <Button
-          type="submit"
-          size="lg"
-          className="min-h-11 sm:min-h-9"
-          disabled={pending}
-        >
-          {pending
-            ? "Saving…"
-            : announcementId
-              ? "Save changes"
-              : "Post Announcement"}
-        </Button>
-        <Button
-          type="button"
-          variant="outline"
-          size="lg"
-          className="min-h-11 sm:min-h-9"
-          onClick={() => router.push("/admin/announcements")}
-        >
-          Cancel
-        </Button>
-      </div>
-      {formError && !pending && <FieldError>{formError}</FieldError>}
+      <SetupSheetFooter>
+        <SetupSaveButton
+          pending={pending}
+          label={announcementId ? "Save changes" : "Post Announcement"}
+        />
+        <SetupRowError error={pending ? null : formError} />
+      </SetupSheetFooter>
     </form>
   );
 }

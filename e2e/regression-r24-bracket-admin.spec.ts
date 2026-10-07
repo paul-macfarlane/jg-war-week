@@ -1,6 +1,10 @@
 import { type Page, type TestInfo, expect, test } from "@playwright/test";
 
-import { addCompetition, openCompetitionPage } from "./competition-page";
+import {
+  addCompetition,
+  expectEntrantsSaved,
+  openCompetitionPage,
+} from "./competition-page";
 import { runQuery } from "./db";
 import {
   competitionId,
@@ -82,10 +86,7 @@ test.describe("Bracket admin at 64 Entrants in the XII scale demo", () => {
       }
       await expect(page.getByText("(4 chosen)")).toBeVisible();
       await page.keyboard.press("Escape");
-      await page.getByRole("button", { name: "Save Entrants" }).click();
-      await expect(
-        page.getByText("Entrants saved", { exact: true }),
-      ).toBeVisible();
+      await expectEntrantsSaved(page);
       await page.getByRole("button", { name: "Generate" }).click();
       await expect(page.getByText("Bracket generated")).toBeVisible();
 

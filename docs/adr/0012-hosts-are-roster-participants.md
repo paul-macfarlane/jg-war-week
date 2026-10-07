@@ -1,7 +1,8 @@
 # ADR 0012: Hosts are roster Participants
 
-- Status: accepted (built in Epic R22, work package people-and-admin)
+- Status: accepted (built in Epic R22, work package people-and-admin); superseded in part by ADR 0013
 - Date: 2026-10-04
+- Superseded in part by ADR 0013 (Remove the MCP): its MCP mention (there is no MCP).
 - Supersedes in part: ADR 0002 (its Host storage as an email, "A Host doesn't have to be a Participant", "Create next War Week copies Hosts" and the Host's Schedule Item and Announcement rights)
 - Extends: ADR 0007 (email matching, case-insensitive)
 

@@ -117,9 +117,7 @@ export default async function PrivacyPage() {
         <section className="flex flex-col gap-3">
           <h2 className="text-xl font-semibold tracking-tight">Why</h2>
           <p className="text-foreground/80 leading-relaxed">
-            We collect this to run War Week and keep its history. Ask Claude,
-            the JG War Week app&apos;s read-only MCP connector, never returns an
-            email address.
+            We collect this to run War Week and keep its history.
           </p>
         </section>
 

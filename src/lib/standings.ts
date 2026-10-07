@@ -60,7 +60,7 @@ export type Standings = {
 };
 
 /**
- * The one place Standings are computed; every page and MCP tool calls this.
+ * The one place Standings are computed; every page calls this.
  *
  * - Team total: Points Entries targeting the Team, plus entries targeting its
  *   Participants in individual Competitions with Counts Toward Team on, plus

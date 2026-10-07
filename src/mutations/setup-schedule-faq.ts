@@ -1,7 +1,14 @@
 import { and, asc, eq, inArray, max, ne, sql } from "drizzle-orm";
 
 import { DBOrTx, db } from "@/db";
-import { competition, day, faqItem, scheduleItem } from "@/db/schema";
+import {
+  competition,
+  day,
+  faqItem,
+  participant,
+  scheduleItem,
+  scheduleItemHost,
+} from "@/db/schema";
 import {
   type FaqItemValues,
   type ScheduleItemValues,
@@ -11,7 +18,13 @@ import {
   moveInOrder,
   scheduleItemGuardError,
 } from "@/lib/setup-schedule-faq";
-import { locked, refusingDuplicate } from "@/mutations/setup";
+import {
+  HOST_NOT_ON_ROSTER,
+  isForeignKeyViolation,
+  locked,
+  onWarWeekRoster,
+  refusingDuplicate,
+} from "@/mutations/setup";
 import type { MutationContext, MutationResult } from "@/mutations/types";
 
 const SCHEDULE_ITEM_NOT_FOUND = "That Schedule Item no longer exists.";
@@ -50,11 +63,64 @@ async function scheduleItemRefusal(
         exceptItemId ? ne(scheduleItem.id, exceptItemId) : undefined,
       ),
     );
-  return scheduleItemGuardError(values, {
+  const guard = scheduleItemGuardError(values, {
     dayIds: days.map((row) => row.id),
     competitionIds: competitions.map((row) => row.id),
     otherItems,
   });
+  if (guard) return guard;
+  return (await onWarWeekRoster(hostsToSave(values), ctx, tx))
+    ? null
+    : HOST_NOT_ON_ROSTER;
+}
+
+/**
+ * The Hosts an item saves with: the posted ones (the schema deduplicates), or none when
+ * it links a Competition (it shows the Competition's Hosts; the form hides
+ * the field, so posted ones are discarded, not refused).
+ */
+function hostsToSave(
+  values: Pick<ScheduleItemValues, "hostIds" | "competitionId">,
+): string[] {
+  return values.competitionId === null ? values.hostIds : [];
+}
+
+/**
+ * A Participant deleted between the roster check and the Host insert breaks
+ * `schedule_item_host`'s foreign key: refuse it as the roster rule.
+ */
+async function refusingMissingHost(
+  write: () => Promise<MutationResult>,
+): Promise<MutationResult> {
+  try {
+    return await write();
+  } catch (error) {
+    if (!isForeignKeyViolation(error)) throw error;
+    return { ok: false, error: HOST_NOT_ON_ROSTER };
+  }
+}
+
+/**
+ * Replaces an item's Hosts with those it saves with: deletes its
+ * `schedule_item_host` rows, then inserts the new ones (none with a
+ * Competition, so linking one clears them).
+ */
+async function replaceHosts(
+  scheduleItemId: string,
+  values: Pick<ScheduleItemValues, "hostIds" | "competitionId">,
+  tx: DBOrTx,
+): Promise<void> {
+  await tx
+    .delete(scheduleItemHost)
+    .where(eq(scheduleItemHost.scheduleItemId, scheduleItemId));
+  const hostIds = hostsToSave(values);
+  if (hostIds.length > 0) {
+    await tx
+      .insert(scheduleItemHost)
+      .values(
+        hostIds.map((participantId) => ({ scheduleItemId, participantId })),
+      );
+  }
 }
 
 export async function createScheduleItem(
@@ -63,14 +129,21 @@ export async function createScheduleItem(
   dbOrTx: DBOrTx = db,
 ): Promise<MutationResult> {
   return refusingDuplicate(duplicateScheduleItemError(values), () =>
-    dbOrTx.transaction(async (tx): Promise<MutationResult> => {
-      // `deleteDay` takes the same lock, so the Day can't go meanwhile.
-      await locked(day, values.dayId, ctx, tx);
-      const refusal = await scheduleItemRefusal(values, ctx, tx);
-      if (refusal) return { ok: false, error: refusal };
-      await tx.insert(scheduleItem).values(values);
-      return { ok: true };
-    }),
+    refusingMissingHost(() =>
+      dbOrTx.transaction(async (tx): Promise<MutationResult> => {
+        // `deleteDay` takes the same lock, so the Day can't go meanwhile.
+        await locked(day, values.dayId, ctx, tx);
+        const refusal = await scheduleItemRefusal(values, ctx, tx);
+        if (refusal) return { ok: false, error: refusal };
+        const { hostIds, ...columns } = values;
+        const [created] = await tx
+          .insert(scheduleItem)
+          .values(columns)
+          .returning({ id: scheduleItem.id });
+        await replaceHosts(created.id, { ...columns, hostIds }, tx);
+        return { ok: true };
+      }),
+    ),
   );
 }
 
@@ -82,25 +155,30 @@ export async function updateScheduleItem(
   dbOrTx: DBOrTx = db,
 ): Promise<MutationResult> {
   return refusingDuplicate(duplicateScheduleItemError(values), () =>
-    dbOrTx.transaction(async (tx): Promise<MutationResult> => {
-      // `deleteDay` takes the same lock, so the target Day can't go meanwhile.
-      await locked(day, values.dayId, ctx, tx);
-      const refusal = await scheduleItemRefusal(values, ctx, tx, id);
-      if (refusal) return { ok: false, error: refusal };
-      const updated = await tx
-        .update(scheduleItem)
-        .set({ ...values, updatedAt: sql`now()` })
-        .where(
-          and(
-            eq(scheduleItem.id, id),
-            inArray(scheduleItem.dayId, warWeekDayIds(ctx.warWeekId, tx)),
-          ),
-        )
-        .returning({ id: scheduleItem.id });
-      return updated.length > 0
-        ? { ok: true }
-        : { ok: false, error: SCHEDULE_ITEM_NOT_FOUND };
-    }),
+    refusingMissingHost(() =>
+      dbOrTx.transaction(async (tx): Promise<MutationResult> => {
+        // `deleteDay` takes the same lock, so the target Day can't go meanwhile.
+        await locked(day, values.dayId, ctx, tx);
+        const refusal = await scheduleItemRefusal(values, ctx, tx, id);
+        if (refusal) return { ok: false, error: refusal };
+        const { hostIds, ...columns } = values;
+        const updated = await tx
+          .update(scheduleItem)
+          .set({ ...columns, updatedAt: sql`now()` })
+          .where(
+            and(
+              eq(scheduleItem.id, id),
+              inArray(scheduleItem.dayId, warWeekDayIds(ctx.warWeekId, tx)),
+            ),
+          )
+          .returning({ id: scheduleItem.id });
+        if (updated.length === 0) {
+          return { ok: false, error: SCHEDULE_ITEM_NOT_FOUND };
+        }
+        await replaceHosts(id, { ...columns, hostIds }, tx);
+        return { ok: true };
+      }),
+    ),
   );
 }
 

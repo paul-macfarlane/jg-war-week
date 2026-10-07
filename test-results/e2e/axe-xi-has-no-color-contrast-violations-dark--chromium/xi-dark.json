@@ -76,7 +76,7 @@
             }
           ],
           "impact": "serious",
-          "html": "<div class=\"html5-video-player ytp-hide-controls ytp-exp-bottom-control-flexbox ytp-modern-caption ytp-livebadge-color unstarted-mode ytp-large-width-mode\" tabindex=\"\" id=\"movie_player\" data-version=\"/s/player/8ab5c328/player_embed_es6.vflset/en_US/base.js\" aria-label=\"YouTube Video Player\">",
+          "html": "<div class=\"html5-video-player ytp-hide-controls ytp-exp-bottom-control-flexbox ytp-modern-caption ytp-livebadge-color unstarted-mode ytp-large-width-mode\" tabindex=\"\" id=\"movie_player\" data-version=\"/s/player/f2999a12/player_embed_es6.vflset/en_US/base.js\" aria-label=\"YouTube Video Player\">",
           "target": [
             "iframe",
             "#movie_player"

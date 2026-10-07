@@ -39,11 +39,9 @@ function blockLines(block: Block, indent = ""): string[] {
 }
 
 /**
- * Rich text as plain text for a Claude user: a quote's lines read `> `, a
- * line break is a newline, an image is its caption (or nothing) and a video
- * is its URL. Shared by
- * every MCP serializer that returns a rich-text field as readable text
- * (Schedule Item descriptions, Announcement bodies).
+ * Rich text as plain text: a quote's lines read `> `, a line break is a
+ * newline, an image is its caption (or nothing) and a video is its URL. The
+ * Competitions list uses it for a description's preview.
  */
 export function toPlainText(content: unknown): string | null {
   if (content == null) return null;

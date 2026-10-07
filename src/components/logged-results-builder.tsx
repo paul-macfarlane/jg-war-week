@@ -1,22 +1,18 @@
 "use client";
 
-import { useRouter } from "next/navigation";
-import { useState } from "react";
-import { toast } from "sonner";
-
 import {
   closeLoggedResults,
   reopenLoggedResults,
 } from "@/actions/logged-results";
-import { saveCompetitionSetting } from "@/actions/setup";
 import { ConfirmActionButton } from "@/components/confirm-dialog";
+import { useEntrantsAutosave } from "@/components/entrants-autosave";
 import {
-  EntrantsPicker,
+  EntrantsPair,
   type EntrantsPickerItem,
 } from "@/components/entrants-picker";
 import { Button } from "@/components/ui/button";
-import type { EntrantKind } from "@/lib/bracket/squads";
 import { hasPlacementPoints } from "@/lib/competitions";
+import { pairTargets } from "@/lib/entrants";
 import type { LoggedFormat } from "@/lib/enums";
 import { placementPointsList, resultNoun } from "@/lib/logged-results";
 import { optionsFromTargets } from "@/lib/participant-options";
@@ -29,8 +25,8 @@ type ParticipantTarget = Target & {
 
 /**
  * A Head-to-head or Best score Competition's run area on its Competition
- * page: a Head-to-head's two Entrants (saved through the per-field save)
- * and its decided-series prompt; then Close / Reopen (R3 decision 1). Best
+ * page: a Head-to-head's two Entrants, "A vs B" (autosaved through the
+ * per-field save once both are set) and its decided-series prompt; then Close / Reopen (R3 decision 1). Best
  * score has no Entrant list. Their settings (draws, Best of, direction,
  * unit, Team score) are in the page's Settings.
  */
@@ -40,6 +36,7 @@ export function LoggedResultsBuilder({
   teams,
   participants,
   entrantsLock,
+  teamLabel = "Team",
 }: {
   competition: {
     id: string;
@@ -61,40 +58,26 @@ export function LoggedResultsBuilder({
   participants: ParticipantTarget[];
   /** Why the Entrants can't change now (Closed), or null. */
   entrantsLock: string | null;
+  /** The War Week's Team Label, for a team Head-to-head's pickers. */
+  teamLabel?: string;
 }) {
-  const router = useRouter();
   const isTeam = competition.scoring === "team";
-  const kind: EntrantKind = isTeam ? "team" : "participant";
+  const kind = isTeam ? "team" : "participant";
   const locked = competition.closed;
   const noun = resultNoun(competition.format);
 
-  const savedEntrantIds = entrants.map((e) => (e.teamId ?? e.participantId)!);
-  const [selected, setSelected] = useState<string[]>(savedEntrantIds);
-  const dirty =
-    selected.length !== savedEntrantIds.length ||
-    !selected.every((id) => savedEntrantIds.includes(id));
-  const [savingEntrants, setSavingEntrants] = useState(false);
+  const entrantsAutosave = useEntrantsAutosave(
+    competition.id,
+    { kind, targetIds: entrants.map((e) => (e.teamId ?? e.participantId)!) },
+    { ordered: true },
+  );
+  const [first = "", second = ""] = entrantsAutosave.value.targetIds;
 
   const items: EntrantsPickerItem[] = teams.map((t) => ({
     id: t.id,
     label: t.name,
   }));
   const participantOptions = optionsFromTargets(participants);
-
-  async function saveEntrants() {
-    setSavingEntrants(true);
-    const saved = await saveCompetitionSetting(competition.id, {
-      field: "entrants",
-      value: { kind, targetIds: selected },
-    });
-    setSavingEntrants(false);
-    if (saved.ok) {
-      toast.success("Entrants saved");
-      router.refresh();
-    } else {
-      toast.error(saved.error);
-    }
-  }
 
   return (
     <div className="flex flex-col gap-8">
@@ -117,21 +100,26 @@ export function LoggedResultsBuilder({
           Best score has no Entrant list: any Participant may log {noun.a}.
         </p>
       ) : (
-        <EntrantsPicker
+        <EntrantsPair
           id="series-entrants"
           description={
             !isTeam
               ? "Choose the 2 Participants who play this Head-to-head."
-              : "Choose the 2 Teams who play this Head-to-head."
+              : `Choose the 2 ${teamLabel}s who play this Head-to-head.`
           }
           kind={kind}
+          kindLabel={teamLabel}
           options={items}
           participantOptions={participantOptions}
-          selected={selected}
-          onChange={setSelected}
-          onSave={saveEntrants}
-          disabled={savingEntrants || locked || entrantsLock !== null}
-          saveDisabled={!dirty}
+          value={[first, second]}
+          onChange={([a, b]) => {
+            const pair = pairTargets(a, b);
+            // Saved once both sides are set; until then the saved pair stays.
+            entrantsAutosave.edit({ kind, targetIds: pair ?? [a, b] }, !!pair);
+          }}
+          disabled={locked || entrantsLock !== null}
+          status={entrantsAutosave.status}
+          error={entrantsAutosave.error}
         />
       )}
 

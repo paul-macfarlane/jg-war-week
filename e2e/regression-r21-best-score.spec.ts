@@ -3,6 +3,7 @@ import { type Locator, type Page, expect, test } from "@playwright/test";
 import {
   addCompetition,
   chooseOption,
+  entrantsStatus,
   expectSaved,
   openCompetitionPage,
 } from "./competition-page";
@@ -108,9 +109,7 @@ test("r21 AC7 AC8 Max attempts 3 refuses a fourth for the Participant and an Org
       page.getByRole("combobox", { name: "Team score", exact: true }),
     ).toHaveCount(0);
     // No Entrant list here.
-    await expect(
-      page.getByRole("button", { name: "Save Entrants" }),
-    ).toHaveCount(0);
+    await expect(entrantsStatus(page)).toHaveCount(0);
     const [stored] = await runQuery<{ max_attempts: number }>(
       `select max_attempts from competition where id = $1`,
       [id],

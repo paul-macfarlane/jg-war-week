@@ -1,7 +1,8 @@
 # ADR 0008: Test sign-in
 
-- Status: accepted (built in Epic R10, work package regression-r10)
+- Status: accepted (built in Epic R10, work package regression-r10); superseded in part by ADR 0013
 - Date: 2026-10-02
+- Superseded in part by ADR 0013 (Remove the MCP): its MCP mention (there is no MCP).
 
 ## Context
 

@@ -7,6 +7,7 @@ import {
 } from "@playwright/test";
 
 import {
+  expectEntrantsSaved,
   expectSaved,
   openCompetitionPage,
   setFormat,
@@ -152,8 +153,7 @@ test("a Bracket of 4 per Match is built, run and Closed into Points Entries, its
   await page.keyboard.press("Escape");
   // A list still open would widen the page in the overflow checks below.
   await expect(page.getByRole("listbox")).toBeHidden();
-  await page.getByRole("button", { name: "Save Entrants" }).click();
-  await expect(page.getByText("Entrants saved", { exact: true })).toBeVisible();
+  await expectEntrantsSaved(page);
   await page.getByRole("button", { name: "Generate" }).click();
   await expect(page.getByText("Bracket generated")).toBeVisible();
 

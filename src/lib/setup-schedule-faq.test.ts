@@ -12,6 +12,7 @@ import {
 } from "@/lib/setup-schedule-faq";
 
 const DAY = "3f0c1f0e-8a1b-4c43-9a4e-3c6a5b0e1d21";
+const HOST = "5d8a2b64-0c1e-4f7a-9b3d-7e6f1a2c8d90";
 const COMPETITION = "9b2d7c1e-5f3a-4b8e-8c6d-2a1e0f9b7c34";
 
 const doc = (text: string) => ({
@@ -24,7 +25,7 @@ const input: ScheduleItemInput = {
   startTime: "09:00",
   endTime: "10:30",
   title: "  Kickoff ",
-  host: " Jason ",
+  hostIds: [],
   location: "",
   virtualLink: "https://meet.google.com/abc-defg-hij",
   category: "competition",
@@ -45,7 +46,7 @@ describe("parseScheduleItemInput", () => {
         startTime: "09:00",
         endTime: "10:30",
         title: "Kickoff",
-        host: "Jason",
+        hostIds: [],
         location: null,
         virtualLink: "https://meet.google.com/abc-defg-hij",
         category: "competition",
@@ -78,6 +79,49 @@ describe("parseScheduleItemInput", () => {
     expect(parsedItem({ endTime: "09:00" })).toEqual(error);
   });
 
+  it("keeps a blank start time as null: an untimed item", () => {
+    const result = parsedItem({ startTime: " ", endTime: "" });
+    expect(result.ok && result.value).toMatchObject({
+      startTime: null,
+      endTime: null,
+    });
+  });
+
+  it('refuses an end time without a start time: "Add a start time first."', () => {
+    expect(parsedItem({ startTime: "", endTime: "10:00" })).toEqual({
+      ok: false,
+      error: "Add a start time first.",
+      fieldErrors: { endTime: "Add a start time first." },
+    });
+  });
+
+  it("refuses a Competition on any category but Competition", () => {
+    for (const category of ["education", "social", "meal", "work", "other"]) {
+      expect(parsedItem({ category })).toEqual({
+        ok: false,
+        error: "Only a Competition item can link a Competition.",
+        fieldErrors: {
+          competitionId: "Only a Competition item can link a Competition.",
+        },
+      });
+    }
+    // The Competition category may link none.
+    expect(parsedItem({ competitionId: "" })).toMatchObject({ ok: true });
+  });
+
+  it("takes Host ids, each once", () => {
+    const ANA = "1b2c3d4e-5f60-4718-8293-a4b5c6d7e8f9";
+    const result = parsedItem({
+      category: "social",
+      competitionId: "",
+      hostIds: [ANA, ANA],
+    });
+    expect(result.ok && result.value.hostIds).toEqual([ANA]);
+    expect(parsedItem({ hostIds: ["not-an-id"] })).toMatchObject({
+      ok: false,
+    });
+  });
+
   it("words field errors with the field's label", () => {
     expect(parsedItem({ title: "  " })).toMatchObject({
       ok: false,
@@ -107,7 +151,7 @@ describe("parseScheduleItemInput", () => {
   });
 
   it("accepts an `other` category", () => {
-    expect(parsedItem({ category: "other" })).toEqual(
+    expect(parsedItem({ category: "other", competitionId: "" })).toEqual(
       expect.objectContaining({ ok: true }),
     );
   });
@@ -116,8 +160,9 @@ describe("parseScheduleItemInput", () => {
 describe("scheduleItemGuardError", () => {
   const values = {
     dayId: DAY,
-    startTime: "09:00",
+    startTime: "09:00" as string | null,
     title: "Kickoff",
+    category: "competition" as const,
     competitionId: COMPETITION,
   };
   const ctx = {
@@ -144,6 +189,27 @@ describe("scheduleItemGuardError", () => {
     );
   });
 
+  it("refuses a second untimed item with the same title on the Day", () => {
+    expect(
+      scheduleItemGuardError(
+        { ...values, startTime: null },
+        {
+          ...ctx,
+          otherItems: [
+            ...ctx.otherItems,
+            { dayId: DAY, startTime: null, title: "Kickoff" },
+          ],
+        },
+      ),
+    ).toBe(
+      'There\'s already a Schedule Item "Kickoff" with no start time on that Day.',
+    );
+    // A timed "Kickoff" is a different key.
+    expect(
+      scheduleItemGuardError({ ...values, startTime: null }, ctx),
+    ).toBeNull();
+  });
+
   it("refuses a Day or Competition of another War Week", () => {
     expect(scheduleItemGuardError(values, { ...ctx, dayIds: [] })).toBe(
       "That Day no longer exists.",
@@ -162,7 +228,7 @@ describe("scheduleItemInputFrom", () => {
         startTime: "09:00:00",
         endTime: null,
         title: "Kickoff",
-        host: null,
+        hostIds: [HOST],
         location: "Lobby",
         virtualLink: null,
         category: "social",
@@ -174,13 +240,32 @@ describe("scheduleItemInputFrom", () => {
       startTime: "09:00",
       endTime: "",
       title: "Kickoff",
-      host: "",
+      hostIds: [HOST],
       location: "Lobby",
       virtualLink: "",
       category: "social",
       competitionId: "",
       description: { type: "doc", content: [] },
     });
+  });
+});
+
+describe("scheduleItemInputFrom an untimed item", () => {
+  it("leaves the start time blank", () => {
+    expect(
+      scheduleItemInputFrom({
+        dayId: DAY,
+        startTime: null,
+        endTime: null,
+        title: "Step Challenge",
+        hostIds: [],
+        location: null,
+        virtualLink: null,
+        category: "other",
+        competitionId: null,
+        description: null,
+      }).startTime,
+    ).toBe("");
   });
 });
 

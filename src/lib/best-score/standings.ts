@@ -5,12 +5,7 @@
  * best Attempt, added up). Pure: no database, no framework.
  */
 import type { BestScoreSettings } from "@/lib/best-score/config";
-import {
-  type StandingsRow,
-  emptyRow,
-  formatScore,
-  rankRows,
-} from "@/lib/logged-results";
+import { type StandingsRow, emptyRow, rankRows } from "@/lib/logged-results";
 
 type Scoring = "team" | "individual";
 
@@ -153,13 +148,4 @@ export function attemptsOf(
 export function attemptsLabel(count: number, mode: "more" | "all"): string {
   const noun = count === 1 ? "attempt" : "attempts";
   return mode === "more" ? `${count} more ${noun}` : `${count} ${noun}`;
-}
-
-/** One line of an Attempt's copy: "Ashley · 42 trips". */
-export function attemptSummary(
-  name: string,
-  score: number | null,
-  unit: string,
-): string {
-  return `${name} · ${formatScore(score, unit)}`;
 }

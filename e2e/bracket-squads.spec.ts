@@ -8,6 +8,7 @@ import {
 import path from "node:path";
 
 import {
+  expectEntrantsSaved,
   expectSaved,
   openCompetitionPage,
   setFormat,
@@ -244,10 +245,7 @@ test("a Squad Bracket with self-report: a Participant reports, the other player 
     await page.getByRole("option", { name: "Squads", exact: true }).click();
     await page.getByRole("button", { name: "All Squads" }).click();
     await expect(page.getByText("Squads (4 chosen)")).toBeVisible();
-    await page.getByRole("button", { name: "Save Entrants" }).click();
-    await expect(
-      page.getByText("Entrants saved", { exact: true }),
-    ).toBeVisible();
+    await expectEntrantsSaved(page);
 
     // Self-report is a setting: it autosaves.
     const selfReport = page.getByRole("switch", {
@@ -419,7 +417,7 @@ test("a Squad Bracket with self-report: a Participant reports, the other player 
     await firstContext.close();
 
     // The Final used Red Alpha's Semifinal: its Edit and Clear result are
-    // disabled, the reason beside them, and nothing resets (D1c).
+    // disabled, the reason in a tooltip, and nothing resets (D1c).
     await page.reload();
     await expect(matchCard(page, "Final")).toContainText(
       `Reported by ${REPORTER}`,
@@ -427,11 +425,18 @@ test("a Squad Bracket with self-report: a Participant reports, the other player 
     const locked = matchCard(page, semifinal);
     await expect(
       locked.getByRole("button", { name: `Edit ${semifinal}` }),
-    ).toBeDisabled();
+    ).toHaveAttribute("aria-disabled", "true");
     await expect(
       locked.getByRole("button", { name: `Clear result of ${semifinal}` }),
-    ).toBeDisabled();
-    await expect(locked.locator('[data-slot="match-lock-reason"]')).toHaveText(
+    ).toHaveAttribute("aria-disabled", "true");
+    // The lock icon marks it; the reason is the disabled controls' tooltip
+    // (focus the control), not text under every locked Match (R26 D8).
+    await expect(locked.locator('[data-slot="match-lock-icon"]')).toBeVisible();
+    await expect(locked.locator('[data-slot="match-lock-reason"]')).toHaveCount(
+      0,
+    );
+    await locked.locator('[data-slot="locked-control"]').first().focus();
+    await expect(page.locator('[data-slot="tooltip-content"]')).toHaveText(
       "A later Match already used this result. Change that Match first.",
     );
     await checkViewports(page, testInfo, "semifinal-locked");

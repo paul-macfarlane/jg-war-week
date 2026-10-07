@@ -20,12 +20,14 @@ export const clockTime = z
   .string()
   .regex(/^([01]\d|2[0-3]):[0-5]\d$/, "must be a 24-hour HH:MM time");
 
+// Strict: a Schedule Item carries no Host in a seed (`host` or `hosts` is
+// refused, not ignored); an Organizer adds them (CONTEXT.md, Seed).
 export const scheduleItemSeedSchema = z
-  .object({
-    startTime: clockTime,
+  .strictObject({
+    /** Omitted for an "Any time" item. */
+    startTime: clockTime.nullish(),
     endTime: clockTime.nullish(),
     title: z.string().min(1).max(200),
-    host: z.string().max(200).nullish(),
     location: z.string().max(200).nullish(),
     virtualLink: httpsUrl.nullish(),
     description: contentInputSchema.nullish(),
@@ -33,9 +35,17 @@ export const scheduleItemSeedSchema = z
     /** A Competition name from this seed. */
     competition: z.string().min(1).max(120).nullish(),
   })
-  .refine((item) => !item.endTime || item.endTime > item.startTime, {
-    message: "endTime must be after startTime",
+  .refine((item) => !item.endTime || item.startTime, {
+    message: "endTime needs a startTime",
     path: ["endTime"],
+  })
+  .refine(
+    (item) => !item.endTime || !item.startTime || item.endTime > item.startTime,
+    { message: "endTime must be after startTime", path: ["endTime"] },
+  )
+  .refine((item) => !item.competition || item.category === "competition", {
+    message: "only a competition-category item can link a Competition",
+    path: ["competition"],
   });
 
 export const faqItemSeedSchema = z.object({
@@ -46,10 +56,12 @@ export const faqItemSeedSchema = z.object({
 /** The Schedule Item form's raw fields, all as the inputs hold them. */
 export type ScheduleItemInput = {
   dayId: string;
+  /** Blank for an "Any time" item. */
   startTime: string;
   endTime: string;
   title: string;
-  host: string;
+  /** The item's own Hosts (roster Participant ids); none with a Competition. */
+  hostIds: string[];
   location: string;
   virtualLink: string;
   category: string;
@@ -58,20 +70,19 @@ export type ScheduleItemInput = {
   description: unknown;
 };
 
-/** The `schedule_item` columns the form writes. */
+/** The `schedule_item` columns the form writes, and the item's own Hosts. */
 type ScheduleItemColumns = Pick<
   ScheduleItem,
   | "dayId"
   | "startTime"
   | "endTime"
   | "title"
-  | "host"
   | "location"
   | "virtualLink"
   | "category"
   | "competitionId"
   | "description"
->;
+> & { hostIds: string[] };
 
 const EMPTY_DOC: Content = { type: "doc", content: [] };
 
@@ -81,10 +92,10 @@ export function scheduleItemInputFrom(
 ): ScheduleItemInput {
   return {
     dayId: item.dayId,
-    startTime: item.startTime.slice(0, 5),
+    startTime: item.startTime?.slice(0, 5) ?? "",
     endTime: item.endTime?.slice(0, 5) ?? "",
     title: item.title,
-    host: item.host ?? "",
+    hostIds: item.hostIds,
     location: item.location ?? "",
     virtualLink: item.virtualLink ?? "",
     category: item.category,
@@ -100,14 +111,19 @@ function optionalContent<T extends z.ZodType>(schema: T) {
     .transform((value) => value ?? null);
 }
 
+const COMPETITION_ON_OTHER_CATEGORY =
+  "Only a Competition item can link a Competition.";
+
 const item = scheduleItemSeedSchema.shape;
 const scheduleItemSchema = z
   .object({
     dayId: z.uuid({ error: "Pick a Day." }),
-    startTime: trimmed(item.startTime),
+    startTime: optional(item.startTime),
     endTime: optional(item.endTime),
     title: trimmed(item.title),
-    host: optional(item.host),
+    hostIds: z
+      .array(z.uuid({ error: "Pick each Host from the list." }))
+      .transform((ids) => [...new Set(ids)]),
     location: optional(item.location),
     virtualLink: optional(item.virtualLink),
     category: item.category,
@@ -116,9 +132,17 @@ const scheduleItemSchema = z
     ),
     description: optionalContent(item.description),
   })
-  .refine((s) => !s.endTime || s.endTime > s.startTime, {
+  .refine((s) => !s.endTime || s.startTime, {
+    error: "Add a start time first.",
+    path: ["endTime"],
+  })
+  .refine((s) => !s.endTime || !s.startTime || s.endTime > s.startTime, {
     error: "End time must be after the start time.",
     path: ["endTime"],
+  })
+  .refine((s) => s.competitionId === null || s.category === "competition", {
+    error: COMPETITION_ON_OTHER_CATEGORY,
+    path: ["competitionId"],
   });
 
 export type ScheduleItemValues = z.infer<typeof scheduleItemSchema>;
@@ -138,7 +162,7 @@ const LABELS: Record<string, string> = {
   startTime: "Start time",
   endTime: "End time",
   title: "Title",
-  host: "Host",
+  hostIds: "Hosts",
   location: "Location",
   virtualLink: "Virtual link",
   category: "Category",
@@ -170,12 +194,13 @@ export function parseFaqItemInput(input: FaqItemInput): Parsed<FaqItemValues> {
 
 /**
  * Refuses a Schedule Item on a Day or Competition outside the War Week, or
- * one whose Day, start time and title (its natural key) are taken.
+ * one whose Day, start time and title (its natural key; no start time is a
+ * value like any other) are taken.
  */
 export function scheduleItemGuardError(
   values: Pick<
     ScheduleItemValues,
-    "dayId" | "startTime" | "title" | "competitionId"
+    "dayId" | "startTime" | "title" | "category" | "competitionId"
   >,
   ctx: {
     dayIds: string[];
@@ -184,16 +209,16 @@ export function scheduleItemGuardError(
   },
 ): string | null {
   if (!ctx.dayIds.includes(values.dayId)) return "That Day no longer exists.";
-  if (
-    values.competitionId !== null &&
-    !ctx.competitionIds.includes(values.competitionId)
-  ) {
-    return "That Competition no longer exists.";
+  if (values.competitionId !== null) {
+    if (!ctx.competitionIds.includes(values.competitionId)) {
+      return "That Competition no longer exists.";
+    }
+    if (values.category !== "competition") return COMPETITION_ON_OTHER_CATEGORY;
   }
   const taken = ctx.otherItems.some(
     (other) =>
       other.dayId === values.dayId &&
-      other.startTime.slice(0, 5) === values.startTime &&
+      (other.startTime?.slice(0, 5) ?? null) === values.startTime &&
       other.title === values.title,
   );
   return taken ? duplicateScheduleItemError(values) : null;
@@ -202,7 +227,9 @@ export function scheduleItemGuardError(
 export function duplicateScheduleItemError(
   values: Pick<ScheduleItemValues, "startTime" | "title">,
 ): string {
-  return `There's already a Schedule Item "${values.title}" at ${formatEtTime(values.startTime)} on that Day.`;
+  return values.startTime === null
+    ? `There's already a Schedule Item "${values.title}" with no start time on that Day.`
+    : `There's already a Schedule Item "${values.title}" at ${formatEtTime(values.startTime)} on that Day.`;
 }
 
 /** Refuses a question the War Week's FAQ already asks (its natural key). */

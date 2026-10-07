@@ -12,8 +12,9 @@ import {
 } from "./harness";
 
 /**
- * Creates XII from XI, ends XI (the Winner is computed from its Standings,
- * never sent by the caller) and starts XII through the lifecycle actions,
+ * Refuses creating XII while XI is live, ends XI (the Winner is computed from
+ * its Standings, never sent by the caller), creates XII from it (upcoming, no
+ * Competitions, no FAQ) and starts XII through the lifecycle actions,
  * checks the site follows, that an Organizer can still
  * pick and correct XI once it's in the Archive, and that a Participant
  * can't reopen XI or create the next War Week. Then puts XI back (`live`,
@@ -24,7 +25,7 @@ export async function assertWarWeekLifecycle(sessions: {
   notOrganizer: SmokeSession;
 }) {
   const check =
-    "lifecycle: create XII, end XI with a Winner, start XII; an Organizer corrects XI but a Participant can't reopen it; then restore";
+    "lifecycle: create XII refused while XI is live, end XI with a Winner, create XII, start XII; an Organizer corrects XI but a Participant can't reopen it; then restore";
   const restore = async () => {
     await runQuery("delete from war_week where edition in ('xii', 'xiii')");
     await runQuery(
@@ -86,6 +87,39 @@ export async function assertWarWeekLifecycle(sessions: {
       "reopenWarWeek",
       [xId],
     );
+    // The server refuses Create next War Week while the latest War Week
+    // (XI here, once the seeded XII is gone) is still live; nothing is written.
+    const tooEarly = await callAction(
+      ids.createNextWarWeek,
+      [
+        xiId,
+        {
+          edition: "XII",
+          editionNumber: "12",
+          year: "2027",
+          startDate: "2027-02-21",
+          endDate: "2027-02-26",
+          storyTheme: "Smoke XII",
+        },
+      ],
+      sessions.organizer,
+    );
+    const [early] = await runQuery<{ n: string }>(
+      "select count(*)::text as n from war_week where edition = 'xii'",
+    );
+    if (
+      tooEarly.ok ||
+      tooEarly.error !== "End War Week XI before creating the next one." ||
+      early.n !== "0"
+    ) {
+      problems.push(
+        `create XII while XI is live: ${JSON.stringify(tooEarly)} rows=${early.n}`,
+      );
+    }
+    await expectOk("end XI", "endWarWeek", [xiId, { highlights: "" }]);
+    const [xiEnded] = await runQuery<{ winner: string | null }>(
+      "select winner from war_week where edition = 'xi'",
+    );
     await expectOk("create XII", "createNextWarWeek", [
       xiId,
       {
@@ -95,23 +129,27 @@ export async function assertWarWeekLifecycle(sessions: {
         startDate: "2027-02-21",
         endDate: "2027-02-26",
         storyTheme: "Smoke XII",
-        copySettings: true,
       },
     ]);
     const xiiId = await editionId("xii");
     if (!xiiId) problems.push("XII was not created");
-    const early = await callAction(
-      ids.startWarWeek,
-      [xiiId],
-      sessions.organizer,
+    const [xiiMade] = await runQuery<{
+      status: string;
+      competitions: string;
+      faq: string;
+    }>(
+      `select w.status,
+         (select count(*)::text from competition c where c.war_week_id = w.id) as competitions,
+         (select count(*)::text from faq_item f where f.war_week_id = w.id) as faq
+       from war_week w where w.edition = 'xii'`,
     );
-    if (early.ok || early.error !== "End XI first.") {
-      problems.push(`start XII while XI is live: ${JSON.stringify(early)}`);
+    if (
+      xiiMade?.status !== "upcoming" ||
+      xiiMade.competitions !== "0" ||
+      xiiMade.faq !== "0"
+    ) {
+      problems.push(`XII as created: ${JSON.stringify(xiiMade)}`);
     }
-    await expectOk("end XI", "endWarWeek", [xiId, { highlights: "" }]);
-    const [xiEnded] = await runQuery<{ winner: string | null }>(
-      "select winner from war_week where edition = 'xi'",
-    );
     await expectRefused("non-Organizer starts XII", "startWarWeek", [xiiId]);
     await expectOk("start XII", "startWarWeek", [xiiId]);
     // Unstart: Organizers only, and only while nothing is scored.

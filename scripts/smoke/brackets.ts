@@ -2,7 +2,6 @@ import type { WriteResult } from "@/lib/result";
 
 import {
   BASE_URL,
-  MCP_TOKEN,
   type SmokeSession,
   callAction,
   fail,
@@ -13,7 +12,6 @@ import {
   signedInFetch,
   xiWarWeekId,
 } from "./harness";
-import { mcpTool } from "./mcp";
 
 /**
  * Saves one setting of a Competition, as its admin page does (ticket 101):
@@ -284,119 +282,6 @@ export async function assertBracketLoop(sessions: { organizer: SmokeSession }) {
     ) {
       problems.push(
         `/admin/finale status=${adminFinale.status} or has a Bracket Finales section`,
-      );
-    }
-
-    // get_bracket over /api/mcp, with the bearer token and no session.
-    const bearer = { Authorization: `Bearer ${MCP_TOKEN}` };
-    const bracket = await mcpTool(
-      "get_bracket",
-      { competition: SMOKE_BRACKET_COMPETITION },
-      undefined,
-      "",
-      bearer,
-    );
-    type McpMatch = Record<string, unknown> & {
-      status: string;
-      recordedAt: string | null;
-      thirdPlace: boolean;
-      size: number;
-      advancing: number;
-      entrants: { name: string; place: number | null }[];
-    };
-    const bracketPayload = bracket.parsed as
-      | {
-          found: boolean;
-          competition?: Record<string, unknown>;
-          winner?: string | null;
-          entrants?: unknown[];
-          rounds?: { round: number; matches: McpMatch[] }[];
-        }
-      | undefined;
-    const rounds = bracketPayload?.rounds ?? [];
-    const matches = rounds.flatMap((round) => round.matches ?? []);
-    const lastRound = rounds[rounds.length - 1]?.matches ?? [];
-    const finalMatch = lastRound.filter((match) => !match.thirdPlace);
-    const thirdPlaceMatches = matches.filter((match) => match.thirdPlace);
-    const finalWinner = finalMatch[0]?.entrants.find(
-      (entrant) => entrant.place === 1,
-    )?.name;
-    const matchKeys = [
-      "advancing",
-      "entrants",
-      "name",
-      "recordedAt",
-      "size",
-      "status",
-      "thirdPlace",
-    ];
-    const bracketProblems = [
-      bracketPayload?.found !== true && "not found",
-      bracketPayload?.competition?.format !== "bracket" && "format",
-      bracketPayload?.competition?.kind !== "head-to-head" && "kind",
-      bracketPayload?.competition?.scoreDirection === undefined &&
-        "scoreDirection",
-      bracketPayload?.competition !== undefined &&
-        !("scoreUnit" in bracketPayload.competition) &&
-        "scoreUnit",
-      !Array.isArray(bracketPayload?.competition?.roundDefaults) &&
-        "roundDefaults",
-      matches.some((match) => match.size !== 2 || match.advancing !== 1) &&
-        "Match size 2 and advancing 1",
-      bracketPayload?.competition?.matchSize !== 2 && "matchSize",
-      bracketPayload?.competition?.advancing !== 1 && "advancing",
-      bracketPayload?.competition?.thirdPlaceMatch !== true &&
-        "thirdPlaceMatch",
-      bracketPayload?.competition?.closed !== true && "closed",
-      bracketPayload?.competition !== undefined &&
-        ["heatSize", "thirdPlaceGame", "finalized"].some(
-          (key) => key in bracketPayload.competition!,
-        ) &&
-        "an old Match or closed field",
-      rounds.some((round) => "heats" in round) && "a heats field",
-      bracketPayload?.entrants?.length !== 4 && "entrants",
-      matches.length !== 4 && `${matches.length} Matches`,
-      matches.some(
-        (match) =>
-          JSON.stringify(Object.keys(match).sort()) !==
-          JSON.stringify(matchKeys),
-      ) && "Match keys (no time, place or Forfeit)",
-      matches.some(
-        (match) =>
-          match.status === "played" &&
-          (match.recordedAt === null ||
-            Number.isNaN(Date.parse(match.recordedAt))),
-      ) && "a played Match without recordedAt",
-      matches.some(
-        (match) => match.status !== "played" && match.recordedAt !== null,
-      ) && "an unplayed Match with recordedAt",
-      (thirdPlaceMatches.length !== 1 ||
-        !lastRound.includes(thirdPlaceMatches[0])) &&
-        "one 3rd place Match in the last Round",
-      finalMatch.length !== 1 && "one final",
-      (finalWinner !== "Red" || bracketPayload?.winner !== finalWinner) &&
-        "winner is the final's winner (Red)",
-      bracketPayload !== undefined &&
-        "champion" in bracketPayload &&
-        "still has a champion field",
-      /forfeit/i.test(bracket.text) && "mentions Forfeit",
-      bracket.text.includes("@") && "has an @",
-    ].filter(Boolean);
-    if (bracketProblems.length > 0) {
-      problems.push(
-        `get_bracket (${bracketProblems.join(", ")}) result=${bracket.text}`,
-      );
-    }
-    const missingBracket = await mcpTool(
-      "get_bracket",
-      { competition: "no such competition" },
-      undefined,
-      "",
-      bearer,
-    );
-    if (missingBracket.parsed?.found !== false) {
-      problems.push(
-        `get_bracket(no such competition) result=${JSON.stringify(missingBracket.parsed)}`,
       );
     }
 
@@ -1193,38 +1078,6 @@ export async function assertSquadSelfReportLoop(sessions: {
           `${team.name} leaderboard total ${after}, expected ${expected}`,
         );
       }
-    }
-
-    const bearer = { Authorization: `Bearer ${MCP_TOKEN}` };
-    const bracket = await mcpTool(
-      "get_bracket",
-      { competition: SMOKE_SQUAD_COMPETITION },
-      undefined,
-      "",
-      bearer,
-    );
-    const bracketPayload = bracket.parsed as
-      | {
-          found: boolean;
-          competition?: Record<string, unknown>;
-          entrants?: { participants: string[] | null }[];
-        }
-      | undefined;
-    const withParticipants = bracketPayload?.entrants?.filter((entrant) =>
-      Array.isArray(entrant.participants),
-    );
-    if (
-      bracketPayload?.found !== true ||
-      bracketPayload.entrants?.length !== 4 ||
-      withParticipants?.length !== 4 ||
-      withParticipants.some((entrant) => entrant.participants!.length !== 2) ||
-      !["head-to-head", "group"].includes(
-        String(bracketPayload.competition?.kind),
-      ) ||
-      bracket.text.includes("@") ||
-      bracket.text.toLowerCase().includes("report")
-    ) {
-      problems.push(`get_bracket squads: ${bracket.text}`);
     }
 
     expectOk(

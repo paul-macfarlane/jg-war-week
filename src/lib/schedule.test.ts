@@ -15,7 +15,7 @@ import {
 } from "@/lib/schedule";
 
 function entry(
-  startTime: string,
+  startTime: string | null,
   title: string,
   endTime: string | null = null,
 ): ScheduleEntry {
@@ -24,7 +24,7 @@ function entry(
     startTime,
     endTime,
     title,
-    host: null,
+    hosts: [],
     location: null,
     virtualLink: null,
     description: null,
@@ -321,6 +321,58 @@ describe("formatTimeRange", () => {
     expect(
       formatTimeRange({ startTime: "18:00:00", endTime: "22:00:00" }),
     ).toBe("6:00 PM – 10:00 PM ET");
+  });
+});
+
+describe("an untimed item (no start time)", () => {
+  const untimedWeek: ScheduleDay[] = groupSchedule(
+    [{ id: "d1", date: "2026-02-23", dayTheme: "Competition Day" }],
+    [
+      entry("07:00:00", "Workout", "08:00:00"),
+      entry(null, "Step Challenge"),
+      entry("12:00:00", "Lunch", "13:00:00"),
+      entry(null, "Drop-in Lego"),
+    ].map((e) => ({ dayId: "d1", entry: e })),
+  );
+
+  it('reads "Any time"', () => {
+    expect(formatTimeRange({ startTime: null, endTime: null })).toBe(
+      "Any time",
+    );
+  });
+
+  it("sorts first in its Day, then by title", () => {
+    expect(untimedWeek[0].items.map((item) => item.title)).toEqual([
+      "Drop-in Lego",
+      "Step Challenge",
+      "Workout",
+      "Lunch",
+    ]);
+  });
+
+  it("is never Now or Next, at any hour of its Day or the day before", () => {
+    for (const [date, time] of [
+      ["2026-02-22", "12:00:00"],
+      ["2026-02-23", "00:00:00"],
+      ["2026-02-23", "07:30:00"],
+      ["2026-02-23", "12:30:00"],
+      ["2026-02-23", "23:59:00"],
+    ]) {
+      const { now, next } = computeNowNext(untimedWeek, est(date, time));
+      const titles = [...now, ...(next?.items ?? [])].map((i) => i.title);
+      expect(titles).not.toContain("Step Challenge");
+      expect(titles).not.toContain("Drop-in Lego");
+    }
+    // The first timed item is still Next before the Day starts.
+    expect(
+      computeNowNext(untimedWeek, est("2026-02-22", "12:00:00")).next,
+    ).toEqual({
+      date: "2026-02-23",
+      items: [expect.objectContaining({ title: "Workout" })],
+    });
+    expect(
+      computeNowNext(untimedWeek, est("2026-02-23", "12:30:00")).now,
+    ).toEqual([expect.objectContaining({ title: "Lunch" })]);
   });
 });
 

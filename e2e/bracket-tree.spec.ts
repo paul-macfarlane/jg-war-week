@@ -13,6 +13,7 @@ import { DISPLAY_STORAGE_KEY } from "@/lib/display";
 import type { ColorScheme } from "@/lib/theme";
 
 import {
+  expectEntrantsSaved,
   expectSaved,
   openCompetitionPage,
   setFormat,
@@ -78,8 +79,7 @@ async function enterAndGenerate(page: Page, entrants: string[]) {
   }
   await expect(page.getByText(`(${entrants.length} chosen)`)).toBeVisible();
   await page.keyboard.press("Escape");
-  await page.getByRole("button", { name: "Save Entrants" }).click();
-  await expect(page.getByText("Entrants saved", { exact: true })).toBeVisible();
+  await expectEntrantsSaved(page);
   await page.getByRole("button", { name: "Generate" }).click();
   await expect(page.getByText("Bracket generated")).toBeVisible();
 }

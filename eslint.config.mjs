@@ -49,7 +49,7 @@ const eslintConfig = defineConfig([
   {
     // ADR 0001: lib is pure business logic at the bottom of the layers. It
     // never imports the seed, queries, mutations, actions, components, pages,
-    // auth, the MCP server, Next.js, icons, or the database client and
+    // auth, Next.js, icons, or the database client and
     // driver. From `@/db/schema` it takes types only: a value import would
     // pull Drizzle into every client bundle that uses lib. Enum value lists
     // live in `src/lib/enums.ts`.
@@ -91,8 +91,6 @@ const eslintConfig = defineConfig([
                 "@/app/*",
                 "@/auth",
                 "@/auth/*",
-                "@/mcp",
-                "@/mcp/*",
                 "@/db/local-url",
                 "@/db/test-transaction",
                 "pg",
@@ -104,13 +102,13 @@ const eslintConfig = defineConfig([
                 "lucide-react",
               ],
               message:
-                "ADR 0001: src/lib is pure business logic and never imports the seed, queries, mutations, actions, components, pages, auth, the MCP server, the database client or driver, Next.js or icons. Move the shared piece down into src/lib, or pass it in.",
+                "ADR 0001: src/lib is pure business logic and never imports the seed, queries, mutations, actions, components, pages, auth, the database client or driver, Next.js or icons. Move the shared piece down into src/lib, or pass it in.",
             },
             {
               // A relative import that climbs out of src/lib into another
               // layer (e.g. "../db/schema" or "../../mutations/setup").
               regex:
-                "^(\\.\\./)+(seed|queries|mutations|actions|components|app|auth|mcp|db)(/|$)",
+                "^(\\.\\./)+(seed|queries|mutations|actions|components|app|auth|db)(/|$)",
               message:
                 "ADR 0001: import other layers by their @/ alias, and only those src/lib may use.",
             },
@@ -125,7 +123,7 @@ const eslintConfig = defineConfig([
     // (as getNavAccount moved to src/auth). src/lib has its own,
     // wider ban.
     files: [
-      "src/{components,hooks,queries,mutations,actions,auth,mcp,seed,db}/**/*.{ts,tsx}",
+      "src/{components,hooks,queries,mutations,actions,auth,seed,db}/**/*.{ts,tsx}",
     ],
     // A test may import the page it exercises.
     ignores: ["**/*.test.{ts,tsx}"],

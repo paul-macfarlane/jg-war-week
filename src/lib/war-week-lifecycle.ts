@@ -1,6 +1,7 @@
 import { z } from "zod";
 
 import type { WarWeek } from "@/db/schema";
+import { formatDateLabel, parseDateValue } from "@/lib/date-value";
 import type { Parsed } from "@/lib/result";
 import {
   parseWith,
@@ -169,6 +170,66 @@ export function lifecycleActionError({
   return null;
 }
 
+type RuleWarWeek = Pick<
+  WarWeek,
+  "id" | "edition" | "editionNumber" | "status" | "startDate"
+>;
+
+/** The latest War Week by start date (ties to the highest edition number). */
+export function latestWarWeek<T extends RuleWarWeek>(
+  warWeeks: T[],
+): T | undefined {
+  return warWeeks.reduce<T | undefined>(
+    (best, w) =>
+      !best ||
+      w.startDate > best.startDate ||
+      (w.startDate === best.startDate && w.editionNumber > best.editionNumber)
+        ? w
+        : best,
+    undefined,
+  );
+}
+
+/**
+ * Whether Create next War Week shows for the War Week being `viewed`: only
+ * when it is the `latest` by start date and is `complete`. The page uses it
+ * to show the button; `createNextWarWeekError` is the server's side.
+ */
+export function canCreateNextWarWeek(
+  viewed: Pick<WarWeek, "id">,
+  latest: Pick<WarWeek, "id" | "status"> | undefined,
+): boolean {
+  return !!latest && latest.id === viewed.id && latest.status === "complete";
+}
+
+/**
+ * Why the next War Week can't be created yet, or null: the `latest` War
+ * Week by start date is still `upcoming` or `live`.
+ */
+export function createNextWarWeekError(
+  latest: Pick<WarWeek, "edition" | "status"> | undefined,
+): string | null {
+  if (!latest || latest.status === "complete") return null;
+  const name = warWeekName(latest);
+  return latest.status === "live"
+    ? `End ${name} before creating the next one.`
+    : `${name} hasn't happened yet. Create the next one after it ends.`;
+}
+
+/**
+ * Why the next War Week can't start on `startDate`, or null: it must be
+ * after the `latest` War Week's end date, so the latest by start date stays
+ * the one Create next War Week follows.
+ */
+export function nextStartDateError(
+  latest: Pick<WarWeek, "edition" | "endDate"> | undefined,
+  startDate: string,
+): string | null {
+  if (!latest || startDate > latest.endDate) return null;
+  const ends = parseDateValue(latest.endDate);
+  return `Start date must be after ${warWeekName(latest)} ends (${ends ? formatDateLabel(ends) : latest.endDate}).`;
+}
+
 const NUMERALS: [number, string][] = [
   [1000, "m"],
   [900, "cm"],
@@ -250,7 +311,7 @@ export function parseClosingInput(input: ClosingInput): Parsed<ClosingValues> {
   return parseWith(closingSchema, input);
 }
 
-/** Settings a new War Week gets when they aren't copied. */
+/** Settings every new War Week starts with: Create next War Week copies nothing. */
 export const DEFAULT_SETTINGS = {
   mode: "teams",
   teamLabel: "Team",
@@ -288,9 +349,6 @@ const nextWarWeekSchema = z
     startDate: trimmed(seed.startDate),
     endDate: trimmed(seed.endDate),
     storyTheme: trimmed(seed.storyTheme),
-    copySettings: z.boolean().default(true),
-    copyCompetitions: z.boolean().default(false),
-    copyFaq: z.boolean().default(false),
   })
   .refine((s) => s.startDate <= s.endDate, {
     error: "Start date must not be after the end date.",
@@ -305,12 +363,6 @@ export type NextWarWeekInput = {
   startDate: string;
   endDate: string;
   storyTheme: string;
-  /** Default on: mode, labels, links and the Appearance Theme. */
-  copySettings?: boolean;
-  /** Default off: Competitions with their Placement Points, scoring and Hosts. */
-  copyCompetitions?: boolean;
-  /** Default off. */
-  copyFaq?: boolean;
 };
 export type NextWarWeekValues = z.infer<typeof nextWarWeekSchema>;
 

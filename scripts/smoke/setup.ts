@@ -62,7 +62,7 @@ export async function assertSetup(sessions: {
   };
 
   await run(
-    "GET /admin/settings and /admin/schedule show the pages to an Organizer and the refusal to a non-Organizer; Settings has the setup warning, the Lifecycle box and Create next War Week; Schedule has the Days and their Schedule Items",
+    "GET /admin/settings and /admin/schedule show the pages to an Organizer and the refusal to a non-Organizer; Settings has the setup warning and the Lifecycle box, with no Create next War Week while the latest War Week is not complete; Schedule has the Days and their Schedule Items",
     async () => {
       const problems: string[] = [];
       const settingsPage = "/admin/settings";
@@ -71,8 +71,9 @@ export async function assertSetup(sessions: {
         ["/admin/schedule", 'aria-label="Schedule Items"'],
       ] as const;
 
-      // Settings carries the form, the Lifecycle box, Create next War Week
-      // and the "overwrites the setup" warning.
+      // Settings carries the form, the Lifecycle box and the "overwrites the
+      // setup" warning; the seeded latest War Week isn't complete, so no
+      // Create next War Week button.
       const settingsOrganizer = await fetch(`${BASE_URL}${settingsPage}`, {
         headers: { cookie: sessions.organizer.cookie },
       });
@@ -80,7 +81,7 @@ export async function assertSetup(sessions: {
       const settingsChecks = {
         form: settingsBody.includes('aria-label="War Week settings"'),
         lifecycle: settingsBody.includes('id="lifecycle-heading"'),
-        next: settingsBody.includes('aria-label="Create next War Week"'),
+        noNext: !settingsBody.includes("Create next War Week"),
         warning: settingsBody.includes("overwrites the setup"),
       };
       if (
@@ -566,7 +567,7 @@ export async function assertSetupScheduleFaq(sessions: {
     startTime: "23:10",
     endTime: "23:50",
     title,
-    host: "",
+    hostIds: [],
     location: "",
     virtualLink: "",
     category: "social",

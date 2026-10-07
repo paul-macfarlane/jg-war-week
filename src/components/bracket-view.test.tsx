@@ -261,7 +261,7 @@ describe("BracketView's Record result in the tree", () => {
     expect(html).not.toContain("Report result");
   });
 
-  it("a Match a later Match already used shows Edit disabled with the reason beside it (D1c)", () => {
+  it("a Match a later Match already used shows a lock icon and Edit disabled with the reason as a tooltip (D1c)", () => {
     // Four people: Neo beats Morpheus, Trinity beats Tank, Neo wins the
     // Final, which used Neo's semifinal.
     const four = ["Neo", "Trinity", "Morpheus", "Tank"].map((label, i) => ({
@@ -294,10 +294,25 @@ describe("BracketView's Record result in the tree", () => {
       { bracket: played, entrants: four },
     );
     expect(recordButtons(html)).toEqual([]);
-    expect(html).toMatch(/<button[^>]*disabled[^>]*>Edit<\/button>/);
-    expect(html).toMatch(/<button[^>]*disabled[^>]*>Clear result<\/button>/);
-    expect(html).toContain(
-      "A later Match already used this result. Change that Match first.",
+    // Focusable while disabled: aria-disabled, never the disabled attribute
+    // or a tabindex of -1, so the not-allowed cursor shows and Tab reaches it.
+    for (const text of ["Edit", "Clear result"]) {
+      const control = html.match(
+        new RegExp(
+          `<button[^>]*data-slot="locked-control"[^>]*>${text}</button>`,
+        ),
+      );
+      expect(control?.[0]).toMatch(/aria-disabled="true"/);
+      expect(control?.[0]).not.toMatch(/\sdisabled(=|\s|>)/);
+      expect(control?.[0]).not.toMatch(/tabindex="-1"/);
+      expect(control?.[0]).not.toMatch(/[\s"]pointer-events-none/);
+    }
+    // The reason is the tooltip's, not printed under the Match.
+    expect(html).toContain('data-slot="match-lock-icon"');
+    expect(html).toContain('aria-label="Result locked"');
+    expect(html).not.toContain('data-slot="match-lock-reason"');
+    expect(html).toMatch(
+      /aria-label="Edit Semifinal[^"]*: A later Match already used this result\. Change that Match first\."/,
     );
   });
 });

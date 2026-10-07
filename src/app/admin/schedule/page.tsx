@@ -4,11 +4,13 @@ import { AdminRefused, AdminShell } from "@/components/admin-shell";
 import { DaysEditor } from "@/components/days-editor";
 import { CategoryBadge } from "@/components/schedule-item";
 import { ScheduleItemsEditor } from "@/components/schedule-items-editor";
+import { buildParticipantOptions } from "@/lib/participant-options";
 import { sanitizeContent } from "@/lib/rich-text/content";
 import { formatTimeRange } from "@/lib/schedule";
 import { scheduleItemInputFrom } from "@/lib/setup-schedule-faq";
 import { formatDateRange } from "@/lib/war-week-display";
-import { getSchedule } from "@/queries/schedule";
+import { getHostCandidates } from "@/queries/roster";
+import { getSchedule, getScheduleItemHostIds } from "@/queries/schedule";
 import { getSetupDays } from "@/queries/setup";
 import { getCompetitionOptions } from "@/queries/setup-schedule-faq";
 
@@ -27,11 +29,24 @@ export default async function AdminSchedulePage() {
     await loadAdminPage("/admin/schedule", "organizers");
   if (!allowed) return <AdminRefused warWeek={warWeek} email={email} />;
 
-  const [schedule, setupDays, competitions] = await Promise.all([
-    getSchedule(warWeek.id),
-    getSetupDays(warWeek),
-    getCompetitionOptions(warWeek),
-  ]);
+  const [schedule, hostIds, setupDays, competitions, candidates] =
+    await Promise.all([
+      getSchedule(warWeek.id),
+      getScheduleItemHostIds(warWeek.id),
+      getSetupDays(warWeek),
+      getCompetitionOptions(warWeek),
+      getHostCandidates(warWeek),
+    ]);
+  // Names and Avatars only: the roster email never reaches the page.
+  const hostOptions = buildParticipantOptions(
+    candidates.map(({ id, name, image, teamName, teamColor }) => ({
+      id,
+      name,
+      image,
+      teamName,
+      teamColor,
+    })),
+  );
   // The same grouping and order as the public Schedule page.
   const days = schedule.map((day) => ({
     id: day.id,
@@ -55,6 +70,7 @@ export default async function AdminSchedulePage() {
           ...item,
           dayId: day.id,
           competitionId: item.competition?.id ?? null,
+          hostIds: hostIds.get(item.id) ?? [],
           description: description?.ok ? description.content : null,
         }),
       };
@@ -109,6 +125,7 @@ export default async function AdminSchedulePage() {
               warWeekId={warWeek.id}
               days={days}
               competitions={competitions}
+              hostOptions={hostOptions}
             />
           )}
         </section>

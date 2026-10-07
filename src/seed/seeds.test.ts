@@ -102,6 +102,29 @@ describe("War Week history", () => {
   });
 });
 
+describe("Schedule Item Hosts", () => {
+  it("are in no seed, history or demo: an Organizer adds them", () => {
+    const paths = [
+      ...files,
+      ...readdirSync(path.join(SEEDS_DIR, "demo"))
+        .filter((f) => f.endsWith(".json"))
+        .map((f) => path.join("demo", f)),
+    ];
+    const withHost = paths.flatMap((file) => {
+      const raw = JSON.parse(
+        readFileSync(path.join(SEEDS_DIR, file), "utf-8"),
+      ) as { days?: { scheduleItems?: Record<string, unknown>[] }[] };
+      return (raw.days ?? []).flatMap((day) =>
+        (day.scheduleItems ?? [])
+          .filter((item) => "host" in item || "hosts" in item)
+          .map((item) => `${file}: ${String(item.title)}`),
+      );
+    });
+    expect(paths.length).toBeGreaterThan(files.length);
+    expect(withHost).toEqual([]);
+  });
+});
+
 describe("Award names", () => {
   const namesOf = (edition: string) =>
     all.find((s) => s.edition === edition)?.awards.map((a) => a.name) ?? [];

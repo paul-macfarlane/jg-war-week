@@ -2,9 +2,8 @@ import { AboutStill } from "@/components/about-still";
 
 /**
  * A still of the current War Week's Finale on a phone (ticket 04): its
- * Title slide, the first of the slideshow (it shows no Standings). Moved
- * out of the About page's hero (now `AboutStandingsDemo`) and shown lower
- * down as a plain still, not a looping video. `public/about/finale-poster.png` (and `finale-poster-dark.png`
+ * Title slide, the first of the slideshow (it shows no Standings). Shown
+ * below the features as a plain still, not a looping video. `public/about/finale-poster.png` (and `finale-poster-dark.png`
  * for a dark Display) is written by `scripts/about-media.ts` from the seeded
  * demo, never by hand.
  */

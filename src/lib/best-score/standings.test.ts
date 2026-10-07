@@ -2,7 +2,6 @@ import { describe, expect, it } from "vitest";
 
 import {
   type AttemptFact,
-  attemptSummary,
   attemptsLabel,
   attemptsOf,
   rankAttempts,
@@ -133,15 +132,10 @@ describe("attemptsOf", () => {
   });
 });
 
-describe("attemptsLabel and attemptSummary", () => {
+describe("attemptsLabel", () => {
   it("counts the others, or every Attempt", () => {
     expect(attemptsLabel(2, "more")).toBe("2 more attempts");
     expect(attemptsLabel(1, "more")).toBe("1 more attempt");
     expect(attemptsLabel(3, "all")).toBe("3 attempts");
-  });
-
-  it("reads a name and a Score with its unit", () => {
-    expect(attemptSummary("Ashley", 42, "trips")).toBe("Ashley · 42 trips");
-    expect(attemptSummary("Ashley", 42, "")).toBe("Ashley · 42");
   });
 });

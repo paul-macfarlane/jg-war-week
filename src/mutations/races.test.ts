@@ -144,7 +144,7 @@ describe.skipIf(!isLocalDatabase)("Day delete on two connections", () => {
               startTime: "09:00",
               endTime: null,
               title: "Kickoff",
-              host: null,
+              hostIds: [],
               location: null,
               virtualLink: null,
               category: "other",
