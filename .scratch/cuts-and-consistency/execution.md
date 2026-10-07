@@ -64,3 +64,25 @@ output under `test-results/r26/`.
 
 Human gates: none planned beyond Docker running locally (done) and the human
 reviewing and merging the PR.
+
+## [PROGRESS]
+
+- Wave 1 (D1–D4) and wave 2 (D5–D8) integrated, plus D8b. Merges were clean
+  except none needed resolution; D5, D7 and D8 were dispatched early from the
+  wave-1 head (they had no D4 dependency), D6 after D4.
+- Orchestrator fixes: D3, an opt-in `fullHeight` on `ResponsiveSheetDialog` /
+  `SetupListRow` / `SetupAddButton` so the Announcement sheet is full height on a
+  phone (the spec's wording) without changing every entity's sheet; D8b, a
+  maintainers-guide note that a first-time still needs a second about-media run;
+  the `docs/agents/testing.md` smoke and e2e rows for every R26 check.
+
+## [SCOPE CHANGE]
+
+- **D8b, phone-viewport `/about` stills** (approved by the product owner,
+  2026-10-07): at 390 the desktop stills were unreadable; each "What it does"
+  feature now has `<slug>-phone(-dark).png` captured by `scripts/about-media.ts`
+  and shown below `md`.
+- **AC9 at 390** (reading of Decision 9, recorded as a deviation): a 4-Entrant
+  tree (~480px) is wider than a 390 phone's region (~358px), so by Decision 9's
+  rule it starts at the left and scrolls there; it is centered at 1440 (admin and
+  Participant page).
