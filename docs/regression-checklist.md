@@ -146,13 +146,20 @@ line that no longer matches the app is a bug in this file.
 - [ ] **Sign-in wears the current War Week.** Open `/sign-in`; its colors
       and font match the current War Week (theme check above).
 - [ ] **About wears the current War Week, stills included.** Open `/about`;
-      the page passes the theme check, and every still (the hero Standings,
-      the Finale poster and each "What it does" card) shows the current
+      the page passes the theme check, and every still (the Finale poster and
+      each "What it does" feature) shows the current
       War Week's colors, not a past edition's. If not, refresh them:
       `pnpm build && pnpm seed:demo:<edition>`, then
       `pnpm tsx scripts/about-media.ts`.
+- [ ] **About's features are one per row and readable, with no Standings
+      demo.** Open `/about` at 1440×900 and 390×844, light and dark. There is
+      no three-phone Standings demo. Each "What it does" feature is its own
+      row: at 1440 the still is large with its caption beside it, at 390 the
+      caption sits below the still. You can read the text in every still at
+      that size (a feature whose still is not readable is cut or re-shot),
+      every image loads, and nothing scrolls sideways.
 - [ ] **About is up to date, without redundancy or salesy copy.** Read
-      `/about` against the app today: every "What it does" card describes a
+      `/about` against the app today: every "What it does" feature describes a
       feature that exists, in the app's navigation order; nothing is said
       twice; no hackathon leftovers, maintainer pitch or over-promise; no
       copy assumes Teams mode (the current War Week may be free-for-all).

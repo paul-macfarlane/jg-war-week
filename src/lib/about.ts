@@ -20,8 +20,8 @@ export const ABOUT_FALLBACK_THEME: ThemeColors = {
 /**
  * The feature cards, in the app's navigation order with the Admin card first. Each
  * `slug` names a still at `public/about/<slug>.png`, written by
- * `scripts/about-media.ts`. The hero is the Standings stills; the Finale is
- * a still poster (its Title slide) below the grid, not a card. Copy is
+ * `scripts/about-media.ts`. The Finale is a still poster (its Title slide)
+ * below the list, not a feature. Copy is
  * mode-neutral: it reads the same for Teams and free-for-all editions.
  */
 export const ABOUT_FEATURES = [

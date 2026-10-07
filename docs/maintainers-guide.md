@@ -184,8 +184,8 @@ literal the spec itself names. A failing scan names the file, the term and
 the word to use instead.
 
 A change people can see also updates `/about` in the same PR: its copy
-(`src/app/about/page.tsx`, `src/lib/about.ts`: six key-feature cards, copy
-that reads the same for Teams and free-for-all) and, when a feature card's
+(`src/app/about/page.tsx`, `src/lib/about.ts`: the "What it does" features, one per row with its still beside its caption
+(below it on a phone), copy that reads the same for Teams and free-for-all) and, when a feature card's
 screen changed, its still. Regenerate the stills from the current War
 Week's demo, never by hand: `scripts/about-media.ts` captures whichever War
 Week is current, in its theme and mode, so first load that edition's demo
@@ -206,12 +206,11 @@ through the slideshow with → to the Standings countdown as a check) wears
 the old edition's theme, so it must be re-recorded too. Use `--stills` only
 when the poster's edition is unchanged (`pnpm tsx scripts/about-media.ts
 --stills` rewrites the feature-card and Standings stills and leaves the
-poster alone). Either way it rewrites the home Standings hero's three
-stills (`standings-before.png`, `standings-entry.png`,
-`standings-after.png`).
+poster alone). The page has no Standings demo and no hero stills: its
+only media are the feature stills and the Finale poster.
 
 Every About still comes in light and dark: the script writes `<name>.png`
-under the light Display and `<name>-dark.png` under the dark one (20 files
+under the light Display and `<name>-dark.png` under the dark one (16 files
 in `public/about/`), and `/about` shows the pair member matching the
 viewer's Display (`AboutStill`, `data-still-scheme` in `globals.css`).
 Never add or replace only one of a pair.

@@ -47,6 +47,8 @@ async function renderAbout() {
   const html = renderToStaticMarkup(element);
   return {
     html,
+    /** The markup with next/image's `/_next/image?url=...` sources unwrapped to `/about/<name>.png`. */
+    decoded: html.replaceAll("&amp;", "&").replaceAll("%2F", "/"),
     text: html.replace(/<[^>]+>/g, " ").replaceAll("&#x27;", "'"),
   };
 }
@@ -91,59 +93,53 @@ describe("AboutPage", () => {
 
   it("shows the Finale as a still lower down the page, not the hero", async () => {
     getCurrentWarWeek.mockResolvedValue(warWeekFixture());
-    const { html } = await renderAbout();
+    const { html, decoded } = await renderAbout();
 
-    expect(html).toContain('src="/about/finale-poster.png"');
-    expect(html).toContain('src="/about/finale-poster-dark.png"');
+    expect(decoded).toContain("/about/finale-poster.png");
+    expect(decoded).toContain("/about/finale-poster-dark.png");
     expect(html).not.toContain("finale.mp4");
     expect(html).not.toMatch(/<video/i);
   });
 
-  it("shows the Standings-moving-after-Discretionary-points stepper in the hero", async () => {
+  it("has no three-phone Standings demo", async () => {
     getCurrentWarWeek.mockResolvedValue(warWeekFixture());
-    const { html, text } = await renderAbout();
+    const { html, decoded, text } = await renderAbout();
 
-    expect(html).toContain('src="/about/standings-before.png"');
-    expect(html).toContain('src="/about/standings-entry.png"');
-    expect(html).toContain('src="/about/standings-after.png"');
-    expect(html).toContain('src="/about/standings-before-dark.png"');
-    expect(html).toContain('src="/about/standings-entry-dark.png"');
-    expect(html).toContain('src="/about/standings-after-dark.png"');
-    expect(text).toContain("Discretionary points");
-    // Accessible alt text on every step.
-    expect(html).toMatch(/alt="[^"]*Standings[^"]*"/);
+    expect(decoded).not.toContain("/about/standings-");
+    expect(html).not.toContain("data-standings-step");
+    expect(text).not.toContain("An Organizer gives Discretionary points and");
   });
 
   it("has a feature card for every entry in ABOUT_FEATURES", async () => {
     getCurrentWarWeek.mockResolvedValue(warWeekFixture());
-    const { html, text } = await renderAbout();
+    const { html, decoded, text } = await renderAbout();
 
     for (const feature of ABOUT_FEATURES) {
       expect(html).toContain(`data-feature="${feature.slug}"`);
-      expect(html).toContain(`src="/about/${feature.slug}.png"`);
-      expect(html).toContain(`src="/about/${feature.slug}-dark.png"`);
+      expect(decoded).toContain(`/about/${feature.slug}.png`);
+      expect(decoded).toContain(`/about/${feature.slug}-dark.png`);
       expect(text).toContain(feature.title);
     }
   });
 
   it("pairs every About still with a dark one, tagged by scheme for the viewer's Display to pick", async () => {
     getCurrentWarWeek.mockResolvedValue(warWeekFixture());
-    const { html } = await renderAbout();
-    const imgs = html.match(/<img [^>]*>/g) ?? [];
-    const stills = imgs.filter((img) => img.includes('src="/about/'));
+    const { decoded } = await renderAbout();
+    const imgs = decoded.match(/<img [^>]*>/g) ?? [];
+    const stills = imgs.filter((img) => img.includes("/about/"));
 
-    // 7 feature cards, 3 Standings steps and the Finale poster, each twice.
-    expect(stills).toHaveLength(22);
+    // 7 features and the Finale poster, each twice.
+    expect(stills).toHaveLength(16);
     const light = stills.filter((img) =>
       img.includes('data-still-scheme="light"'),
     );
     const dark = stills.filter((img) =>
       img.includes('data-still-scheme="dark"'),
     );
-    expect(light).toHaveLength(11);
-    expect(dark).toHaveLength(11);
+    expect(light).toHaveLength(8);
+    expect(dark).toHaveLength(8);
     for (const img of dark) {
-      expect(img).toMatch(/src="\/about\/[a-z-]+-dark\.png"/);
+      expect(img).toMatch(/src="[^"]*\/about\/[a-z-]+-dark\.png/);
       expect(img).toMatch(/alt="[^"]+"/);
       expect(img).toContain('loading="lazy"');
     }
