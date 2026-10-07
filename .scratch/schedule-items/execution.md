@@ -141,7 +141,7 @@ All severities non-blocking. No unresolved blocking finding.
 
 ## [CLOSEOUT]
 
-PR: _(added below once opened)_ (into `staging`).
+PR: https://github.com/paul-macfarlane/jg-war-week/pull/149 (into `staging`).
 
 | Deliverable | Worker model | Commit |
 |---|---|---|
