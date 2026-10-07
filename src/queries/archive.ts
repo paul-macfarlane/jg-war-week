@@ -2,7 +2,7 @@ import { asc, eq } from "drizzle-orm";
 
 import { DBOrTx, db } from "@/db";
 import { WarWeek, team, warWeek } from "@/db/schema";
-import { type ArchiveDetail, isArchived, selectArchive } from "@/lib/archive";
+import { type ArchiveDetail, selectArchive } from "@/lib/archive";
 import { namedAward } from "@/lib/awards";
 import { getAwards } from "@/queries/awards";
 
@@ -30,17 +30,4 @@ export async function getArchiveDetail(
     teams,
     awards: awards.map(namedAward),
   };
-}
-
-/** A past War Week by year, or `undefined` when the year isn't archived. */
-export async function getArchiveDetailByYear(
-  year: number,
-  dbOrTx: DBOrTx = db,
-): Promise<ArchiveDetail | undefined> {
-  const [row] = await dbOrTx
-    .select()
-    .from(warWeek)
-    .where(eq(warWeek.year, year))
-    .limit(1);
-  return row && isArchived(row) ? getArchiveDetail(row, dbOrTx) : undefined;
 }

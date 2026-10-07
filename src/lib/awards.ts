@@ -92,7 +92,7 @@ export type AwardView = {
   }[];
 };
 
-/** An Award with recipients by name only, as the Archive and MCP show it. */
+/** An Award with recipients by name only, as the Archive shows it. */
 export function namedAward(award: AwardView): ArchiveAward {
   return {
     name: award.name,

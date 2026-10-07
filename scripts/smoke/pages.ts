@@ -5,7 +5,6 @@ import { Client } from "pg";
 import { ABOUT_FEATURES } from "@/lib/about";
 import { DISPLAY_SCRIPT } from "@/lib/display";
 import { YOU_ROW_CLASS } from "@/lib/you";
-import { MCP_TOOLS } from "@/mcp/tools";
 import { DEMO_SEED } from "@/seed/local-files";
 
 import {
@@ -582,30 +581,25 @@ export async function assertInstallable() {
   }
 }
 
-export async function assertLlmsTxt() {
-  const check =
-    "GET /llms.txt returns 200 text/plain without a session and names every MCP tool";
-  try {
-    const res = await fetch(`${BASE_URL}/llms.txt`, { redirect: "manual" });
-    const body = await res.text();
-    const checks = {
-      status: res.status === 200,
-      contentType: (res.headers.get("content-type") ?? "").startsWith(
-        "text/plain",
-      ),
-      title: body.startsWith("# JG War Week\n"),
-      tools: Object.keys(MCP_TOOLS).every((name) =>
-        body.includes(`\`${name}\``),
-      ),
-      endpoint: body.includes(`${BASE_URL}/api/mcp`),
-    };
-    if (Object.values(checks).every(Boolean)) {
-      ok(check);
-    } else {
-      fail(check, `status=${res.status} ${JSON.stringify(checks)}`);
+export async function assertMcpAndLlmsGone(sessions: {
+  organizer: SmokeSession;
+}) {
+  // Signed in, so a 404 is the route being gone, not the proxy's 401.
+  for (const route of ["/api/mcp", "/llms.txt"]) {
+    const check = `GET ${route} answers 404 (the MCP and llms.txt are gone)`;
+    try {
+      const res = await fetch(`${BASE_URL}${route}`, {
+        headers: { cookie: sessions.organizer.cookie },
+        redirect: "manual",
+      });
+      if (res.status === 404) {
+        ok(check);
+      } else {
+        fail(check, `status=${res.status}`);
+      }
+    } catch (error) {
+      fail(check, String(error));
     }
-  } catch (error) {
-    fail(check, String(error));
   }
 }
 

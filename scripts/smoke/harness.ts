@@ -20,8 +20,6 @@ export const SESSION_COOKIE = "better-auth.session_token";
 
 /** What `/admin` shows a signed-in user with no role on the page. */
 export const ADMIN_REFUSAL_TEXT = "Organizers and Hosts only.";
-// A smoke-only MCP bearer token; anonymous requests still get 401.
-export const MCP_TOKEN = `smoke-mcp-token-${randomUUID()}`;
 
 export const childEnv = {
   ...process.env,
@@ -31,7 +29,6 @@ export const childEnv = {
   BETTER_AUTH_URL: BASE_URL,
   GOOGLE_CLIENT_ID: "",
   GOOGLE_CLIENT_SECRET: "",
-  MCP_TOKEN,
   // Test sign-in off, as on Production. Explicit blanks win over .env.local.
   TEST_SIGN_IN_SECRET: "",
   VERCEL_ENV: "",

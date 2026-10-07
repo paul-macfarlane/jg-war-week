@@ -73,9 +73,7 @@ pnpm build
 migrations, loads every seed (once with `--reset`, then again to prove
 idempotence; this wipes those War Weeks in your local database), starts the app with `pnpm start -p 3100`,
 and asserts `/` redirects to `/xi`, `/xi` and `/xi/leaderboard` respond, and
-`/api/mcp` answers `initialize`, `tools/list`, and a `tools/call` of
-`get_current_war_week` with War Week XI's data, both with a session and with
-a smoke-only `MCP_TOKEN` bearer token (anonymous still gets 401). It prints one `ok - <check>`
+`/api/mcp` and `/llms.txt` answer 404 (both are gone). It prints one `ok - <check>`
 or `FAIL - <check>: <detail>` line per assertion and exits 0 only if every
 check passed.
 
@@ -104,42 +102,6 @@ time, install the browser with `pnpm exec playwright install chromium`.
 lint, vitest, production build, the smoke test, then the Playwright flows —
 `pnpm typecheck && pnpm lint && pnpm test && pnpm build && pnpm smoke && pnpm e2e`.
 
-## Connect Claude to JG War Week
-
-The app exposes a read-only Model Context Protocol server over Streamable
-HTTP at `/api/mcp` (production: `https://jg-war-week.vercel.app/api/mcp`).
-Its tools are `get_current_war_week`, `get_leaderboard`, `get_schedule`,
-`get_announcements`, `get_awards`, `get_faq`, `list_history`,
-`get_history`, `get_bracket`, `get_league`, `get_games`, `get_participation`, `get_placements` and
-`get_discretionary_points`. Every tool is read-only and returns only what a signed-in
-Participant sees, and no tool returns an email
-or the Organizer list (Announcement authors come back as the handle
-before the `@`).
-
-`/llms.txt` (public, static copy, no War Week data) describes the site, its
-pages and these tools for AI agents. Its tool list comes from
-`src/mcp/tools.ts`, the same metadata the MCP route registers.
-
-`/api/mcp` lets a request in when either of these holds; otherwise it answers
-401:
-
-- a signed-in `@jahnelgroup.com` browser session;
-- `Authorization: Bearer <MCP_TOKEN>`, where `MCP_TOKEN` is a server-only
-  env var (unset or blank turns token auth off).
-
-**Claude Code (or any client that can send headers).** Set `MCP_TOKEN`
-(`openssl rand -base64 32`) in the environment, redeploy, then:
-
-```bash
-claude mcp add --transport http jg-war-week https://jg-war-week.vercel.app/api/mcp --header "Authorization: Bearer <token>"
-```
-
-**claude.ai / Claude Desktop custom connector.** Those connectors support
-only OAuth or no auth, and this server only takes a session or a bearer
-token, so a custom connector there needs OAuth support this server doesn't
-have yet. Until then, only Claude Code or another header-capable client can
-connect.
-
 ## Organizer sign-in
 
 Every page needs a `@jahnelgroup.com` Google sign-in: anonymous visitors
@@ -164,14 +126,9 @@ Any Google account outside `@jahnelgroup.com` is refused at sign-in, even if
 the consent screen were misconfigured. A JG employee who is neither an
 Organizer nor a Host can sign in but `/admin` refuses them.
 
-`/api/mcp` is locked too: without a session it answers 401 unless the
-request carries the `MCP_TOKEN` bearer token; see "Connect Claude to JG War
-Week".
-
 ## Deployment (Vercel + Neon)
 
-Production: **https://jg-war-week.vercel.app** (MCP at
-`https://jg-war-week.vercel.app/api/mcp`). Staging:
+Production: **https://jg-war-week.vercel.app**. Staging:
 **https://jg-war-week-staging.vercel.app**.
 
 - **Hosting:** the Vercel project is connected to this GitHub repo. A push to
@@ -197,8 +154,7 @@ Production: **https://jg-war-week.vercel.app** (MCP at
 Release flow: merge PRs into `staging` (its Vercel build migrates the
 staging database, then deploys) → merge `staging` into `main` (its build
 migrates the production database, then deploys). Load or refresh seed data with the Seed workflow; check
-the deploy by confirming `/` redirects to `/xi`, `/xi` responds 200, and
-`/api/mcp` answers a `tools/call` of `get_current_war_week`.
+the deploy by confirming `/` redirects to `/xi`, and `/xi` responds 200.
 
 ## Deployed migrations
 

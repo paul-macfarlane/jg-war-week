@@ -1,9 +1,7 @@
-// The banned-term scan: no retired or banned word reaches UI copy or MCP
-// output. It reads every non-test `.ts`/`.tsx` file under `src/` and checks
-// the text a person or an MCP client can see — string literals, template
-// literal text and JSX text — and, under `src/mcp/`, the property names
-// that become an MCP tool's output fields. Never other identifiers or
-// comments (CONTEXT.md, "Banned terms"; spec competition-results,
+// The banned-term scan: no retired or banned word reaches UI copy. It reads
+// every non-test `.ts`/`.tsx` file under `src/` and checks the text a person
+// can see — string literals, template literal text and JSX text. Never
+// identifiers or comments (CONTEXT.md, "Banned terms"; spec competition-results,
 // decisions 10 and 11).
 import { readFileSync, readdirSync } from "node:fs";
 import path from "node:path";
@@ -70,10 +68,6 @@ const ALLOWLIST: Allowed[] = [
       "Spec R24 decision 4 names the Announcements bottom-bar tab's short label News; its accessible name stays Announcements.",
   },
 ];
-
-// Property names under here are MCP output fields (and its input
-// schemas), which an MCP client reads as words.
-const MCP_DIR = "src/mcp/";
 
 // Lowercase path segments ("/admin", "/xii/competitions/games-night") are
 // routes and URLs, not copy; no route is renamed (decision 10).
@@ -169,44 +163,6 @@ export function visibleText(
   return out;
 }
 
-/**
- * Every property name a file declares (object literal keys, shorthand
- * properties and type members), with its line: in `src/mcp/` these are the
- * fields of a tool's output.
- */
-export function propertyNames(
-  fileName: string,
-  source: string,
-): { line: number; text: string }[] {
-  const file = ts.createSourceFile(
-    fileName,
-    source,
-    ts.ScriptTarget.Latest,
-    true,
-    fileName.endsWith(".tsx") ? ts.ScriptKind.TSX : ts.ScriptKind.TS,
-  );
-  const out: { line: number; text: string }[] = [];
-  const visit = (node: ts.Node) => {
-    if (
-      ts.isPropertyAssignment(node) ||
-      ts.isShorthandPropertyAssignment(node) ||
-      ts.isPropertySignature(node) ||
-      ts.isPropertyDeclaration(node)
-    ) {
-      const name = node.name;
-      if (ts.isIdentifier(name) || ts.isStringLiteral(name)) {
-        const { line } = file.getLineAndCharacterOfPosition(
-          name.getStart(file),
-        );
-        out.push({ line: line + 1, text: name.text });
-      }
-    }
-    ts.forEachChild(node, visit);
-  };
-  visit(file);
-  return out;
-}
-
 /** Whether an allowlist entry lets this one literal keep `term`. */
 export function isAllowed(
   allowlist: Allowed[],
@@ -220,8 +176,7 @@ export function isAllowed(
 }
 
 /**
- * The banned words in some files' copy and, under `src/mcp/`, property
- * names, one line per hit. `rel` is the path from the repository root.
+ * The banned words in some files' copy, one line per hit. `rel` is the path from the repository root.
  */
 export function scan(
   files: { rel: string; source: string }[],
@@ -232,9 +187,7 @@ export function scan(
     const copyText = visibleText(rel, source).filter(
       ({ text }) => !KEY.test(text.trim()),
     );
-    // A key is a name, so the KEY shape doesn't excuse it.
-    const keys = rel.startsWith(MCP_DIR) ? propertyNames(rel, source) : [];
-    for (const { line, text } of [...copyText, ...keys]) {
+    for (const { line, text } of copyText) {
       const copy = text
         .replace(STYLE, " ")
         .replace(PATH, " ")
@@ -264,7 +217,7 @@ function violations(): string[] {
 }
 
 describe("banned-term scan", () => {
-  it("finds no banned or retired word in UI copy or MCP output", () => {
+  it("finds no banned or retired word in UI copy", () => {
     expect(violations().join("\n")).toBe("");
   });
 
@@ -282,21 +235,6 @@ describe("banned-term scan", () => {
       ].join("\n"),
     ).map((t) => t.text.trim());
     expect(text).toEqual(["Heat one", "Log a", "Game", "Champion"]);
-  });
-
-  it("reads property names under src/mcp/ as MCP output, and nowhere else", () => {
-    const source = [
-      "export const out = { finalized: true, games: [], name: 'Cup' };",
-      "type Bracket = { heats: string[]; champion: string | null };",
-      "const winner = 1; export const short = { winner };",
-    ].join("\n");
-    expect(scan([{ rel: "src/mcp/x.ts", source }], [])).toEqual([
-      'src/mcp/x.ts:1 "finalized" (Finalize; use Close / Closed / Reopen) in "finalized"',
-      'src/mcp/x.ts:1 "games" (Game; use Match or Attempt) in "games"',
-      'src/mcp/x.ts:2 "heats" (Heat; use Match) in "heats"',
-      'src/mcp/x.ts:2 "champion" (Champion; use Winner) in "champion"',
-    ]);
-    expect(scan([{ rel: "src/lib/x.ts", source }], [])).toEqual([]);
   });
 
   it("lets an allowlist entry pass only the literal it names", () => {

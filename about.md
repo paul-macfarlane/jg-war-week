@@ -11,7 +11,6 @@ In addition to the core competition features (see competiscore for that), I'd li
 - Historical War Week References
 - Customized Theme Per War Week
 - Integration with the JG Stairs app
-- Some AI Integration (MCP for checking status/leaderboard, events, asking questions, etc.)
 - A bulletin board for announcements (text and video), schedule, etc.
 
 Some other places to draw inspiration from:

@@ -117,7 +117,7 @@ export async function getPlacementRows(
 }
 
 /**
- * A Placement Competition and its rows, for its sheet, its page and MCP.
+ * A Placement Competition and its rows, for its sheet and its page.
  * Undefined for a malformed or unknown id or another Format.
  */
 export async function getPlacementsView(

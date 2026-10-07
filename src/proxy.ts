@@ -1,41 +1,24 @@
 import { type NextRequest, NextResponse } from "next/server";
 
 import { auth, identityFromSession } from "@/auth/server";
-import { canUseMcp, isPublicPath } from "@/lib/access";
+import { isPublicPath } from "@/lib/access";
 
 /**
  * Every page and API route needs a Jahnel Group session. Pages redirect
  * anonymous visitors to `/sign-in` and come back afterwards; API routes
- * answer 401. `/api/mcp` also takes `Authorization: Bearer <MCP_TOKEN>`, so
- * MCP clients can connect.
+ * answer 401.
  */
 export async function proxy(request: NextRequest) {
   const { pathname, search } = request.nextUrl;
   if (isPublicPath(pathname)) return NextResponse.next();
 
   // The same rule as `getSessionIdentity`: a Test sign-in session counts as
-  // anonymous (no page, no API, no MCP) once Test sign-in is off.
+  // anonymous (no page, no API) once Test sign-in is off.
   const hasSession =
     identityFromSession(
       await auth.api.getSession({ headers: request.headers }),
     ) !== null;
   if (hasSession) return NextResponse.next();
-
-  if (pathname === "/api/mcp") {
-    const allowed = canUseMcp({
-      hasSession,
-      authorization: request.headers.get("authorization"),
-      mcpToken: process.env.MCP_TOKEN,
-    });
-    if (allowed) return NextResponse.next();
-    return NextResponse.json(
-      {
-        error:
-          "Sign in with a @jahnelgroup.com account or send Authorization: Bearer <MCP_TOKEN>.",
-      },
-      { status: 401 },
-    );
-  }
 
   if (pathname.startsWith("/api/")) {
     return NextResponse.json(

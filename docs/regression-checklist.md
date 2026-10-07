@@ -339,13 +339,6 @@ on the matching War Week page.
       about 10 s, and the points breakdown reads "Discretionary: <reason>".
       `/admin/points` redirects to this page. *(Host refused: see Admin, as a
       Host.)*
-- [ ] **MCP: `get_placements` and `get_discretionary_points`.** Call each
-      against a signed-in session or `MCP_TOKEN`: `get_placements` for the
-      Placement Competition by name returns its Score direction, Placement
-      Points, closed state and rows by place with names, Teams, Scores and
-      points; `get_discretionary_points` returns the current War Week's
-      entries by name and reason. Neither output contains an `@`. For a
-      Placement Competition `get_bracket` points to `get_placements`.
 - [ ] **Run a Bracket end to end.** On the Bracket Competition's page
       (Format "Bracket"), leave the Bracket kind on Head-to-head (the toggle
       beside Group; 2 per Match, 1 advancing, no size fields shown), pick Entrants and Save Entrants, then
@@ -580,9 +573,8 @@ on the matching War Week page.
       War Week, after anything posted today, so unpin the seeded pinned one
       first and pin it again at the end. Unpin, then delete. The admin list
       shows "Posted by <name>" (the poster's display name or the part of
-      their email before the @, never the email) and no video count. MCP
-      `get_announcements` returns no `videoUrls`; the video shows as its URL
-      in the plain-text body.
+      their email before the @, never the email) and no video count; a
+      video shows as its URL in the plain-text body.
 - [ ] **Awards.** Give an Award to two Participants (and a Team,
       *(teams)*); it shows on `/<edition>/awards`. Delete it.
 - [ ] **Award presets.** On `/admin/awards`, Add Award: the Preset picker
@@ -837,16 +829,6 @@ that nothing personal shows (no You highlight, no Log a Match or Log an Attempt)
       Competitions list and the Competition page's Settings show no
       Individual/Team choice and no "Individual" label; a Competition that
       is already Team shows "Team".
-- [ ] **MCP: `get_bracket` and `get_games` words.** Call each against the
-      Bracket and the Head-to-head and Best score Competitions: `get_bracket`
-      returns the Bracket kind, `matchSize`, `advancing` (per Match),
-      `thirdPlaceMatch`, `closed`, each
-      Round's `matches` and a `winner` (the final's winner once Closed;
-      null before); `get_games` returns `closed`, the Score direction and
-      unit, Best of, draws, Max attempts and Team score, a leaderboard and
-      `matches` (Head-to-head) or `attempts` (Best score), with no count
-      (best/total) field. `get_placements` shows the direction and unit. No field or
-      description says Heat, Champion, Finalize or Game, and there is no `@`.
 - [ ] **Announcements.** The Announcements page (`/<edition>/announcements`;
       at 390 it is More's first item and More is highlighted there)
       lists the pinned Announcement first, renders rich text (headings,

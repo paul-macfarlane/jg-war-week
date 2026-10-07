@@ -70,8 +70,8 @@ jobs:
       - run: pnpm build
 
       # End-to-end over the production build against the Postgres service:
-      # migrations, every seed (reset, then idempotent), pages, actions and
-      # /api/mcp. Smoke signs its own sessions, so no real auth secrets.
+      # migrations, every seed (reset, then idempotent), pages and actions.
+      # Smoke signs its own sessions, so no real auth secrets.
       - run: pnpm smoke
 
       # The Playwright flows (sign-in, Points Entry, Bracket, Heats Bracket

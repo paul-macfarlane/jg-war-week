@@ -45,7 +45,7 @@ Atlas runs these commands to prove that a change works.
 | format | `unavailable (no code yet)` | Consistent formatting | Before lint | unavailable |
 | unit | `unavailable (no code yet); vitest planned` | Pure modules and services through public interfaces; no DB for pure-module tests | During implementation and per slice gate | unavailable |
 | build | `unavailable (no code yet)` | Next.js production build | Per slice gate, before PR | unavailable |
-| e2e | `unavailable (no code yet); smoke planned` | Seeded local Postgres + app start; /xi, /xi/leaderboard, /xi/finale, /api/mcp respond; leaderboard via MCP. Only coverage for UI and admin forms | Per slice gate, before PR | unavailable |
+| e2e | `unavailable (no code yet); smoke planned` | Seeded local Postgres + app start; /xi, /xi/leaderboard, /xi/finale respond. Only coverage for UI and admin forms | Per slice gate, before PR | unavailable |
 | run | `unavailable (no code yet)` | Local dev server | Manual verification and smoke | unavailable |
 
 `verified` means setup ran the command here and it worked. `inferred` means the
