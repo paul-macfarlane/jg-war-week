@@ -1,6 +1,6 @@
 ---
 title: Cuts and admin consistency (Epic R26)
-status: ready-for-agent
+status: in-progress
 grilled: 2026-10-06 (see ../regression-2026-10/grilling-2026-10-06.md)
 created: 2026-10-06
 source: Paul's final regression feedback, items B1, S1, S2, S4–S6, S12–S16 (../regression-2026-10/feedback-final.md)
@@ -10,7 +10,7 @@ source: Paul's final regression feedback, items B1, S1, S2, S4–S6, S12–S16 (
 
 **Epic:** R26 · **Branch:** `feat/r26-cuts-and-consistency` · **Blocked
 by:** none · **Red-team:** not required (no schema or access change) ·
-**Status:** ready-for-agent
+**Status:** in-progress
 
 ## Summary
 
