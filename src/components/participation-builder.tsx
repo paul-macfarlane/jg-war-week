@@ -63,9 +63,23 @@ export function ParticipationBuilder({
   const isTeam = competition.scoring === "team";
   const locked = competition.closed;
 
-  // Each tick saves at once; until the page refreshes, the box shows it.
+  // Each tick saves at once. The box holds the new state until the refreshed
+  // data reflects it (a refusal drops it at once), so it never flips back to
+  // the old state while router.refresh() is still in flight.
   const saved = new Map(tookPart.map((t) => [t.participantId, t.checkedIn]));
   const [optimistic, setOptimistic] = useState<Record<string, boolean>>({});
+  const [seen, setSeen] = useState(tookPart);
+  if (seen !== tookPart) {
+    // Refreshed data arrived: drop each held state it now agrees with.
+    setSeen(tookPart);
+    setOptimistic((current) =>
+      Object.fromEntries(
+        Object.entries(current).filter(
+          ([participantId, on]) => saved.has(participantId) !== on,
+        ),
+      ),
+    );
+  }
   const [, startTransition] = useTransition();
   const isMarked = (participantId: string) =>
     optimistic[participantId] ?? saved.has(participantId);
@@ -78,13 +92,13 @@ export function ParticipationBuilder({
         toast.success(on ? `${row.name} took part` : `${row.name} removed`);
       } else {
         toast.error(done.error);
+        setOptimistic((current) => {
+          const next = { ...current };
+          delete next[row.id];
+          return next;
+        });
       }
       router.refresh();
-      setOptimistic((current) => {
-        const next = { ...current };
-        delete next[row.id];
-        return next;
-      });
     });
   }
 
