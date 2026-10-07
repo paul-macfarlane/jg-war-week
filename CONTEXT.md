@@ -41,7 +41,7 @@ War Weeker). **War Week** alone always means the event, never the app.
 | **Competition**               | Anything that awards points. Scored as team or individual. Skill divisions are separate Competitions ("MTG Advanced", "MTG Beginner"). |
 | **Competition Group**         | An optional grouping of competitions ("Team Night Events").                                                                       |
 | **Competition page** (admin)  | A Competition's one admin page, `/admin/competitions/<id>`: its **Settings** on top, each field autosaving, and the Format's **run area** below it (Entrants and the Bracket tree, Entrants and Matches or Attempts with Log a Match / Log an Attempt, Record placements, or who took part, and Close or Reopen). The Competitions list's Edit opens it; Add Competition creates one in a sheet and then opens it. Organizers and that Competition's Hosts use it; a Participant is refused. |
-| **Create and edit rule**      | A record (Announcement, Award, FAQ Item, Schedule Item, Team, Participant…) is created and edited in the same dialog (`SetupSheet` / `ResponsiveSheetDialog`: a dialog on desktop, a full-height sheet on phones), opened from its list; it has no `/new` or `/[id]` page. Only a thing you run gets a page: today a Competition (created in a dialog, then run on its page). |
+| **Create and edit rule**      | A record (Announcement, Award, FAQ Item, Schedule Item, Team, Participant…) is created and edited in the same dialog (`SetupSheet` / `ResponsiveSheetDialog`: a dialog on desktop, a bottom sheet on phones, full height for an Announcement's rich-text body), opened from its list; it has no `/new` or `/[id]` page. Only a thing you run gets a page: today a Competition (created in a dialog, then run on its page). |
 | **Settings lock**             | A Competition's settings lock only as play starts or when it is Closed, and the page and the server refuse a locked change with the same one-line reason. Name, description, Group, Hosts, Placement Points (and points per Participant) and **Score unit** (a label) **never lock**. Format, scoring and counts toward team lock **once any result exists** (an Entrant is one); **Score direction** locks per Format once play has started there (a Placement row, a Match or Attempt, a Bracket Match result); a Head-to-head Competition's draws and Best of, and a Best score Competition's Team score, lock **once it has a Match or Attempt** ("Locked once the Competition has a Match or Attempt.": a Best of needs its two Entrants first); the Bracket kind, Entrants per Match, how many advance, the 3rd place match, the Bracket's Entrants and building the Bracket lock **once a Match result exists**; a League's **Pairing**, **rounds**, **Score direction** and **Entrants** lock **once round 1 is paired** ("Locked once round 1 is paired."; its Score unit never locks and its self-report locks only while Closed, as on every Format); self-enroll, Entrant limit, self-report, check-in and **Max attempts** lock **only while Closed** (Max attempts also cannot go below the most Attempts any one person already has). While Closed everything but the never-locking settings is locked until Reopen. A points setting changed while Closed applies at the next Close. There are no scheduled times to lock (see the retired terms below). |
 | **Competition description**   | Rich text (the Announcement editor: headings, lists, links, images by URL), edited in the Competition page's Settings and shown in full on the Participant Competition page. |
 | **Points Entry**              | One ledger row: points awarded to a Team or Participant. Every Points Entry is either **generated** by a Competition's result (Close) or **Discretionary**. Nobody types one against a Competition. |
@@ -458,15 +458,15 @@ Now/next is computed on the ET clock, whatever the viewer's timezone.
   - Reopen works only for the most recently ended edition, and not while a
     later edition is upcoming ("War Week XII is next; reopen isn't
     available").
-- **Create next War Week** (on `/admin/settings`, Organizers only) makes an
-  `upcoming` edition from any edition, prefilled with the next Roman
-  numeral, edition number and year. It can copy settings with the
-  Appearance Theme (on), Competitions with new ids and no Hosts (off) and
-  the FAQ (off). It never copies Hosts: the new roster is empty, so there is
-  no Participant to point at, and Organizers add Hosts once it exists
-  (ADR 0012). It never copies Organizers: the Organizer list is global.
-  Teams, roster, Days, Schedule, Points Entries, Awards and Announcements
-  are never copied. It doesn't change what's current until it starts.
+- **Create next War Week** (a button in the Lifecycle section of
+  `/admin/settings`, Organizers only, opening a dialog) shows only on the
+  latest War Week by start date once it is `complete`. It makes an `upcoming`
+  edition prefilled with the next Roman numeral, edition number and year,
+  starting after the latest War Week ends, with default settings and nothing
+  copied: no settings, Competitions, FAQ, Hosts, Teams, roster, Days,
+  Schedule, Points Entries, Awards or Announcements (Organizers are global).
+  The server refuses it while the latest War Week is `upcoming` or `live`. It
+  doesn't change what's current until it starts.
 
 ## Points Entry and Discretionary points rules
 
@@ -591,13 +591,14 @@ Now/next is computed on the ET clock, whatever the viewer's timezone.
   played isn't recorded.
 - **Editing a result** (ADR 0011, D1c): only the latest result along a path
   can change. A Match whose result a later Match already used offers no edit
-  or Clear result: both are disabled with the visible reason "A later Match
-  already used this result. Change that Match first.", and the server
+  or Clear result: the Match shows a lock icon, both controls are disabled
+  with the reason "A later Match already used this result. Change that Match
+  first." as their tooltip (by hover, keyboard focus or tap), and the server
   refuses a direct request. A correction clears results back from the latest
   one; nothing resets later Matches for you. In a Group Bracket a Match is
   editable only while no later Round has a result; otherwise its Edit and
-  Clear result are disabled with "A later round already has a result. Change
-  that round first.", and the server refuses it. An
+  Clear result are disabled the same way, with "A later round already has a
+  result. Change that round first." as the tooltip, and the server refuses it. An
   edit after a Round is complete, with the next Match unplayed (D1f), is
   allowed: the next Round re-fills from the new advancers and any moves or
   overrides made there are lost.

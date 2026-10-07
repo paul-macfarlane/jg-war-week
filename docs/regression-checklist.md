@@ -393,9 +393,9 @@ on the matching War Week page.
 - [ ] **Bracket tree: full width and Jump to your Match.** From 768 up the
       Participant page's tree uses the full width of the page (not a narrow
       column); at 390 it scrolls sideways only in its own "Rounds" region.
-      A small Bracket (4 Entrants) is centered in its region at 1440 and 390,
-      on the Participant page and in admin; the 64-Entrant one starts at the
-      left edge and scrolls.
+      A small Bracket (4 Entrants) is centered in its region at 1440, on the
+      Participant page and in admin; at 390 it is wider than the region, so it
+      starts at the left edge and scrolls, as the 64-Entrant one does at both.
       As an Entrant, "Jump to your Match" scrolls to and highlights your next
       unplayed Match; once you're out, or the Bracket is Closed, it goes to
       your last played one. A signed-in Participant who isn't an Entrant
