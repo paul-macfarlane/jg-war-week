@@ -15,6 +15,10 @@ const MARKER_EMAILS = [
   "r22-picker-marker@example.org",
 ];
 
+/** The roster name a marker email's entry is added under. */
+const markerName = (email: string) =>
+  `R22 Picker Marker ${email.split("@")[1]}`;
+
 /** Every email on any War Week's roster, lowercase. */
 async function rosterEmails(): Promise<string[]> {
   const rows = await runQuery<{ email: string }>(
@@ -89,9 +93,7 @@ async function assertNoRosterEmailOnSchedulePages(
   organizerEmail: string,
   participantEmail: string,
 ) {
-  const names = MARKER_EMAILS.map(
-    (email) => `R22 Picker Marker ${email.split("@")[1]}`,
-  );
+  const names = MARKER_EMAILS.map(markerName);
   try {
     const [day] = await runQuery<{ id: string }>(
       `select id from day where war_week_id = $1 order by date limit 1`,
@@ -188,7 +190,7 @@ export async function assertNoRosterEmailInPickers(
     for (const email of MARKER_EMAILS) {
       await runQuery(
         `insert into participant (war_week_id, display_name, email) values ($1, $2, $3)`,
-        [xiId, `R22 Picker Marker ${email.split("@")[1]}`, email],
+        [xiId, markerName(email), email],
       );
     }
   } catch (error) {

@@ -18,12 +18,17 @@ import {
   moveInOrder,
   scheduleItemGuardError,
 } from "@/lib/setup-schedule-faq";
-import { locked, refusingDuplicate } from "@/mutations/setup";
+import {
+  HOST_NOT_ON_ROSTER,
+  isForeignKeyViolation,
+  locked,
+  onWarWeekRoster,
+  refusingDuplicate,
+} from "@/mutations/setup";
 import type { MutationContext, MutationResult } from "@/mutations/types";
 
 const SCHEDULE_ITEM_NOT_FOUND = "That Schedule Item no longer exists.";
 const FAQ_ITEM_NOT_FOUND = "That FAQ Item no longer exists.";
-const HOST_NOT_ON_ROSTER = "A Host must be on this War Week's roster.";
 
 /** The War Week's Days, as a subquery for "an item of this War Week". */
 function warWeekDayIds(warWeekId: string, dbOrTx: DBOrTx) {
@@ -64,39 +69,35 @@ async function scheduleItemRefusal(
     otherItems,
   });
   if (guard) return guard;
-  return (await hostsOnRoster(hostsToSave(values), ctx, tx))
+  return (await onWarWeekRoster(hostsToSave(values), ctx, tx))
     ? null
     : HOST_NOT_ON_ROSTER;
 }
 
 /**
- * The Hosts an item saves with: the posted ones, deduplicated, or none when
+ * The Hosts an item saves with: the posted ones (the schema deduplicates), or none when
  * it links a Competition (it shows the Competition's Hosts; the form hides
  * the field, so posted ones are discarded, not refused).
  */
 function hostsToSave(
   values: Pick<ScheduleItemValues, "hostIds" | "competitionId">,
 ): string[] {
-  return values.competitionId === null ? [...new Set(values.hostIds)] : [];
+  return values.competitionId === null ? values.hostIds : [];
 }
 
-/** Whether every one of `hostIds` is on the War Week's roster. */
-async function hostsOnRoster(
-  hostIds: string[],
-  ctx: MutationContext,
-  tx: DBOrTx,
-): Promise<boolean> {
-  if (hostIds.length === 0) return true;
-  const onRoster = await tx
-    .select({ id: participant.id })
-    .from(participant)
-    .where(
-      and(
-        eq(participant.warWeekId, ctx.warWeekId),
-        inArray(participant.id, hostIds),
-      ),
-    );
-  return onRoster.length === hostIds.length;
+/**
+ * A Participant deleted between the roster check and the Host insert breaks
+ * `schedule_item_host`'s foreign key: refuse it as the roster rule.
+ */
+async function refusingMissingHost(
+  write: () => Promise<MutationResult>,
+): Promise<MutationResult> {
+  try {
+    return await write();
+  } catch (error) {
+    if (!isForeignKeyViolation(error)) throw error;
+    return { ok: false, error: HOST_NOT_ON_ROSTER };
+  }
 }
 
 /**
@@ -128,19 +129,21 @@ export async function createScheduleItem(
   dbOrTx: DBOrTx = db,
 ): Promise<MutationResult> {
   return refusingDuplicate(duplicateScheduleItemError(values), () =>
-    dbOrTx.transaction(async (tx): Promise<MutationResult> => {
-      // `deleteDay` takes the same lock, so the Day can't go meanwhile.
-      await locked(day, values.dayId, ctx, tx);
-      const refusal = await scheduleItemRefusal(values, ctx, tx);
-      if (refusal) return { ok: false, error: refusal };
-      const { hostIds, ...columns } = values;
-      const [created] = await tx
-        .insert(scheduleItem)
-        .values(columns)
-        .returning({ id: scheduleItem.id });
-      await replaceHosts(created.id, { ...columns, hostIds }, tx);
-      return { ok: true };
-    }),
+    refusingMissingHost(() =>
+      dbOrTx.transaction(async (tx): Promise<MutationResult> => {
+        // `deleteDay` takes the same lock, so the Day can't go meanwhile.
+        await locked(day, values.dayId, ctx, tx);
+        const refusal = await scheduleItemRefusal(values, ctx, tx);
+        if (refusal) return { ok: false, error: refusal };
+        const { hostIds, ...columns } = values;
+        const [created] = await tx
+          .insert(scheduleItem)
+          .values(columns)
+          .returning({ id: scheduleItem.id });
+        await replaceHosts(created.id, { ...columns, hostIds }, tx);
+        return { ok: true };
+      }),
+    ),
   );
 }
 
@@ -152,28 +155,30 @@ export async function updateScheduleItem(
   dbOrTx: DBOrTx = db,
 ): Promise<MutationResult> {
   return refusingDuplicate(duplicateScheduleItemError(values), () =>
-    dbOrTx.transaction(async (tx): Promise<MutationResult> => {
-      // `deleteDay` takes the same lock, so the target Day can't go meanwhile.
-      await locked(day, values.dayId, ctx, tx);
-      const refusal = await scheduleItemRefusal(values, ctx, tx, id);
-      if (refusal) return { ok: false, error: refusal };
-      const { hostIds, ...columns } = values;
-      const updated = await tx
-        .update(scheduleItem)
-        .set({ ...columns, updatedAt: sql`now()` })
-        .where(
-          and(
-            eq(scheduleItem.id, id),
-            inArray(scheduleItem.dayId, warWeekDayIds(ctx.warWeekId, tx)),
-          ),
-        )
-        .returning({ id: scheduleItem.id });
-      if (updated.length === 0) {
-        return { ok: false, error: SCHEDULE_ITEM_NOT_FOUND };
-      }
-      await replaceHosts(id, { ...columns, hostIds }, tx);
-      return { ok: true };
-    }),
+    refusingMissingHost(() =>
+      dbOrTx.transaction(async (tx): Promise<MutationResult> => {
+        // `deleteDay` takes the same lock, so the target Day can't go meanwhile.
+        await locked(day, values.dayId, ctx, tx);
+        const refusal = await scheduleItemRefusal(values, ctx, tx, id);
+        if (refusal) return { ok: false, error: refusal };
+        const { hostIds, ...columns } = values;
+        const updated = await tx
+          .update(scheduleItem)
+          .set({ ...columns, updatedAt: sql`now()` })
+          .where(
+            and(
+              eq(scheduleItem.id, id),
+              inArray(scheduleItem.dayId, warWeekDayIds(ctx.warWeekId, tx)),
+            ),
+          )
+          .returning({ id: scheduleItem.id });
+        if (updated.length === 0) {
+          return { ok: false, error: SCHEDULE_ITEM_NOT_FOUND };
+        }
+        await replaceHosts(id, { ...columns, hostIds }, tx);
+        return { ok: true };
+      }),
+    ),
   );
 }
 

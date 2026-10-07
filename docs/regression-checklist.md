@@ -592,8 +592,9 @@ on the matching War Week page.
       that Day with its time in ET and links to the Competition. At 1440
       and 390 the form asks Category before Competition; Competition shows
       only for the Competition category, changing Category clears it, and
-      picking one fills an empty title but never a typed one; Day, Start and
-      End line up (one row at 1440, equal heights stacked at 390). Add an item
+      picking one fills an empty title but never a typed one; Day, Start time and
+      End time sit on one row at both 1440 and 390, with equal top and bottom
+      edges. Add an item
       with two Hosts picked by name: no Hosts field when a Competition is
       linked, and the schedule shows "Hosted by" the two names with an Avatar
       each. Add one with no start time: it reads "Any time" on `/admin/schedule`

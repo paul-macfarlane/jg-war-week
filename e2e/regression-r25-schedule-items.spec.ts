@@ -60,7 +60,7 @@ async function pickHost(form: Locator, page: Page, name: string) {
   await page.getByRole("option", { name: new RegExp(`^${name}`) }).click();
 }
 
-async function pickTime(form: Locator, page: Page, id: string, text: string) {
+async function pickTime(form: Locator, id: string, text: string) {
   const input = form.locator(`#${id}`);
   await input.fill(text);
   await input.press("Enter");
@@ -99,7 +99,7 @@ test.describe("R25 Schedule items", () => {
       await page.setViewportSize(viewport);
       const form = await openAddForm(page);
       await form.getByRole("textbox", { name: "Title" }).fill(title);
-      await pickTime(form, page, "schedule-start-time", "9:15 PM");
+      await pickTime(form, "schedule-start-time", "9:15 PM");
       await pickHost(form, page, HOST_A);
       await pickHost(form, page, HOST_B);
       await shoot(page, testInfo, `form-hosts-${label}`);
@@ -183,6 +183,25 @@ test.describe("R25 Schedule items", () => {
     }
   });
 
+  test("AC3 editing an existing Competition-linked item shows no Hosts field", async ({
+    context,
+    page,
+  }) => {
+    await asOrganizer(context);
+    await page.setViewportSize(DESKTOP);
+    await page.goto("/admin/schedule");
+    await page
+      .getByRole("button", { name: `Edit ${COMPETITION}`, exact: true })
+      .click();
+    const edit = page.getByRole("dialog");
+    await expect(edit.getByRole("textbox", { name: "Title" })).toHaveValue(
+      COMPETITION,
+    );
+    await expect(
+      edit.getByRole("combobox", { name: "Hosts", exact: true }),
+    ).toHaveCount(0);
+  });
+
   test("AC6/AC14 an untimed item reads Any time on both pages and sorts first", async ({
     context,
     page,
@@ -198,10 +217,11 @@ test.describe("R25 Schedule items", () => {
     await page.goto("/xi/schedule");
     const card = cardOf(page, title);
     await expect(card).toContainText("Any time");
-    // First in its Day's list, ahead of every timed item.
-    await expect(card.locator("xpath=..").locator("li").first()).toContainText(
-      title,
-    );
+    // First in its Day's list, ahead of a timed item that follows it.
+    const dayList = card.locator("xpath=..").locator("li");
+    await expect(dayList.first()).toContainText(title);
+    await expect(dayList.nth(1)).not.toContainText("Any time");
+    await expect(dayList.nth(1)).not.toContainText(title);
     await shoot(page, testInfo, "schedule-any-time");
 
     await page.goto("/admin/schedule");
@@ -209,9 +229,10 @@ test.describe("R25 Schedule items", () => {
       .locator('main [aria-label="Schedule Items"] li')
       .filter({ hasText: title });
     await expect(row).toContainText("Any time");
-    await expect(row.locator("xpath=..").locator("li").first()).toContainText(
-      title,
-    );
+    const adminList = row.locator("xpath=..").locator("li");
+    await expect(adminList.first()).toContainText(title);
+    await expect(adminList.nth(1)).not.toContainText("Any time");
+    await expect(adminList.nth(1)).not.toContainText(title);
     await shoot(page, testInfo, "admin-any-time");
   });
 
@@ -254,7 +275,7 @@ test.describe("R25 Schedule items", () => {
   });
 
   for (const [label, viewport] of VIEWPORTS) {
-    test(`AC12 Day, Start time and End time line up at ${label}`, async ({
+    test(`AC12 Day, Start time and End time sit on one row at ${label}`, async ({
       context,
       page,
     }, testInfo) => {
@@ -278,23 +299,17 @@ test.describe("R25 Schedule items", () => {
         for (const box of boxes) {
           expect(Math.abs(box.height - boxes[0].height)).toBeLessThanOrEqual(1);
         }
-        if (label === "1440") {
-          // One row: top and bottom edges match.
-          for (const box of boxes) {
-            expect(Math.abs(box.y - boxes[0].y)).toBeLessThanOrEqual(1);
-            expect(
-              Math.abs(box.y + box.height - (boxes[0].y + boxes[0].height)),
-            ).toBeLessThanOrEqual(1);
+        // One row at every width: top and bottom edges match, and each
+        // control starts to the right of the one before.
+        for (const [index, box] of boxes.entries()) {
+          expect(Math.abs(box.y - boxes[0].y)).toBeLessThanOrEqual(1);
+          expect(
+            Math.abs(box.y + box.height - (boxes[0].y + boxes[0].height)),
+          ).toBeLessThanOrEqual(1);
+          if (index > 0) {
+            const previous = boxes[index - 1];
+            expect(box.x).toBeGreaterThanOrEqual(previous.x + previous.width);
           }
-        } else {
-          // At 390 the three stack one per row by design: equal heights
-          // only, each below the last.
-          expect(boxes[1].y).toBeGreaterThanOrEqual(
-            boxes[0].y + boxes[0].height,
-          );
-          expect(boxes[2].y).toBeGreaterThanOrEqual(
-            boxes[1].y + boxes[1].height,
-          );
         }
       }).toPass();
       await shoot(page, testInfo, `form-alignment-${label}`);

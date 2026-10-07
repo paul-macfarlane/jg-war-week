@@ -29,19 +29,35 @@ const hostColumns = {
   teamColor: team.color,
 };
 
+/** Groups `rows` by `keyOf`, each list in row order. */
+function groupBy<R, V>(
+  rows: R[],
+  keyOf: (row: R) => string,
+  valueOf: (row: R) => V,
+): Map<string, V[]> {
+  const grouped = new Map<string, V[]>();
+  for (const row of rows) {
+    const key = keyOf(row);
+    grouped.set(key, [...(grouped.get(key) ?? []), valueOf(row)]);
+  }
+  return grouped;
+}
+
 /** Groups host rows by `key`, each list in name order. */
 function byKey<K extends string>(
   rows: (ScheduleHost & Record<K, string>)[],
   key: K,
 ): Map<string, ScheduleHost[]> {
-  const grouped = new Map<string, ScheduleHost[]>();
-  for (const row of rows) {
-    const { id, displayName, image, teamColor } = row;
-    const list = grouped.get(row[key]) ?? [];
-    list.push({ id, displayName, image, teamColor });
-    grouped.set(row[key], list);
-  }
-  return grouped;
+  return groupBy(
+    rows,
+    (row) => row[key],
+    ({ id, displayName, image, teamColor }) => ({
+      id,
+      displayName,
+      image,
+      teamColor,
+    }),
+  );
 }
 
 /**
@@ -176,12 +192,9 @@ export async function getScheduleItemHostIds(
     )
     .innerJoin(day, eq(day.id, scheduleItem.dayId))
     .where(eq(day.warWeekId, warWeekId));
-  const grouped = new Map<string, string[]>();
-  for (const { scheduleItemId, participantId } of rows) {
-    grouped.set(scheduleItemId, [
-      ...(grouped.get(scheduleItemId) ?? []),
-      participantId,
-    ]);
-  }
-  return grouped;
+  return groupBy(
+    rows,
+    (row) => row.scheduleItemId,
+    (row) => row.participantId,
+  );
 }

@@ -12,6 +12,7 @@ import {
 } from "@/lib/setup-schedule-faq";
 
 const DAY = "3f0c1f0e-8a1b-4c43-9a4e-3c6a5b0e1d21";
+const HOST = "5d8a2b64-0c1e-4f7a-9b3d-7e6f1a2c8d90";
 const COMPETITION = "9b2d7c1e-5f3a-4b8e-8c6d-2a1e0f9b7c34";
 
 const doc = (text: string) => ({
@@ -227,7 +228,7 @@ describe("scheduleItemInputFrom", () => {
         startTime: "09:00:00",
         endTime: null,
         title: "Kickoff",
-        hostIds: [COMPETITION],
+        hostIds: [HOST],
         location: "Lobby",
         virtualLink: null,
         category: "social",
@@ -239,7 +240,7 @@ describe("scheduleItemInputFrom", () => {
       startTime: "09:00",
       endTime: "",
       title: "Kickoff",
-      hostIds: [COMPETITION],
+      hostIds: [HOST],
       location: "Lobby",
       virtualLink: "",
       category: "social",

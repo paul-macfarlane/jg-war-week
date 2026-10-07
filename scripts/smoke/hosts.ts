@@ -46,15 +46,9 @@ const LOCKED_WHILE_CLOSED =
 /**
  * Removes the smoke Host's roster Participants, and with them every
  * `competition_host` and `schedule_item_host` row they have (a Host is a
- * roster Participant, ADR 0012; both cascade, the Schedule Item Host row is
- * deleted first anyway so the smoke never relies on it).
+ * roster Participant, ADR 0012; both cascade).
  */
 export async function deleteSmokeHosts() {
-  await runQuery(
-    `delete from schedule_item_host where participant_id in
-       (select id from participant where email = $1)`,
-    [SMOKE_HOST_EMAIL],
-  );
   await runQuery(`delete from participant where email = $1`, [
     SMOKE_HOST_EMAIL,
   ]);

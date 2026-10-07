@@ -194,7 +194,7 @@ export function ScheduleItemForm({
       aria-label="Schedule Item"
     >
       <FieldGroup className="px-4">
-        <div className="grid items-start gap-4 sm:grid-cols-3">
+        <div className="grid grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)_minmax(0,1fr)] items-start gap-2 sm:gap-4">
           <Field data-invalid={!!fieldErrors.dayId}>
             <FieldLabel htmlFor="schedule-day">Day</FieldLabel>
             <OptionSelect
@@ -207,9 +207,7 @@ export function ScheduleItemForm({
             <FieldError>{fieldErrors.dayId}</FieldError>
           </Field>
           <Field data-invalid={!!fieldErrors.startTime}>
-            <FieldLabel htmlFor="schedule-start-time">
-              Start (optional)
-            </FieldLabel>
+            <FieldLabel htmlFor="schedule-start-time">Start time</FieldLabel>
             <TimeCombobox
               id="schedule-start-time"
               aria-invalid={!!fieldErrors.startTime}
@@ -218,7 +216,7 @@ export function ScheduleItemForm({
             <FieldError>{fieldErrors.startTime}</FieldError>
           </Field>
           <Field data-invalid={!!fieldErrors.endTime}>
-            <FieldLabel htmlFor="schedule-end-time">End (optional)</FieldLabel>
+            <FieldLabel htmlFor="schedule-end-time">End time</FieldLabel>
             <TimeCombobox
               id="schedule-end-time"
               start={fields.startTime}
@@ -228,9 +226,9 @@ export function ScheduleItemForm({
             <FieldError>{fieldErrors.endTime}</FieldError>
           </Field>
         </div>
-        <FieldDescription className="-mt-2">
-          Times are Eastern (ET). With no start time the item reads &ldquo;Any
-          time&rdquo;.
+        <FieldDescription>
+          Start and end are optional. Times are Eastern (ET); with no start time
+          the item reads &ldquo;Any time&rdquo;.
         </FieldDescription>
 
         <Field data-invalid={!!fieldErrors.title}>

@@ -34,7 +34,7 @@ export const ABOUT_FEATURES = [
   {
     slug: "schedule",
     title: "Schedule, Now and Next",
-    text: "Every Day Theme, with a line about each Day, and every item on the ET clock. The home screen says what's on now and what's up next, so nobody has to ask.",
+    text: "Every Day Theme, with a line about each Day, every timed item on the ET clock, and the rest marked Any time. The home screen says what's on now and what's up next, so nobody has to ask.",
     alt: "The current War Week's home: today's Day Theme, what's on now and what's up next on the ET clock, then the pinned Announcement.",
   },
   {

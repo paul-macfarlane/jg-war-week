@@ -981,7 +981,8 @@ settings and the Appearance Theme in `/admin/settings`, Days and Schedule
 Items in `/admin/schedule`, Teams and the roster in `/admin/roster`,
 Competitions with their Hosts in `/admin/competitions` and FAQ Items in
 `/admin/faq`; a Host edits
-only their own Competitions and the Schedule Items linked to them. The seed
+only their own Competitions. Schedule Items are Organizer-only, and a
+Schedule Item's Hosts are display only (they give no access). The seed
 stays the way to bootstrap a War Week, and there's no merge: reloading a
 seed makes its War Week match the seed again, overwriting settings, Days and
 other setup data edited in the UI and deleting setup rows the seed doesn't

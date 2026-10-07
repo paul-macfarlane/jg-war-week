@@ -145,7 +145,7 @@ export function OrganizerGuide({
           results, run its Bracket, Matches and Attempts, and change its
           settings. Schedule, Announcements, the Finale and everything else stay
           with Organizers. A Schedule Item&apos;s Hosts are just who the
-          schedule shows as &ldquo;Hosted by&rdquo;; it doesn&apos;t make anyone
+          Schedule shows as &ldquo;Hosted by&rdquo;; they don&apos;t make anyone
           a Host.
         </p>
       </section>
