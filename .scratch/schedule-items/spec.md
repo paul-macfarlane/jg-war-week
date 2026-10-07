@@ -191,7 +191,7 @@ Participants.
 
 ## Definition of Done
 
-- [ ] Red-team the spec before implementation (`/atlas-red-team`).
+- [x] Red-team the spec before implementation (`/atlas-red-team`): passed 2026-10-06 on the third pass.
 - [ ] R26 merged first; branch from the `staging` that contains it.
 - [ ] Migration and seeds together; smoke on seeded local Postgres.
 - [ ] `CONTEXT.md`:
