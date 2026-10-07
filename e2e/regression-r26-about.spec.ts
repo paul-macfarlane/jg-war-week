@@ -62,10 +62,12 @@ for (const display of ["light", "dark"] as const) {
         const src = decodeURIComponent((await still.getAttribute("src")) ?? "");
         if (label === "390") expect(src).toContain("-phone");
         else expect(src).not.toContain("-phone");
-        // Loaded, not just in the markup.
+        // Loaded, not just in the markup. The first request of a still makes
+        // next/image resize the 2560px capture, which can take seconds.
         await expect
-          .poll(() =>
-            still.evaluate((img: HTMLImageElement) => img.naturalWidth),
+          .poll(
+            () => still.evaluate((img: HTMLImageElement) => img.naturalWidth),
+            { timeout: 20_000 },
           )
           .toBeGreaterThan(0);
 
