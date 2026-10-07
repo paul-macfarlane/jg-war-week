@@ -67,8 +67,8 @@ reviewing and merging the PR.
 
 ## [PROGRESS]
 
-- Wave 1 (D1–D4) and wave 2 (D5–D8) integrated, plus D8b. Merges were clean
-  except none needed resolution; D5, D7 and D8 were dispatched early from the
+- Wave 1 (D1–D4) and wave 2 (D5–D8) integrated, plus D8b. All merges were clean (git
+  auto-merged the shared docs); D5, D7 and D8 were dispatched early from the
   wave-1 head (they had no D4 dependency), D6 after D4.
 - Orchestrator fixes: D3, an opt-in `fullHeight` on `ResponsiveSheetDialog` /
   `SetupListRow` / `SetupAddButton` so the Announcement sheet is full height on a
