@@ -219,7 +219,10 @@ shows the phone set below `md` and the desktop set from `md` up
 (`data-still-size`). The same `pnpm tsx scripts/about-media.ts` run writes
 all of them (30 files in `public/about/`: 7 features x 4, plus the poster
 pair). Run it against a fresh build and a server it starts itself, so it
-serves the new files. Never add or replace only one of a pair.
+serves the new files. When a run writes a still that wasn't in `public/about/` before
+(a new feature, or the first phone set), its server can't serve it yet and the
+evidence step fails with "images failed to load": run the script a second time.
+Never add or replace only one of a pair.
 
 ### Run a new War Week or change this year's theme (no code first)
 
