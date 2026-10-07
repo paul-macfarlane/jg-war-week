@@ -5,7 +5,6 @@ import {
   fail,
   ok,
 } from "./harness";
-import { assertMcpBearerToken, mcpRequest } from "./mcp";
 
 export async function assertAdminGate(sessions: {
   organizer: SmokeSession;
@@ -208,33 +207,6 @@ export async function assertSignInRequired() {
       fail(check, String(error));
     }
   }
-
-  const mcpCheck = "anonymous POST /api/mcp answers 401";
-  try {
-    const { status } = await mcpRequest(
-      {
-        jsonrpc: "2.0",
-        id: 1,
-        method: "initialize",
-        params: {
-          protocolVersion: "2025-06-18",
-          capabilities: {},
-          clientInfo: { name: "smoke-test", version: "0.1.0" },
-        },
-      },
-      undefined,
-      "",
-    ).catch(() => ({ status: -1 }));
-    if (status === 401) {
-      ok(mcpCheck);
-    } else {
-      fail(mcpCheck, `status=${status}`);
-    }
-  } catch (error) {
-    fail(mcpCheck, String(error));
-  }
-
-  await assertMcpBearerToken();
 }
 
 export async function assertAdminGuidePage(sessions: {

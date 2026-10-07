@@ -81,7 +81,7 @@ export type SessionIdentity = {
 };
 
 /**
- * The one session rule (pages, the proxy and MCP): a session counts as
+ * The one session rule (pages and the proxy): a session counts as
  * anonymous when its email isn't a Jahnel Group email, or when it is a Test
  * sign-in session and Test sign-in is off for this request.
  */

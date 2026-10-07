@@ -3,16 +3,14 @@ import {
   BASE_URL,
   type SmokeSession,
   fail,
-  leaderboardTeamTotal,
   ok,
 } from "./harness";
-import { mcpLeaderboard } from "./mcp";
 
 /**
  * The Finale (brackets ticket 1, ticket 72): `/xi/finale` opens on the
  * slideshow's first slide for any signed-in user, `/admin/finale` is the
  * Organizer's way in, lists the slides and sets the Awards layout (ticket
- * 73), and MCP `get_leaderboard` always returns Standings.
+ * 73).
  */
 export async function assertFinale(sessions: {
   organizer: SmokeSession;
@@ -91,26 +89,6 @@ export async function assertFinale(sessions: {
       return Object.values(checks).every(Boolean)
         ? null
         : JSON.stringify(checks);
-    },
-  );
-
-  await run(
-    "MCP get_leaderboard(team) returns the same Team totals as /xi/leaderboard",
-    async () => {
-      const mcp = await mcpLeaderboard("team");
-      const rows: { name: string; total: number }[] =
-        mcp.parsed?.standings ?? [];
-      const shown = await Promise.all(
-        rows.map((row) => leaderboardTeamTotal(row.name)),
-      );
-      const checks = {
-        rows: rows.length > 0,
-        noHiddenKey: mcp.parsed !== undefined && !("hidden" in mcp.parsed),
-        same: rows.every((row, i) => shown[i] === row.total),
-      };
-      return Object.values(checks).every(Boolean)
-        ? null
-        : `${JSON.stringify(checks)} text=${mcp.text}`;
     },
   );
 }

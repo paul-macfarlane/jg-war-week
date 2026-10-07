@@ -55,7 +55,6 @@ import { ABOUT_FEATURES } from "@/lib/about";
 import { DISPLAY_CHANGE_EVENT, DISPLAY_STORAGE_KEY } from "@/lib/display";
 import { FINALE_MAX_MS } from "@/lib/finale";
 import { backgroundColorScheme } from "@/lib/theme";
-import type { LeaderboardResult } from "@/mcp/leaderboard";
 
 import {
   type DemoServer,
@@ -103,6 +102,7 @@ type CurrentWarWeek = {
   edition: string;
   mode: "teams" | "free-for-all";
   background_color: string;
+  team_label: string;
 };
 
 let current: CurrentWarWeek;
@@ -150,7 +150,7 @@ const createSession = (email: string) =>
  */
 async function resolveCurrentWarWeek(): Promise<CurrentWarWeek> {
   const [row] = await query<CurrentWarWeek>(
-    `select id, edition, mode, background_color from war_week
+    `select id, edition, mode, background_color, team_label from war_week
      where status in ('live', 'upcoming', 'complete')
      order by case status when 'live' then 0 when 'upcoming' then 1 else 2 end,
        case when status = 'upcoming' then start_date end asc,
@@ -580,62 +580,25 @@ const scrollToText = (text: string) => `(() => {
   return Boolean(el);
 })()`;
 
-/** The real `get_leaderboard` answer from `/api/mcp`, as a signed-in user. */
-async function askMcp(cookie: string): Promise<LeaderboardResult> {
-  const call = async (body: Record<string, unknown>, sessionId?: string) => {
-    const res = await fetch(`${BASE_URL}/api/mcp`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Accept: "application/json, text/event-stream",
-        cookie: `better-auth.session_token=${cookie}`,
-        ...(sessionId ? { "mcp-session-id": sessionId } : {}),
-      },
-      body: JSON.stringify(body),
-    });
-    const text = await res.text();
-    const data = (res.headers.get("content-type") ?? "").includes(
-      "event-stream",
-    )
-      ? text
-          .split("\n")
-          .filter((l) => l.startsWith("data:"))
-          .map((l) => l.slice(5).trim())
-          .filter(Boolean)
-          .at(-1)
-      : text;
-    return {
-      json: data ? (JSON.parse(data) as Record<string, unknown>) : undefined,
-      sessionId: res.headers.get("mcp-session-id") ?? undefined,
-    };
-  };
-  const init = await call({
-    jsonrpc: "2.0",
-    id: 1,
-    method: "initialize",
-    params: {
-      protocolVersion: "2025-06-18",
-      capabilities: {},
-      clientInfo: { name: "about-media", version: "0.1.0" },
-    },
+/** The current Standings, read from the database the way the leaderboard page reads them. */
+type StandingsRead = {
+  teamLabel: string;
+  standings: { name: string; total: number }[];
+};
+async function readStandings(): Promise<StandingsRead> {
+  // Imported late: `@/db` reads DATABASE_URL, which `loadEnvConfig` sets.
+  const { getStandings } = await import("@/queries/standings");
+  const standings = await getStandings({
+    id: current.id,
+    mode: current.mode,
   });
-  const answer = await call(
-    {
-      jsonrpc: "2.0",
-      id: 2,
-      method: "tools/call",
-      params: {
-        name: "get_leaderboard",
-        arguments: { kind: standingsKind() },
-      },
-    },
-    init.sessionId,
-  );
-  const text = (
-    answer.json?.result as { content?: { text: string }[] } | undefined
-  )?.content?.[0]?.text;
-  if (!text) throw new Error("get_leaderboard returned nothing");
-  return JSON.parse(text) as LeaderboardResult;
+  return {
+    teamLabel: current.team_label,
+    standings: (standingsKind() === "team"
+      ? standings.team
+      : standings.individual
+    ).map(({ name, total }) => ({ name, total })),
+  };
 }
 
 // ---------------------------------------------------------------------------
@@ -834,8 +797,8 @@ async function teardownSeriesDemo() {
  * before, the Discretionary points form about to save a big win for
  * whoever is currently in last place (a Team, or in free-for-all a
  * Participant), and the same home Standings right after, reordered. Uses the
- * real Discretionary points form and the real `get_leaderboard` MCP tool to
- * read the Standings, not a hand-crafted fixture.
+ * real Discretionary points form and the real Standings query to read the
+ * Standings, not a hand-crafted fixture.
  */
 async function captureStandingsDemo(cookie: string): Promise<void> {
   await still(
@@ -846,7 +809,7 @@ async function captureStandingsDemo(cookie: string): Promise<void> {
     PHONE,
   );
 
-  const before = await askMcp(cookie);
+  const before = await readStandings();
   const last = before.standings.at(-1);
   const first = before.standings[0];
   if (!last || !first || before.standings.length < 2) {
@@ -921,7 +884,7 @@ async function captureStandingsDemo(cookie: string): Promise<void> {
     PHONE,
   );
 
-  const after = await askMcp(cookie);
+  const after = await readStandings();
   const lastAfter = after.standings.find((row) => row.name === last.name);
   note(
     `standings demo: ${JSON.stringify(last.name)} is now #${

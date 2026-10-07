@@ -230,7 +230,7 @@ export async function loadBrackets(
   );
   if (competitions.length === 0) return brackets;
   // An explicit list: the reporter columns (an email among them) are never
-  // read into a Bracket, which feeds pages and MCP.
+  // read into a Bracket, which feeds the pages.
   const matches = await dbOrTx
     .select({
       id: bracketMatch.id,

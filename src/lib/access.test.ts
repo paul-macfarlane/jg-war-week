@@ -7,7 +7,6 @@ import {
   type WarWeekAction,
   adminEditions,
   can,
-  canUseMcp,
   defaultAdminWarWeek,
   isJahnelGroupEmail,
   isPublicPath,
@@ -1357,7 +1356,6 @@ describe("isPublicPath", () => {
     "/xi",
     "/xi/leaderboard",
     "/admin",
-    "/api/mcp",
     "/sign-in-other",
     "/api/authx",
     "/aboutx",
@@ -1398,49 +1396,4 @@ describe("safeCallbackPath", () => {
   ])("falls back to / for %j", (value) => {
     expect(safeCallbackPath(value)).toBe("/");
   });
-});
-
-describe("canUseMcp", () => {
-  const token = "s3cret-token-value";
-  const base = {
-    hasSession: false,
-    authorization: null,
-    mcpToken: token,
-  };
-
-  it("lets a Jahnel Group session in without a token", () => {
-    expect(canUseMcp({ ...base, hasSession: true })).toBe(true);
-    expect(canUseMcp({ ...base, hasSession: true, mcpToken: "" })).toBe(true);
-  });
-
-  it("lets a correct bearer token in", () => {
-    expect(canUseMcp({ ...base, authorization: `Bearer ${token}` })).toBe(true);
-    expect(canUseMcp({ ...base, authorization: `bearer  ${token} ` })).toBe(
-      true,
-    );
-  });
-
-  it.each([
-    ["a wrong token", "Bearer nope"],
-    ["a token prefix", `Bearer ${token.slice(0, -1)}`],
-    ["a longer token", `Bearer ${token}x`],
-    ["a non-bearer scheme", `Basic ${token}`],
-    ["the bare token", token],
-    ["an empty bearer", "Bearer "],
-    ["no header", null],
-  ])("refuses %s", (_, authorization) => {
-    expect(canUseMcp({ ...base, authorization })).toBe(false);
-  });
-
-  it.each([undefined, "", "   "])(
-    "turns token auth off when MCP_TOKEN is %j",
-    (mcpToken) => {
-      expect(canUseMcp({ ...base, mcpToken, authorization: "Bearer " })).toBe(
-        false,
-      );
-      expect(
-        canUseMcp({ ...base, mcpToken, authorization: `Bearer ${token}` }),
-      ).toBe(false);
-    },
-  );
 });

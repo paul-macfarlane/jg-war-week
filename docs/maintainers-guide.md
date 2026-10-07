@@ -28,7 +28,7 @@ you set them in your own `.env.local` or in the service's settings.
 
 Your local `.env.local` needs the variables named in `.env.example`:
 `DATABASE_URL`, `DATABASE_DRIVER`, `BETTER_AUTH_SECRET`, `BETTER_AUTH_URL`,
-`GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, and optionally `MCP_TOKEN`. The
+`GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET`. The
 local database defaults work as-is. Slack posting isn't built yet, so
 there's no Slack app to be granted.
 
@@ -102,7 +102,6 @@ before it says it's done.
 | Appearance Theme → CSS                     | `src/lib/theme.ts`                                                     |
 | Shared UI pieces                           | `src/components/` (shadcn primitives in `src/components/ui/`)          |
 | Participant nav, tab bar, footer and theme | `src/components/war-week-chrome.tsx` (the `[edition]` layout and `/history`), `src/components/primary-nav.tsx`; the signed-in nav account is `src/auth/nav-account.ts` |
-| MCP server (Claude connector)              | `src/app/api/mcp/route.ts`, tools in `src/mcp/`, list in `src/mcp/tools.ts` |
 | Profiles (name, picture) and Delete my account | `src/lib/profile.ts`, `src/queries/profile-join.ts`, `src/app/[edition]/profile/`, `src/mutations/account.ts` |
 | Test sign-in (staging only)                | `src/lib/test-sign-in.ts`, `src/app/sign-in/test/`, `src/actions/test-sign-in.ts` |
 | Who can do what                            | `src/lib/access.ts` (`can`), `src/auth/authorize.ts`, `src/auth/actor.ts` |
@@ -169,8 +168,7 @@ Words must follow `CONTEXT.md`. If Claude refuses a word, that's why.
 
 **The banned-term scan.** `src/lib/banned-terms.test.ts` (run by `pnpm test`)
 reads the string literals, template text and JSX text of every non-test
-`.ts`/`.tsx` file under `src/`, plus the property names of MCP output
-under `src/mcp/`, so UI copy and MCP output can't carry a
+`.ts`/`.tsx` file under `src/`, so UI copy can't carry a
 banned word: **Heat** (say Match), **Champion** (Winner), **Finalize** and
 **Un-finalize** (Close, Closed, Reopen), **Game** (Match for a Bracket or
 Head-to-head or League, Attempt for Best score), plus Event, Member, ELO,
@@ -385,7 +383,7 @@ staging. It is never on for production (ADR 0008).
 - **Every page shows a "Test sign-in: <email>" banner** while you are in a
   test session.
 - **Turn it off.** Remove `TEST_SIGN_IN_SECRET` and redeploy: every test
-  session counts as anonymous (pages, the proxy and MCP) while it stays
+  session counts as anonymous (pages and the proxy) while it stays
   removed. Setting any secret again revives the unexpired test sessions.
   Test accounts are real `user` rows; Delete my account removes them like
   anyone's.
@@ -1136,31 +1134,6 @@ Notes:
 linked from <nav / More>. It needs a JG sign-in like every other page.
 ```
 
-### Add an MCP tool
-
-```text
-/implement Add a read-only MCP tool <tool_name> that returns <what>.
-Follow the existing tools in src/mcp/ (metadata in src/mcp/tools.ts, a
-test next to it, registered in src/app/api/mcp/route.ts) and add it to the
-README tool list. It must only return what a signed-in Participant sees: no
-emails.
-```
-
-`/llms.txt` picks the new tool up from `src/mcp/tools.ts`. The tools today
-are `get_current_war_week`, `get_leaderboard`, `get_schedule`,
-`get_announcements` (a video is its URL in the plain-text body),
-`get_awards`, `get_faq`, `list_history`, `get_history`, `get_bracket` (a
-Competition's Bracket by name, with its kind, Match size, how many advance and
-whether it has a 3rd place match, each played Match's recorded time, its `winner` once the Bracket is Closed (`closed`, `matchSize`, `thirdPlaceMatch` and each Round's `matches` are the field names), and a
-Squad's `participants` by name; never who reported a result) and
-`get_league` (a League by name: Pairing, rounds, each Match with its result and Scores, and the standings with match points and tiebreaks; no emails; `get_bracket` and `get_games` on a League point to it) and
-`get_games` (a Head-to-head or Best score Competition, by name: its Format and settings (Score direction and unit, Best of, draws, Max attempts, Team score), leaderboard
-ranked by that Format and its `matches` (Head-to-head) or `attempts` (Best score) newest first, with `closed`; never an email or who
-logged one) and `get_participation` (a Competition run as Participation, by
-name: its settings, closed state, who took part by name and, in team
-scoring, each Team's headcount; never an email or who marked anyone), `get_placements` (a Placement Competition by name: Score direction, Placement Points, whether it's closed and each row by place with name, Team, Score and points; no emails; `get_bracket` on a Placement points to it) and `get_discretionary_points` (the current War Week's Discretionary points by name and reason; no emails). `get_bracket` (`src/mcp/bracket.ts`) is the model for a tool
-that looks something up by name and whitelists what it returns.
-
 ### Add or fix history
 
 ```text
@@ -1307,8 +1280,7 @@ Organizer wants kept, don't migrate; ask Paul. Then, as for R16 to R18:
 1. **Staging.** After the PR merges into `staging` and `migrate.yml`'s run is
    green, run the **Seed** workflow on `staging`, file blank (all seeds),
    **reset** ticked, `staging` typed in **confirm_reset**. Check:
-   `/xii/competitions` renders, a Head-to-head's `get_games` answers over MCP,
-   and the Bracket page answers 200.
+   `/xii/competitions` renders, and the Bracket page answers 200.
 2. **Production pre-check** before the `staging` → `main` PR merges: the report
    above, plus a look in Admin for anything an Organizer entered that should
    be kept.
@@ -1331,8 +1303,8 @@ admit a League. It converts and drops nothing, so there is no report script.
 After the PR merges into `staging`, 0034 applies on its own (the deploy
 migrates; nothing to run by hand). Once it has, run **`seed.yml`**
 (file blank, all seeds) so the XII demo gains **Chess Round Robin** and
-**Chess Swiss**. Check: `/xii/competitions` lists both, both pages answer 200
-and `get_league` answers over MCP. Repeat for production after the `main`
+**Chess Swiss**. Check: `/xii/competitions` lists both, and both pages answer 200.
+Repeat for production after the `main`
 merge. **Roll back only after deleting every League Competition**: an older
 deploy has no Format branch for a `league` Competition and would error on it.
 This release also changes Head-to-head: Close now waits for a decided or

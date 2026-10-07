@@ -31,7 +31,7 @@ async function loadSorted(
 
 /**
  * A War Week's Announcements, pinned first then newest first. `limit` caps
- * the returned list; the feed page and MCP both use it.
+ * the returned list; the feed page uses it.
  */
 export async function getAnnouncements(
   warWeek: Pick<WarWeek, "id">,
@@ -115,7 +115,7 @@ function toCardData(row: Announcement, authors: Authors): AnnouncementCardData {
  * A War Week's Announcements as `AnnouncementCard` data (author display
  * name, not email). `/announcements` and the home feed both use this. The
  * admin pages show the name too; the email is only for the edit/ownership
- * check (MCP shows the same name).
+ * check (the feed shows the same name).
  */
 export async function getAnnouncementCards(
   warWeek: Pick<WarWeek, "id">,
@@ -161,8 +161,7 @@ export async function getAnnouncementAuthorName(
 /**
  * A War Week's Announcements (pinned first, then newest; `limit` caps the
  * list), each with its author's display name added. Rows keep the author's
- * email for the edit check, so only the admin pages and the MCP builder
- * (which drops it) read them.
+ * email for the edit check, so only the admin pages read them.
  */
 export async function getAnnouncementsWithAuthors(
   warWeek: Pick<WarWeek, "id">,

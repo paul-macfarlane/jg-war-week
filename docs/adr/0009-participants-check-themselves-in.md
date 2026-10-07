@@ -1,7 +1,8 @@
 # ADR 0009: Participants check themselves in
 
-- Status: accepted (built in Epic R12, work package regression-r12)
+- Status: accepted (built in Epic R12, work package regression-r12); superseded in part by ADR 0013
 - Date: 2026-10-02
+- Superseded in part by ADR 0013 (Remove the MCP): its MCP mention (there is no MCP).
 - Extends: ADR 0006 (its three Participant writes stand; this adds a fourth)
 
 ## Context
