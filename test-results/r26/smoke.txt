@@ -1,236 +1,4 @@
-
-> war-weeker@0.1.0 format:check /Users/paulmacfarlane/Code/jg-war-week/.claude/worktrees/r23-league/war-weeker
-> prettier --check .
-
-Checking formatting...
-All matched files use Prettier code style!
-
-> war-weeker@0.1.0 typecheck /Users/paulmacfarlane/Code/jg-war-week/.claude/worktrees/r23-league/war-weeker
-> next typegen && tsc --noEmit
-
-Generating route types...
-✓ Types generated successfully
-
-> war-weeker@0.1.0 lint /Users/paulmacfarlane/Code/jg-war-week/.claude/worktrees/r23-league/war-weeker
-> eslint .
-
-
-/Users/paulmacfarlane/Code/jg-war-week/.claude/worktrees/r23-league/war-weeker/src/app/sign-in/page.tsx
-  46:11  warning  Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
-  57:17  warning  Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
-
-/Users/paulmacfarlane/Code/jg-war-week/.claude/worktrees/r23-league/war-weeker/src/components/about-still.tsx
-  21:7  warning  Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
-  28:7  warning  Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
-
-/Users/paulmacfarlane/Code/jg-war-week/.claude/worktrees/r23-league/war-weeker/src/components/finale-slides/title-slide.tsx
-  13:11  warning  Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
-  26:9   warning  Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
-
-/Users/paulmacfarlane/Code/jg-war-week/.claude/worktrees/r23-league/war-weeker/src/components/roster.tsx
-  77:11  warning  Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
-
-/Users/paulmacfarlane/Code/jg-war-week/.claude/worktrees/r23-league/war-weeker/src/components/war-week-hero.tsx
-  15:9   warning  Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
-  25:13  warning  Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
-
-✖ 9 problems (0 errors, 9 warnings)
-
-
-> war-weeker@0.1.0 test /Users/paulmacfarlane/Code/jg-war-week/.claude/worktrees/r23-league/war-weeker
-> vitest run
-
-(!) Your Vite config uses features that are unsupported by `configLoader: 'native'`, which is planned to become the default in a future major version of Vite:
-  - ESM syntax in a file loaded as CommonJS (vitest.config.ts:1:1). Use a `.mjs` extension or set `"type": "module"` in the closest package.json
-Set `VITE_CONFIG_NATIVE_IGNORE_WARNING=true` to suppress this warning.
-
- RUN  v4.1.11 /Users/paulmacfarlane/Code/jg-war-week/.claude/worktrees/r23-league/war-weeker
-
-(node:66244) DeprecationWarning: Calling client.query() when the client is already executing a query is deprecated and will be removed in pg@9.0. Use async/await or an external async flow control mechanism instead.
-(Use `node --trace-deprecation ...` to show where the warning was created)
-(node:66241) DeprecationWarning: Calling client.query() when the client is already executing a query is deprecated and will be removed in pg@9.0. Use async/await or an external async flow control mechanism instead.
-(Use `node --trace-deprecation ...` to show where the warning was created)
-(node:66240) DeprecationWarning: Calling client.query() when the client is already executing a query is deprecated and will be removed in pg@9.0. Use async/await or an external async flow control mechanism instead.
-(Use `node --trace-deprecation ...` to show where the warning was created)
-(node:66242) DeprecationWarning: Calling client.query() when the client is already executing a query is deprecated and will be removed in pg@9.0. Use async/await or an external async flow control mechanism instead.
-(Use `node --trace-deprecation ...` to show where the warning was created)
-(node:66243) DeprecationWarning: Calling client.query() when the client is already executing a query is deprecated and will be removed in pg@9.0. Use async/await or an external async flow control mechanism instead.
-(Use `node --trace-deprecation ...` to show where the warning was created)
-(node:66247) DeprecationWarning: Calling client.query() when the client is already executing a query is deprecated and will be removed in pg@9.0. Use async/await or an external async flow control mechanism instead.
-(Use `node --trace-deprecation ...` to show where the warning was created)
-(node:66251) DeprecationWarning: Calling client.query() when the client is already executing a query is deprecated and will be removed in pg@9.0. Use async/await or an external async flow control mechanism instead.
-(Use `node --trace-deprecation ...` to show where the warning was created)
-(node:66262) DeprecationWarning: Calling client.query() when the client is already executing a query is deprecated and will be removed in pg@9.0. Use async/await or an external async flow control mechanism instead.
-(Use `node --trace-deprecation ...` to show where the warning was created)
-(node:66268) DeprecationWarning: Calling client.query() when the client is already executing a query is deprecated and will be removed in pg@9.0. Use async/await or an external async flow control mechanism instead.
-(Use `node --trace-deprecation ...` to show where the warning was created)
-(node:66270) DeprecationWarning: Calling client.query() when the client is already executing a query is deprecated and will be removed in pg@9.0. Use async/await or an external async flow control mechanism instead.
-(Use `node --trace-deprecation ...` to show where the warning was created)
-(node:66272) DeprecationWarning: Calling client.query() when the client is already executing a query is deprecated and will be removed in pg@9.0. Use async/await or an external async flow control mechanism instead.
-(Use `node --trace-deprecation ...` to show where the warning was created)
-(node:66275) DeprecationWarning: Calling client.query() when the client is already executing a query is deprecated and will be removed in pg@9.0. Use async/await or an external async flow control mechanism instead.
-(Use `node --trace-deprecation ...` to show where the warning was created)
-(node:66391) DeprecationWarning: Calling client.query() when the client is already executing a query is deprecated and will be removed in pg@9.0. Use async/await or an external async flow control mechanism instead.
-(Use `node --trace-deprecation ...` to show where the warning was created)
-(node:66392) DeprecationWarning: Calling client.query() when the client is already executing a query is deprecated and will be removed in pg@9.0. Use async/await or an external async flow control mechanism instead.
-(Use `node --trace-deprecation ...` to show where the warning was created)
-(node:66394) DeprecationWarning: Calling client.query() when the client is already executing a query is deprecated and will be removed in pg@9.0. Use async/await or an external async flow control mechanism instead.
-(Use `node --trace-deprecation ...` to show where the warning was created)
-(node:66403) DeprecationWarning: Calling client.query() when the client is already executing a query is deprecated and will be removed in pg@9.0. Use async/await or an external async flow control mechanism instead.
-(Use `node --trace-deprecation ...` to show where the warning was created)
-(node:66432) DeprecationWarning: Calling client.query() when the client is already executing a query is deprecated and will be removed in pg@9.0. Use async/await or an external async flow control mechanism instead.
-(Use `node --trace-deprecation ...` to show where the warning was created)
-(node:66631) DeprecationWarning: Calling client.query() when the client is already executing a query is deprecated and will be removed in pg@9.0. Use async/await or an external async flow control mechanism instead.
-(Use `node --trace-deprecation ...` to show where the warning was created)
-(node:66629) DeprecationWarning: Calling client.query() when the client is already executing a query is deprecated and will be removed in pg@9.0. Use async/await or an external async flow control mechanism instead.
-(Use `node --trace-deprecation ...` to show where the warning was created)
-
- Test Files  220 passed (220)
-      Tests  4144 passed (4144)
-   Start at  20:56:59
-   Duration  34.83s (transform 11.54s, setup 0ms, import 113.05s, tests 165.87s, environment 1.35s)
-
-
-> war-weeker@0.1.0 build /Users/paulmacfarlane/Code/jg-war-week/.claude/worktrees/r23-league/war-weeker
-> next build
-
-▲ Next.js 16.3.6 (Turbopack)
-✓ Running next.config.ts took 58ms
-
-  Creating an optimized production build ...
-✓ Compiled successfully in 2.5s
-  Running TypeScript ...
-  Finished TypeScript in 7.5s ...
-  Collecting page data using 9 workers ...
-2026-10-05T00:57:46.375Z WARN [Better Auth]: [better-auth] Base URL is not set. Set the baseURL option or BETTER_AUTH_URL env, or use a dynamic baseURL with allowedHosts for multi-host setups. Without it the origin is derived from the incoming request, and callbacks and redirects may not work correctly.
-[Error [BetterAuthError]: You are using the default secret. Please set `BETTER_AUTH_SECRET` in your environment variables or pass `secret` in your auth config.]
-2026-10-05T00:57:46.384Z WARN [Better Auth]: [better-auth] Base URL is not set. Set the baseURL option or BETTER_AUTH_URL env, or use a dynamic baseURL with allowedHosts for multi-host setups. Without it the origin is derived from the incoming request, and callbacks and redirects may not work correctly.
-[Error [BetterAuthError]: You are using the default secret. Please set `BETTER_AUTH_SECRET` in your environment variables or pass `secret` in your auth config.]
-2026-10-05T00:57:46.391Z WARN [Better Auth]: [better-auth] Base URL is not set. Set the baseURL option or BETTER_AUTH_URL env, or use a dynamic baseURL with allowedHosts for multi-host setups. Without it the origin is derived from the incoming request, and callbacks and redirects may not work correctly.
-[Error [BetterAuthError]: You are using the default secret. Please set `BETTER_AUTH_SECRET` in your environment variables or pass `secret` in your auth config.]
-2026-10-05T00:57:46.406Z WARN [Better Auth]: [better-auth] Base URL is not set. Set the baseURL option or BETTER_AUTH_URL env, or use a dynamic baseURL with allowedHosts for multi-host setups. Without it the origin is derived from the incoming request, and callbacks and redirects may not work correctly.
-[Error [BetterAuthError]: You are using the default secret. Please set `BETTER_AUTH_SECRET` in your environment variables or pass `secret` in your auth config.]
-2026-10-05T00:57:46.409Z WARN [Better Auth]: [better-auth] Base URL is not set. Set the baseURL option or BETTER_AUTH_URL env, or use a dynamic baseURL with allowedHosts for multi-host setups. Without it the origin is derived from the incoming request, and callbacks and redirects may not work correctly.
-[Error [BetterAuthError]: You are using the default secret. Please set `BETTER_AUTH_SECRET` in your environment variables or pass `secret` in your auth config.]
-2026-10-05T00:57:46.435Z WARN [Better Auth]: [better-auth] Base URL is not set. Set the baseURL option or BETTER_AUTH_URL env, or use a dynamic baseURL with allowedHosts for multi-host setups. Without it the origin is derived from the incoming request, and callbacks and redirects may not work correctly.
-2026-10-05T00:57:46.435Z WARN [Better Auth]: [better-auth] Base URL is not set. Set the baseURL option or BETTER_AUTH_URL env, or use a dynamic baseURL with allowedHosts for multi-host setups. Without it the origin is derived from the incoming request, and callbacks and redirects may not work correctly.
-[Error [BetterAuthError]: You are using the default secret. Please set `BETTER_AUTH_SECRET` in your environment variables or pass `secret` in your auth config.]
-[Error [BetterAuthError]: You are using the default secret. Please set `BETTER_AUTH_SECRET` in your environment variables or pass `secret` in your auth config.]
-2026-10-05T00:57:46.424Z WARN [Better Auth]: [better-auth] Base URL is not set. Set the baseURL option or BETTER_AUTH_URL env, or use a dynamic baseURL with allowedHosts for multi-host setups. Without it the origin is derived from the incoming request, and callbacks and redirects may not work correctly.
-[Error [BetterAuthError]: You are using the default secret. Please set `BETTER_AUTH_SECRET` in your environment variables or pass `secret` in your auth config.]
-2026-10-05T00:57:46.544Z WARN [Better Auth]: [better-auth] Base URL is not set. Set the baseURL option or BETTER_AUTH_URL env, or use a dynamic baseURL with allowedHosts for multi-host setups. Without it the origin is derived from the incoming request, and callbacks and redirects may not work correctly.
-2026-10-05T00:57:46.547Z WARN [Better Auth]: [better-auth] Base URL is not set. Set the baseURL option or BETTER_AUTH_URL env, or use a dynamic baseURL with allowedHosts for multi-host setups. Without it the origin is derived from the incoming request, and callbacks and redirects may not work correctly.
-[Error [BetterAuthError]: You are using the default secret. Please set `BETTER_AUTH_SECRET` in your environment variables or pass `secret` in your auth config.]
-[Error [BetterAuthError]: You are using the default secret. Please set `BETTER_AUTH_SECRET` in your environment variables or pass `secret` in your auth config.]
-2026-10-05T00:57:46.570Z WARN [Better Auth]: [better-auth] Base URL is not set. Set the baseURL option or BETTER_AUTH_URL env, or use a dynamic baseURL with allowedHosts for multi-host setups. Without it the origin is derived from the incoming request, and callbacks and redirects may not work correctly.
-[Error [BetterAuthError]: You are using the default secret. Please set `BETTER_AUTH_SECRET` in your environment variables or pass `secret` in your auth config.]
-  Generating static pages using 9 workers (0/5) ...
-  Generating static pages using 9 workers (1/5) 
-  Generating static pages using 9 workers (2/5) 
-  Generating static pages using 9 workers (3/5) 
-✓ Generating static pages using 9 workers (5/5) in 77ms
-  Finalizing page optimization ...
-
-Route (app)
-┌ ƒ /
-├ ƒ /_not-found
-├ ƒ /[edition]
-├ ƒ /[edition]/announcements
-├ ƒ /[edition]/awards
-├ ƒ /[edition]/competitions
-├ ƒ /[edition]/competitions/[id]
-├ ƒ /[edition]/competitions/[id]/manage
-├ ƒ /[edition]/faq
-├ ƒ /[edition]/finale
-├ ƒ /[edition]/leaderboard
-├ ƒ /[edition]/more
-├ ƒ /[edition]/profile
-├ ƒ /[edition]/schedule
-├ ƒ /[edition]/teams
-├ ƒ /about
-├ ƒ /admin/announcements
-├ ƒ /admin/announcements/[id]
-├ ƒ /admin/announcements/new
-├ ƒ /admin/awards
-├ ƒ /admin/brackets/[id]
-├ ƒ /admin/competitions
-├ ƒ /admin/competitions/[id]
-├ ƒ /admin/competitions/[id]/bracket
-├ ƒ /admin/competitions/[id]/games
-├ ƒ /admin/competitions/[id]/participation
-├ ƒ /admin/discretionary-points
-├ ƒ /admin/faq
-├ ƒ /admin/finale
-├ ƒ /admin/guide
-├ ƒ /admin/organizers
-├ ƒ /admin/placements/[competitionId]
-├ ƒ /admin/roster
-├ ƒ /admin/schedule
-├ ƒ /admin/settings
-├ ƒ /api/auth/[...all]
-├ ƒ /api/mcp
-├ ƒ /history
-├ ƒ /history/awards
-├ ƒ /history/awards/[slug]
-├ ƒ /install
-├ ƒ /llms.txt
-├ ○ /manifest.webmanifest
-├ ƒ /privacy
-├ ƒ /sign-in
-├ ƒ /sign-in/test
-└ ƒ /terms
-
-
-ƒ Proxy (Middleware)
-
-○  (Static)   prerendered as static content
-ƒ  (Dynamic)  server-rendered on demand
-
-
-> war-weeker@0.1.0 smoke /Users/paulmacfarlane/Code/jg-war-week/.claude/worktrees/r23-league/war-weeker
-> tsx scripts/smoke/index.ts
-
-
-> war-weeker@0.1.0 db:migrate /Users/paulmacfarlane/Code/jg-war-week/.claude/worktrees/r23-league/war-weeker
-> drizzle-kit migrate
-
-No config path provided, using default 'drizzle.config.ts'
-Reading config file '/Users/paulmacfarlane/Code/jg-war-week/.claude/worktrees/r23-league/war-weeker/drizzle.config.ts'
-Using 'pg' driver for database querying
-[⣷] applying migrations...[2K[1G[✓] migrations applied successfully!ok - pnpm db:migrate
-
-> war-weeker@0.1.0 seed:load /Users/paulmacfarlane/Code/jg-war-week/.claude/worktrees/r23-league/war-weeker
-> tsx scripts/seed-load.ts --reset seeds/i.json seeds/ii.json seeds/iii.json seeds/iv.json seeds/ix.json seeds/v.json seeds/vi.json seeds/vii.json seeds/viii.json seeds/x.json seeds/xii.json seeds/demo/xi.json
-
-Loaded War Week i (reset)
-Loaded War Week ii (reset)
-Loaded War Week iii (reset)
-Loaded War Week iv (reset)
-Loaded War Week ix (reset)
-Loaded War Week v (reset)
-Loaded War Week vi (reset)
-Loaded War Week vii (reset)
-Loaded War Week viii (reset)
-Loaded War Week x (reset)
-Loaded War Week xii (reset)
-Loaded War Week xi (reset)
 ok - pnpm seed:load --reset (12 seeds, load 1)
-
-> war-weeker@0.1.0 seed:load /Users/paulmacfarlane/Code/jg-war-week/.claude/worktrees/r23-league/war-weeker
-> tsx scripts/seed-load.ts seeds/i.json seeds/ii.json seeds/iii.json seeds/iv.json seeds/ix.json seeds/v.json seeds/vi.json seeds/vii.json seeds/viii.json seeds/x.json seeds/xii.json seeds/demo/xi.json
-
-Loaded War Week i
-Loaded War Week ii
-Loaded War Week iii
-Loaded War Week iv
-Loaded War Week ix
-Loaded War Week v
-Loaded War Week vi
-Loaded War Week vii
-Loaded War Week viii
-Loaded War Week x
-Loaded War Week xii
-Loaded War Week xi
 ok - pnpm seed:load (12 seeds, load 2)
 ok - after loading the seed twice, War Week XI has 1 war_week rows
 ok - after loading the seed twice, War Week XI has 6 day rows
@@ -272,15 +40,6 @@ ok - competition_self_enroll_bracket_only admits a League with enrollment
 ok - competition_self_enroll_bracket_only still refuses a Head-to-head with enrollment
 ok - the XI seed loads 5/3/1 Placement Points for Catan and the lone-winner 3 for Beast Mode
 ok - after loading the seeds twice, Award Categories are gone, Billable Hours Champ is in iv, v and viii, and no retired Award spelling remains
-
-> war-weeker@0.1.0 start /Users/paulmacfarlane/Code/jg-war-week/.claude/worktrees/r23-league/war-weeker
-> next start -p 3150
-
-▲ Next.js 16.3.6
-- Local:         http://localhost:3150
-- Network:       http://192.168.1.184:3150
-✓ Ready in 101ms
-✓ Running next.config.ts took 24ms
 ok - server ready
 ok - signed-in GET / redirects to /xi
 ok - GET /xi renders War Week XI with the Team Standings
@@ -292,7 +51,6 @@ ok - GET /xi/schedule groups by Day with Day Themes, ET times and Competition li
 ok - GET /xi?at=<Tue Feb 24 12:30 ET> shows today's Day Theme and now/next
 ok - GET /xi/more links to Teams, Awards, FAQ, history, Install app and About
 ok - PWA: manifest, icons and service worker load without a session, pages link them, and /install renders
-ok - GET /llms.txt returns 200 text/plain without a session and names every MCP tool
 ok - GET /history lists every complete War Week, newest first, each in its own theme
 ok - GET /viii renders 2023 in its Harry Potter theme with stored winner, Houses, Awards, highlights and wiki link
 ok - GET /i and /ii render as link-only cards, /iii with its Awards, each with the wiki link
@@ -307,45 +65,9 @@ ok - a signed-in user linked by email sees one 'You' on /xi/teams and no picker
 ok - a signed-in user linked by email sees one 'You' on the individual leaderboard
 ok - a signed-in user linked by email sees 'You' on their Award on /xi/awards
 ok - a signed-in user with no email match gets no 'You' and no picker
-ok - MCP tools/list includes get_current_war_week
-ok - MCP tools/list includes get_leaderboard
-ok - MCP tools/list includes get_schedule
-ok - MCP tools/list includes get_announcements
-ok - MCP tools/list includes get_awards
-ok - MCP tools/list includes get_discretionary_points
-ok - MCP tools/list includes get_faq
-ok - MCP tools/list includes list_history
-ok - MCP tools/list includes get_history
-ok - MCP tools/list includes get_bracket
-ok - MCP tools/list includes get_league
-ok - MCP tools/list includes get_games
-ok - MCP tools/list includes get_participation
-ok - MCP tools/list includes get_placements
-ok - MCP tools/call get_current_war_week returns edition xi
-ok - MCP get_leaderboard(team) returns Standings with numeric totals
-ok - MCP get_leaderboard(individual) returns Standings with numeric totals
-ok - MCP get_schedule(2026-02-24) returns only that Day
-ok - MCP get_schedule() returns all six XI Days
-ok - MCP get_announcements(limit: 2) returns edition xi, 2 Announcements, welcome pinned first with its video URL and body
-ok - MCP get_announcements() returns all 3 Announcements
-ok - MCP get_announcements({}) returns no @ anywhere
-ok - MCP get_leaderboard({"kind":"team"}) returns no @ anywhere
-ok - MCP get_leaderboard({"kind":"individual"}) returns no @ anywhere
-ok - MCP get_awards returns XI's three seeded Awards with the same recipients as /xi/awards
-ok - MCP get_games(Bouncy Pong) returns its Head-to-head settings (Best of 3, draws not allowed, Score direction and unit) between its 2 Entrants, standings and matches (no attempts, no count) with no @
-ok - MCP get_bracket(Bouncy Pong) answers bracket: null, run as Head-to-head, pointing to get_games
-ok - MCP get_participation(Daily Workout Check-in) returns its settings and who took part with no @
-ok - MCP get_placements(Speed Chess) returns its Closed sheet by name (closed, no finalized field, Score direction and unit) with no @
-ok - MCP get_games(Tuesday Stairs) returns the Best score Format with higher wins in trips, unlimited attempts, Team score Sum of members and its attempts (no matches, no entrants, no count) with no @
-ok - MCP get_bracket(Daily Workout Check-in) answers bracket: null with no @
-ok - MCP get_bracket(Speed Chess) answers bracket: null, run as Placement, pointing to get_placements
-ok - MCP get_discretionary_points returns edition xi and its list with no @
-ok - MCP get_faq returns XI's six FAQ Items in seed order with plain-text answers
-ok - MCP list_history returns 2025 down to 2016
-ok - MCP get_history(2023) returns the stored winner, Houses, Awards and wiki link
-ok - MCP get_history(2030) returns a clear not-found result
-ok - MCP get_history(2026) returns a clear not-found result
-ok - anonymous GET /about is 200 with the Standings-hero stills, the Finale still, every feature card, the XI link and no sign-in redirect
+ok - GET /api/mcp answers 404 (the MCP and llms.txt are gone)
+ok - GET /llms.txt answers 404 (the MCP and llms.txt are gone)
+ok - anonymous GET /about is 200 with no Standings demo, the Finale still, every feature card with its phone stills, the XI link and no sign-in redirect
 ok - anonymous GET /about/leaderboard redirects to sign-in
 ok - anonymous GET /aboutx redirects to sign-in
 ok - anonymous GET /privacy is 200 with its "Privacy" heading, "Last updated" and no sign-in redirect
@@ -396,9 +118,6 @@ ok - GET /admin as an Organizer lands on Competitions, the first admin section
 ok - anonymous GET / redirects to sign-in
 ok - anonymous GET /xi redirects to sign-in
 ok - anonymous GET /xi/leaderboard redirects to sign-in
-ok - anonymous POST /api/mcp answers 401
-ok - POST /api/mcp with a wrong bearer token answers 401
-ok - POST /api/mcp with the bearer token and no session completes initialize and get_current_war_week
 ok - GET /xi/more as an Organizer has no Admin link or account rows (the account menu holds them)
 ok - GET /xi/more as a non-Organizer has no Admin link or account rows (the account menu holds them)
 ok - GET /admin/guide as an Organizer shows the guide, linked in the admin nav
@@ -416,7 +135,6 @@ ok - deleteDiscretionaryPoints as an Organizer removes it
 ok - GET /xi/finale as a signed-in user opens the slideshow on its Title slide, with nothing waiting on Start
 ok - GET /admin/finale shows the Finale page with Open Finale, the slide list and no Awards layout control to an Organizer and the refusal to a non-Organizer
 ok - GET /admin/finale lists the seeded Custom "Thank you" slide on XI with its Edit and Delete, and offers Add Custom slide, to an Organizer
-ok - MCP get_leaderboard(team) returns the same Team totals as /xi/leaderboard
 ok - GET /xi/news permanently redirects (308) to /xi/announcements
 ok - GET /xi/announcements orders the pinned welcome first, then Wellness Wednesday, then Tournament Night recap
 ok - GET /xi/announcements embeds the welcome Announcement's video as a YouTube iframe
@@ -433,8 +151,8 @@ ok - deleteAnnouncement as an Organizer removes it
 ok - deleteAnnouncement of an id that no longer exists says so
 ok - createAnnouncement strips a javascript: link, a data: image and an unrecognized iframe block on write
 ok - GET /admin/announcements as an Organizer lists the seeded titles and New Announcement, and refuses a non-Organizer
-ok - GET /admin/announcements/new as an Organizer shows the Announcement form
-ok - GET /admin/announcements/[id] as an Organizer shows Edit Announcement for the seeded welcome Announcement
+ok - GET /admin/announcements/new as an Organizer answers 404 (the dialog on the list replaced the page)
+ok - GET /admin/announcements/[id] for the seeded welcome Announcement as an Organizer answers 404
 ok - GET /xi/awards lists the seeded Awards with descriptions and recipients, and says Awards don't affect Standings
 ok - GET /xi/awards links an Award's name to /history/awards/<slug> with no Category headings
 ok - GET /admin/awards offers presets with a past Award name and the seven former Category names, and has no Categories section
@@ -450,7 +168,7 @@ ok - Giving and editing Awards adds no Points Entries
 ok - deleteAward as an Organizer removes it
 ok - deleteAward of an id that no longer exists says so
 ok - GET /admin/awards as an Organizer lists the seeded Awards with Edit and Delete and Add Award, and refuses a non-Organizer
-ok - GET /admin/settings and /admin/schedule show the pages to an Organizer and the refusal to a non-Organizer; Settings has the setup warning, the Lifecycle box and Create next War Week; Schedule has the Days and their Schedule Items
+ok - GET /admin/settings and /admin/schedule show the pages to an Organizer and the refusal to a non-Organizer; Settings has the setup warning and the Lifecycle box, with no Create next War Week while the latest War Week is not complete; Schedule has the Days and their Schedule Items
 ok - updateWarWeekSettingsFields rejects a signed-in JG user off the allowlist
 ok - updateWarWeekSettingsFields refuses free-for-all while XI has Teams
 ok - an Organizer saves a new primary color and GET /xi is themed with it
@@ -493,7 +211,6 @@ ok - GET /admin/discretionary-points as a Host shows the refusal, not the form
 ok - GET /admin/competitions as a Host shows the Host's nav (Competitions and Guide only) and only the Competitions they host
 ok - GET /admin/schedule as a Host shows 'Organizers and Hosts only.'
 ok - GET /admin/announcements as a Host shows 'Organizers and Hosts only.'
-ok - GET /admin/announcements/new as a Host shows 'Organizers and Hosts only.'
 ok - GET /admin/finale as a Host shows 'Organizers and Hosts only.'
 ok - GET /admin/competitions/<another Competition> as a Host shows 'Organizers and Hosts only.'
 ok - GET their own Competition's admin page as a Host shows its Settings
@@ -602,8 +319,6 @@ ok - participation: checkIn as the linked smoke Participant succeeds and the pag
 ok - participation: clear Daily Workout Check-in's check-ins
 ok - league: pairLeague by an Organizer pairs a round robin of 3 (3 rounds, a Match and a sit-out each)
 ok - league: with self-report off, a player and a non-player recording a Match are both refused SELF_REPORT_OFF (AC 4)
-(node:67366) DeprecationWarning: Calling client.query() when the client is already executing a query is deprecated and will be removed in pg@9.0. Use async/await or an external async flow control mechanism instead.
-(Use `node --trace-deprecation ...` to show where the warning was created)
 ok - league: with self-report on, a player records their own Match and a non-player is refused NOT_A_PLAYER (AC 4)
 ok - league: swapPairing before a result succeeds, and after a result in the round it is refused (AC 6)
 ok - league: swapPairing in the round with the player's result is refused too
@@ -618,34 +333,12 @@ ok - logged results: Close is refused until the series is decided; decided, clos
 ok - logged results: reopen Bouncy Pong and delete the smoke Matches
 ok - logged results: Tuesday Stairs back to no Attempts, self-report off
 ok - createFaqItem posting XI's warWeekId with admin_edition=x in the cookie writes to XI and leaves X unchanged
-ok - lifecycle: create XII, end XI with a Winner, start XII; an Organizer corrects XI but a Participant can't reopen it; then restore
-
-> war-weeker@0.1.0 seed:load /Users/paulmacfarlane/Code/jg-war-week/.claude/worktrees/r23-league/war-weeker
-> tsx scripts/seed-load.ts seeds/demo/xii.json
-
-Loaded War Week xii
+ok - lifecycle: create XII refused while XI is live, end XI with a Winner, create XII, start XII; an Organizer corrects XI but a Participant can't reopen it; then restore
 ok - league: pnpm seed:load seeds/demo/xii.json (XII demo, load 1)
-
-> war-weeker@0.1.0 seed:load /Users/paulmacfarlane/Code/jg-war-week/.claude/worktrees/r23-league/war-weeker
-> tsx scripts/seed-load.ts seeds/demo/xii.json
-
-Loaded War Week xii
 ok - league: pnpm seed:load seeds/demo/xii.json (XII demo, load 2)
 ok - league: the XII demo's Leagues load twice with no league_match, entrant, points_entry or competition count changing
-
-> war-weeker@0.1.0 seed:load /Users/paulmacfarlane/Code/jg-war-week/.claude/worktrees/r23-league/war-weeker
-> tsx scripts/seed-load.ts seeds/demo/xii.json
-
-Loaded War Week xii
 ok - league: pnpm seed:load seeds/demo/xii.json over the re-paired Chess Swiss
 ok - league: a reload over a re-paired Chess Swiss changes nothing and doesn't throw
-ok - league: MCP get_league(Chess Swiss) returns the pairing, 3 rounds of 4 Matches with results, and standings with Buchholz, with no @
-ok - league: MCP get_league(Chess Round Robin) returns 5 rounds of Matches with results and the standings with head-to-head and Sonneborn-Berger, Closed with its points, with no @
-ok - league: MCP get_bracket(Chess Swiss) answers bracket: null and points to get_league
-ok - league: MCP get_games(Chess Swiss) answers matches: null and points to get_league
-ok - league: MCP get_placements(Chess Swiss) answers placements: null and points to get_league
-ok - league: MCP get_participation(Chess Swiss) answers participation: null and points to get_league
-ok - league: MCP get_league(Mile Run) answers league: null and points to get_placements
 ok - no roster email in the Participant page of Chess Round Robin (League)
 ok - no roster email in the admin page of Chess Round Robin (League) as an Organizer
 ok - no roster email in the admin page of Chess Round Robin (League) as a Host
@@ -654,102 +347,16 @@ ok - no roster email in the admin page of Chess Swiss (League) as an Organizer
 ok - no roster email in the admin page of Chess Swiss (League) as a Host
 ok - league: XII is back as it was before this step
 ok - league: XI is live again
-
-> war-weeker@0.1.0 seed:load /Users/paulmacfarlane/Code/jg-war-week/.claude/worktrees/r23-league/war-weeker
-> tsx scripts/seed-load.ts --reset seeds/i.json seeds/ii.json seeds/iii.json seeds/iv.json seeds/ix.json seeds/v.json seeds/vi.json seeds/vii.json seeds/viii.json seeds/x.json seeds/xi.json seeds/demo/xii-scale.json
-
-Loaded War Week i (reset)
-Loaded War Week ii (reset)
-Loaded War Week iii (reset)
-Loaded War Week iv (reset)
-Loaded War Week ix (reset)
-Loaded War Week v (reset)
-Loaded War Week vi (reset)
-Loaded War Week vii (reset)
-Loaded War Week viii (reset)
-Loaded War Week x (reset)
-Loaded War Week xi (reset)
-Loaded War Week xii (reset)
 ok - pnpm seed:load --reset with the XII scale demo (load 1)
-(node:68305) DeprecationWarning: Calling client.query() when the client is already executing a query is deprecated and will be removed in pg@9.0. Use async/await or an external async flow control mechanism instead.
-(Use `node --trace-deprecation ...` to show where the warning was created)
-Applied the XII scale fixture
 ok - the XII scale fixture (load 1)
-
-> war-weeker@0.1.0 seed:load /Users/paulmacfarlane/Code/jg-war-week/.claude/worktrees/r23-league/war-weeker
-> tsx scripts/seed-load.ts seeds/i.json seeds/ii.json seeds/iii.json seeds/iv.json seeds/ix.json seeds/v.json seeds/vi.json seeds/vii.json seeds/viii.json seeds/x.json seeds/xi.json seeds/demo/xii-scale.json
-
-Loaded War Week i
-Loaded War Week ii
-Loaded War Week iii
-Loaded War Week iv
-Loaded War Week ix
-Loaded War Week v
-Loaded War Week vi
-Loaded War Week vii
-Loaded War Week viii
-Loaded War Week x
-Loaded War Week xi
-Loaded War Week xii
 ok - pnpm seed:load with the XII scale demo (load 2)
-Applied the XII scale fixture
 ok - the XII scale fixture (load 2)
 ok - the XII scale demo loads twice with no row count changing
 ok - the XII scale demo has 100 Participants and 64 Entrants in Ping Pong Bracket
 ok - the XII scale demo's /xii answers 200
 ok - the XII scale demo's /xii/leaderboard answers 200
 ok - the XII scale demo's /xii/competitions answers 200
-ok - the XII scale demo's /xii/competitions/9cc15640-006b-41ac-a736-3c5c171292ef answers 200
-
-> war-weeker@0.1.0 seed:load /Users/paulmacfarlane/Code/jg-war-week/.claude/worktrees/r23-league/war-weeker
-> tsx scripts/seed-load.ts --reset seeds/i.json seeds/ii.json seeds/iii.json seeds/iv.json seeds/ix.json seeds/v.json seeds/vi.json seeds/vii.json seeds/viii.json seeds/x.json seeds/xii.json seeds/demo/xi.json
-
-Loaded War Week i (reset)
-Loaded War Week ii (reset)
-Loaded War Week iii (reset)
-Loaded War Week iv (reset)
-Loaded War Week ix (reset)
-Loaded War Week v (reset)
-Loaded War Week vi (reset)
-Loaded War Week vii (reset)
-Loaded War Week viii (reset)
-Loaded War Week x (reset)
-Loaded War Week xii (reset)
-Loaded War Week xi (reset)
+ok - the XII scale demo's /xii/competitions/c99a9723-4e54-4d2a-9508-4ffe6bfe8473 answers 200
 ok - pnpm seed:load --reset (12 seeds) puts the usual state back
 ok - the XII scale demo phase restored localSeedFiles()
-⨯ Error: Failed query: select "id", "war_week_id", "question", "answer", "sort_order", "created_at", "updated_at" from "faq_item" where "faq_item"."war_week_id" = $1 order by "faq_item"."sort_order" asc, "faq_item"."id" asc
-params: 0a357f50-8352-4487-b76b-b9130f80272b
-    at o.queryWithCache (.next/server/chunks/ssr/_1-k91vo._.js:25:37181)
-    at async (.next/server/chunks/ssr/_1-k91vo._.js:18:6014)
-    at async k (.next/server/chunks/ssr/[root-of-the-server]__1tnyg3a._.js:1:4473) {
-  query: 'select "id", "war_week_id", "question", "answer", "sort_order", "created_at", "updated_at" from "faq_item" where "faq_item"."war_week_id" = $1 order by "faq_item"."sort_order" asc, "faq_item"."id" asc',
-  params: [ '0a357f50-8352-4487-b76b-b9130f80272b' ],
-  digest: '3572704944',
-  [cause]: error: relation "faq_item" does not exist
-      at async (.next/server/chunks/ssr/_1-k91vo._.js:18:6229)
-      at async o.queryWithCache (.next/server/chunks/ssr/_1-k91vo._.js:25:37156)
-      at async (.next/server/chunks/ssr/_1-k91vo._.js:18:6014)
-      at async k (.next/server/chunks/ssr/[root-of-the-server]__1tnyg3a._.js:1:4473) {
-    length: 107,
-    severity: 'ERROR',
-    code: '42P01',
-    detail: undefined,
-    hint: undefined,
-    position: '97',
-    internalPosition: undefined,
-    internalQuery: undefined,
-    where: undefined,
-    schema: undefined,
-    table: undefined,
-    column: undefined,
-    dataType: undefined,
-    constraint: undefined,
-    file: 'parse_relation.c',
-    line: '1449',
-    routine: 'parserOpenTable'
-  }
-}
-  /xi/faq with faq_item missing answered 200
 ok - GET /xi/faq with its table missing streams the edition error boundary (ErrorScreen copy), not Next's default error page
- ELIFECYCLE  Command failed with exit code 143.
