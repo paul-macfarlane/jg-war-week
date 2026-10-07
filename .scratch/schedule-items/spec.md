@@ -41,8 +41,10 @@ human step (Paul), as in R22.
 The seeds hold 8 free-text Schedule item Hosts (`seeds/xi.json` and
 `seeds/demo/xi.json`, including "Jet Breuer", who isn't on XI's roster, and
 two on items linked to a Competition). They are **dropped**, not converted
-(Paul, 2026-10-06). No seed carries a Schedule item Host after R25. To
-seed one later, also seed that person as a roster Participant.
+(Paul, 2026-10-06). The seed format carries no Schedule item Host at all
+after R25, matching `CONTEXT.md` ("Hosts aren't in seeds"). Seeding them
+later is its own change, which would also seed those people as roster
+Participants.
 
 ## Decisions
 
@@ -63,7 +65,9 @@ seed one later, also seed that person as a roster Participant.
      `schedule_item_host` rows, in the same transaction. Linking a
      Competition later therefore clears the item's own Hosts, and unlinking
      it starts from none. Hosts are discarded rather than refused, because
-     the field is hidden and the Organizer has no way to fix the post.
+     the field is hidden and the Organizer has no way to fix the post. The
+     seed loader follows the same rule: when it saves an item with a
+     Competition, it deletes that item's `schedule_item_host` rows.
    - **Shown as** "Hosted by A, B" with avatars on the participant
      Schedule (`schedule-item.tsx`), names only, never an email.
 2. **Start time is optional.**
@@ -71,11 +75,16 @@ seed one later, also seed that person as a roster Participant.
      time must still be after the start.
    - An item with no start time reads **"Any time"**, sorts **first** in
      its day (then by title), and **never** appears in Now/Next.
-   - Every reader of `startTime` handles null: `compareItems`, `toSeconds`,
-     `span`, `computeNowNext`, `formatEtTime` and `formatTimeRange` in
-     `src/lib/schedule.ts`, and the `.slice` in
-     `src/lib/setup-schedule-faq.ts`. R26 has deleted the MCP by then; R25
-     adds nothing to it.
+   - Every reader of `startTime` handles null, including:
+     - `compareItems`, `toSeconds`, `span`, `computeNowNext`,
+       `formatEtTime` and `formatTimeRange` in `src/lib/schedule.ts`;
+     - in `src/lib/setup-schedule-faq.ts`: `scheduleItemInputFrom`'s
+       `.slice`, the guard's `.slice`, `duplicateScheduleItemError`, and
+       the start/end refine;
+     - the seed duplicate key `${item.startTime} ${item.title}`
+       (`src/seed/schema.ts`), which would otherwise read "undefined …"
+       without a type error, and the row mapping in `src/seed/load.ts`.
+   - R26 has deleted the MCP by then; R25 adds nothing to it.
    - The unique key on (day, start time, title) becomes
      `NULLS NOT DISTINCT`, so two untimed items with the same title can't
      share a day. The refusal for that case reads: There's already a
@@ -92,17 +101,11 @@ seed one later, also seed that person as a roster Participant.
 4. **Layout.** Day, Start time and End time line up on one baseline at
    every width (labels, helper text and control heights match).
 5. **Seed.**
-   - A Schedule item's optional `hosts` is a list of display names,
-     checked against the War Week's roster exactly as Competition `hosts`
-     are ("Host "X" is not on this War Week's roster").
-   - The seed schema refuses `hosts` on an item that names a Competition:
-     authored data should fail loudly, unlike a hidden form field.
-   - The loader adds absent Host rows and never removes one, as
-     `insertHosts` does for Competition Hosts, so a reload keeps
-     Organizer-added Hosts.
+   - The seed format drops `host` and gains no `hosts`. Every seed's
+     free-text `host` is removed (see "Data and deployed environments").
    - Items may omit a start time.
-   - Every seed's free-text `host` is removed (see "Data and deployed
-     environments").
+   - A reload never touches an unlinked item's Hosts, which an Organizer
+     added.
 
 ## Schema change (for the red-team)
 
@@ -117,23 +120,34 @@ seed one later, also seed that person as a roster Participant.
 ## Acceptance criteria
 
 - [ ] An Organizer adds a Schedule item with two Hosts picked by name; the
-      participant Schedule shows "Hosted by" both, with avatars (e2e,
-      screenshots at 1440 and 390).
+      participant Schedule shows "Hosted by" both, with one avatar beside
+      each name (e2e asserts the avatar elements are present; screenshots
+      at 1440 and 390). The e2e deletes the item it created.
 - [ ] Adding a Host from another War Week's roster is refused (vitest on
       the mutation).
 - [ ] An item linked to a Competition shows that Competition's Hosts and the
-      form has no Host field (e2e). Saving an item with a Competition and
+      form has no Host field (e2e). No seeded Competition has Hosts, so the
+      e2e adds them and removes them afterwards. Saving an item with a Competition and
       posted Hosts stores no `schedule_item_host` rows, and linking a
       Competition to an item that has Hosts deletes them (vitest on the
-      mutation against seeded local Postgres).
-- [ ] A Participant who hosts only a Schedule item gets no Host role: the
-      actor loader (`getActor`, `src/auth/actor.ts`) returns no hosted
-      Competitions for them (vitest against seeded local Postgres), and
-      smoke shows an admin Competition page refusing them.
+      mutation against seeded local Postgres). A reload that links a
+      Competition to an item with Hosts deletes them (vitest on the loader
+      against seeded local Postgres).
+- [ ] A Participant who hosts only a Schedule item gets no Host role:
+      `getHostedCompetitions` (`src/queries/organizers.ts`, the query
+      `getActor` uses) returns nothing for them (vitest against seeded
+      local Postgres, beside the existing `organizers.test.ts` cases).
+      Smoke reuses the smoke Host flow in `scripts/smoke/hosts.ts`,
+      giving its signed-in Participant only a `schedule_item_host` row,
+      and shows an admin Competition page refusing them. It removes the
+      row afterwards.
 - [ ] No email reaches the HTML or RSC payload of `/admin/schedule` (as an
-      Organizer) or `/xi/schedule` (as a Participant): the picker-leak
-      check in `scripts/smoke/pickers.ts` covers both, with its marker
-      roster entries.
+      Organizer) or `/xi/schedule` (as a Participant). The picker-leak
+      check in `scripts/smoke/pickers.ts` covers both. Before fetching, it
+      makes one marker roster entry a Host of an unlinked Schedule item,
+      and the other a Host of a Competition that a Schedule item links. It
+      asserts both marker names appear on `/xi/schedule`, so the check can
+      fail, and it removes those rows afterwards.
 - [ ] An item with no start time saves, reads "Any time", sorts first in
       its day and is never Now or Next (vitest on `src/lib/schedule.ts`;
       e2e on the Schedule page).
@@ -152,18 +166,12 @@ seed one later, also seed that person as a roster Participant.
 - [ ] Day, Start time and End time line up at 1440 and 390: in e2e, their
       controls' top and bottom edges match within 1px, and screenshots are
       committed.
-- [ ] A seed fixture loads with list `hosts` and an untimed item. An
-      unknown Host name, or `hosts` on an item naming a Competition, fails
-      the load (vitest on the seed schema). Loading it twice leaves the same
-      `schedule_item_host` rows (vitest against seeded local Postgres), and
-      smoke's reload count includes `schedule_item_host`.
-- [ ] No seed file contains a Schedule item `host` or `hosts` (vitest on
-      the seed files).
-- [ ] Hosts show with avatars (each Host's avatar is rendered with an
-      accessible name, asserted in the first e2e). Untimed items read "Any
-      time" on `/admin/schedule` too (e2e).
+- [ ] A seed with an untimed item loads (vitest on the seed schema), and
+      the seed schema refuses a Schedule item `host` or `hosts` key.
+- [ ] Untimed items read "Any time" on `/admin/schedule` too (e2e).
 - [ ] Every database-backed vitest suite above ran: its run reports those
-      tests passed, not skipped (`SKIPPED` is never `PASS`).
+      tests passed, not skipped (`SKIPPED` is never `PASS`). The captured
+      vitest output is committed under `test-results/vitest/`.
 
 ## Out of scope
 
@@ -176,9 +184,15 @@ seed one later, also seed that person as a roster Participant.
 - [ ] Red-team the spec before implementation (`/atlas-red-team`).
 - [ ] R26 merged first; branch from the `staging` that contains it.
 - [ ] Migration and seeds together; smoke on seeded local Postgres.
-- [ ] `CONTEXT.md`: the Host entry's Schedule item line ("a Schedule
-      item's Hosts are roster Participants shown as 'Hosted by'; they don't
-      hold the Host role"), and Schedule item / Now/Next for untimed items.
+- [ ] `CONTEXT.md`:
+      - the Host entry's Schedule item line ("a Schedule item's Hosts are
+        roster Participants shown as 'Hosted by'; they don't hold the Host
+        role");
+      - Schedule item and Now/Next for untimed items;
+      - the Schedule Item natural key `(day_id, start_time, title)`, now
+        nulls not distinct;
+      - the seed entry "Hosts aren't in seeds", now covering Schedule item
+        Hosts.
 - [ ] `docs/maintainers-guide.md`, `docs/regression-checklist.md` (Schedule
       lines at both viewports) and `/about` copy and media updated where
       affected.
@@ -187,7 +201,8 @@ seed one later, also seed that person as a roster Participant.
 - [ ] After merge (human, Paul): reset and reseed staging and production.
       - **Prerequisite:** the Vercel build of the merge has applied the
         migration.
-      - **Action:** run the Seed workflow (`.github/workflows/seed.yml`) for each environment.
+      - **Action:** run the Seed workflow (`.github/workflows/seed.yml`)
+        for each environment.
       - **Expected:** it succeeds.
       - **Check afterwards:** each `/xi/schedule` loads and shows no "Hosted
         by" line on any item.
