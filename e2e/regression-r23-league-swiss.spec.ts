@@ -2,6 +2,7 @@ import { type Page, expect, test } from "@playwright/test";
 
 import {
   addCompetition,
+  expectEntrantsSaved,
   expectSaved,
   openCompetitionPage,
 } from "./competition-page";
@@ -132,10 +133,7 @@ test("r23 AC3 AC6 a Swiss League of 6 is paired, edited, played to round 3, Clos
     await expect(page.getByText("(6 chosen)")).toBeVisible();
     await page.keyboard.press("Escape");
     await expect(page.getByRole("listbox")).toBeHidden();
-    await page.getByRole("button", { name: "Save Entrants" }).click();
-    await expect(
-      page.getByText("Entrants saved", { exact: true }),
-    ).toBeVisible();
+    await expectEntrantsSaved(page);
     await expect(
       settings.getByText("Blank: ⌈log₂ N⌉, 3 for 6 Entrants."),
     ).toBeVisible();
@@ -161,9 +159,6 @@ test("r23 AC3 AC6 a Swiss League of 6 is paired, edited, played to round 3, Clos
         .locator('[data-slot="lock-reason"]'),
     ).toHaveText("Locked once round 1 is paired.");
     await expect(find).toBeDisabled();
-    await expect(
-      page.getByRole("button", { name: "Save Entrants" }),
-    ).toBeDisabled();
     await expect(swiss).toBeDisabled();
     await expect(settings.getByLabel("Rounds")).toBeDisabled();
     await shoot(page, testInfo, "swiss-round-1");

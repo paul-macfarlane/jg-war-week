@@ -28,7 +28,7 @@ you set them in your own `.env.local` or in the service's settings.
 
 Your local `.env.local` needs the variables named in `.env.example`:
 `DATABASE_URL`, `DATABASE_DRIVER`, `BETTER_AUTH_SECRET`, `BETTER_AUTH_URL`,
-`GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, and optionally `MCP_TOKEN`. The
+`GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET`. The
 local database defaults work as-is. Slack posting isn't built yet, so
 there's no Slack app to be granted.
 
@@ -102,7 +102,6 @@ before it says it's done.
 | Appearance Theme → CSS                     | `src/lib/theme.ts`                                                     |
 | Shared UI pieces                           | `src/components/` (shadcn primitives in `src/components/ui/`)          |
 | Participant nav, tab bar, footer and theme | `src/components/war-week-chrome.tsx` (the `[edition]` layout and `/history`), `src/components/primary-nav.tsx`; the signed-in nav account is `src/auth/nav-account.ts` |
-| MCP server (Claude connector)              | `src/app/api/mcp/route.ts`, tools in `src/mcp/`, list in `src/mcp/tools.ts` |
 | Profiles (name, picture) and Delete my account | `src/lib/profile.ts`, `src/queries/profile-join.ts`, `src/app/[edition]/profile/`, `src/mutations/account.ts` |
 | Test sign-in (staging only)                | `src/lib/test-sign-in.ts`, `src/app/sign-in/test/`, `src/actions/test-sign-in.ts` |
 | Who can do what                            | `src/lib/access.ts` (`can`), `src/auth/authorize.ts`, `src/auth/actor.ts` |
@@ -169,8 +168,7 @@ Words must follow `CONTEXT.md`. If Claude refuses a word, that's why.
 
 **The banned-term scan.** `src/lib/banned-terms.test.ts` (run by `pnpm test`)
 reads the string literals, template text and JSX text of every non-test
-`.ts`/`.tsx` file under `src/`, plus the property names of MCP output
-under `src/mcp/`, so UI copy and MCP output can't carry a
+`.ts`/`.tsx` file under `src/`, so UI copy can't carry a
 banned word: **Heat** (say Match), **Champion** (Winner), **Finalize** and
 **Un-finalize** (Close, Closed, Reopen), **Game** (Match for a Bracket or
 Head-to-head or League, Attempt for Best score), plus Event, Member, ELO,
@@ -186,8 +184,8 @@ literal the spec itself names. A failing scan names the file, the term and
 the word to use instead.
 
 A change people can see also updates `/about` in the same PR: its copy
-(`src/app/about/page.tsx`, `src/lib/about.ts`: six key-feature cards, copy
-that reads the same for Teams and free-for-all) and, when a feature card's
+(`src/app/about/page.tsx`, `src/lib/about.ts`: the "What it does" features, one per row with its still beside its caption
+(below it on a phone), copy that reads the same for Teams and free-for-all) and, when a feature card's
 screen changed, its still. Regenerate the stills from the current War
 Week's demo, never by hand: `scripts/about-media.ts` captures whichever War
 Week is current, in its theme and mode, so first load that edition's demo
@@ -208,14 +206,22 @@ through the slideshow with → to the Standings countdown as a check) wears
 the old edition's theme, so it must be re-recorded too. Use `--stills` only
 when the poster's edition is unchanged (`pnpm tsx scripts/about-media.ts
 --stills` rewrites the feature-card and Standings stills and leaves the
-poster alone). Either way it rewrites the home Standings hero's three
-stills (`standings-before.png`, `standings-entry.png`,
-`standings-after.png`).
+poster alone). The page has no Standings demo and no hero stills: its
+only media are the feature stills and the Finale poster.
 
 Every About still comes in light and dark: the script writes `<name>.png`
-under the light Display and `<name>-dark.png` under the dark one (20 files
-in `public/about/`), and `/about` shows the pair member matching the
-viewer's Display (`AboutStill`, `data-still-scheme` in `globals.css`).
+under the light Display and `<name>-dark.png` under the dark one, and
+`/about` shows the pair member matching the viewer's Display (`AboutStill`,
+`data-still-scheme` in `globals.css`). Each "What it does" feature also has a
+phone set, `<slug>-phone.png` and `<slug>-phone-dark.png` (390 wide, 640 tall,
+2x, the same screen as the desktop still), so it reads at 390: `/about`
+shows the phone set below `md` and the desktop set from `md` up
+(`data-still-size`). The same `pnpm tsx scripts/about-media.ts` run writes
+all of them (30 files in `public/about/`: 7 features x 4, plus the poster
+pair). Run it against a fresh build and a server it starts itself, so it
+serves the new files. When a run writes a still that wasn't in `public/about/` before
+(a new feature, or the first phone set), its server can't serve it yet and the
+evidence step fails with "images failed to load": run the script a second time.
 Never add or replace only one of a pair.
 
 ### Run a new War Week or change this year's theme (no code first)
@@ -233,8 +239,9 @@ redirect to their new homes.
   Roster's Team controls, and keeps their saved values for if you switch
   back to Teams), the Appearance Theme (colors, font, logo, banner), the
   **Lifecycle** box (Start, End with the computed Winner and highlights,
-  Unstart while nothing is scored and it has never been ended, Reopen) and
-  **Create next War Week**. The seed-overwrite warning shows here. **The
+  Unstart while nothing is scored and it has never been ended, Reopen, and
+  **Create next War Week**, which shows only on the latest War Week by start
+  date once it is complete). The seed-overwrite warning shows here. **The
   form saves itself**: each field saves a moment after you stop
   typing, with "Saving…" then "Saved" by the heading and no Save button; a
   value the server refuses (a Slack URL that isn't `https`) shows its error
@@ -270,9 +277,13 @@ redirect to their new homes.
   Delete opens a `ConfirmDialog` and ends in a toast. The Add button sits
   below the list. Competitions' Edit opens the Competition's page (Add
   creates it in a sheet, then opens the page); Days, Schedule Items, Teams,
-  Participants, FAQ, Awards and Organizers all use it; Announcements' Edit links to their
-  own full page. There are no `/new` or `/[id]` pages for Schedule, FAQ or
-  Awards. A Team's row reads "Edit <Team Label> <name>". The Hosts field is
+  Participants, FAQ, Awards, Announcements and Organizers all use it. A record
+  is created and edited in the same dialog (`SetupSheet` /
+  `ResponsiveSheetDialog`, a bottom sheet on phones; pass `fullHeight` for a
+  long form, as Announcements do); only a thing you
+  run gets a page, which today is a Competition (created in a dialog, then
+  run on its page). There are no `/new` or `/[id]` pages for Schedule, FAQ,
+  Awards or Announcements (the last answers 404). A Team's row reads "Edit <Team Label> <name>". The Hosts field is
   in the Competition page's Settings and saves as you pick.
 - **You comes from the roster email only.** A signed-in person is "You" (the
   highlight, Log a Match or Attempt, reporting a Match) only when their email matches a
@@ -286,15 +297,7 @@ redirect to their new homes.
 
 To start next year's edition in the app:
 
-1. In `/admin/settings`, press **Create next War Week**. The edition, number
-   and year are prefilled (XII, 12, next year); add the dates and Story
-   Theme, and choose what to copy (settings are on; Competitions, with
-   no Hosts, and the FAQ are off: the new roster is empty, so add Hosts once it
-   exists). Organizers are global, so there's
-   nothing to copy for them. It starts `upcoming`, and the admin
-   switches to it so you can set it up while XI stays current.
-2. When XI is over, switch back to XI in the header's edition switcher and
-   press **End War Week**: the dialog shows the Winner it will record —
+1. When XI is over, open `/admin/settings` on XI and press **End War Week**: the dialog shows the Winner it will record —
    whoever is first in the Standings, "Tie: A & B" when two or more Teams
    or Participants tie for first, blank when nobody scored — and lets you
    add any highlights. There is no way to type a different Winner. XI moves
@@ -302,7 +305,13 @@ To start next year's edition in the app:
    and any open Head-to-head or Best score Competition with Matches or Attempts, or `participation` Competition
    with anyone marked, each linked to its Competition page. Close them first so their placings
    count; it warns, it doesn't stop you.
-3. Switch to XII and press **Start War Week**. `/` and `/admin` now go to
+2. With XI ended and the latest War Week, its Lifecycle box shows **Create
+   next War Week** (only then: not while the latest is upcoming or live, and
+   not on an older War Week). The edition, number and year are prefilled
+   (XII, 12, next year); add the dates and Story Theme. It copies nothing:
+   default settings, no Competitions, no FAQ, no Teams or roster. It starts
+   `upcoming`, and the admin switches to it so you can set it up.
+3. Press **Start War Week** on XII. `/` and `/admin` now go to
    XII. Only one War Week can be live, so XI must end first.
 
 Organizers can still pick any Archive edition in the switcher to correct
@@ -385,7 +394,7 @@ staging. It is never on for production (ADR 0008).
 - **Every page shows a "Test sign-in: <email>" banner** while you are in a
   test session.
 - **Turn it off.** Remove `TEST_SIGN_IN_SECRET` and redeploy: every test
-  session counts as anonymous (pages, the proxy and MCP) while it stays
+  session counts as anonymous (pages and the proxy) while it stays
   removed. Setting any secret again revives the unexpired test sessions.
   Test accounts are real `user` rows; Delete my account removes them like
   anyone's.
@@ -605,13 +614,14 @@ is a **bye** (never the Final). A setting that would send on as many as it
 received is refused. A Round with any result is **locked**.
 
 **Edit a result.** Only the latest result along a path changes. A Match whose
-result a later Match already used shows **Edit** and **Clear result**
-disabled with "A later Match already used this result. Change that Match
-first." (visible text, so it shows on a phone); the server refuses it too.
+result a later Match already used shows a lock icon and **Edit** and
+**Clear result** disabled; the reason ("A later Match already used this
+result. Change that Match first.") is their tooltip, on keyboard focus or a
+tap; the server refuses it too.
 Clear back from the latest result. In a Group Bracket a Match is editable
 only while no later Round has a result; otherwise Edit and Clear result are
-disabled with "A later round already has a result. Change that round
-first." Editing a finished Round's result while the next Round has no result
+disabled, with "A later round already has a result. Change that round
+first." as their tooltip. Editing a finished Round's result while the next Round has no result
 is allowed; the next Round re-fills from the new advancers and anything you
 moved or set there is lost.
 
@@ -1136,31 +1146,6 @@ Notes:
 linked from <nav / More>. It needs a JG sign-in like every other page.
 ```
 
-### Add an MCP tool
-
-```text
-/implement Add a read-only MCP tool <tool_name> that returns <what>.
-Follow the existing tools in src/mcp/ (metadata in src/mcp/tools.ts, a
-test next to it, registered in src/app/api/mcp/route.ts) and add it to the
-README tool list. It must only return what a signed-in Participant sees: no
-emails.
-```
-
-`/llms.txt` picks the new tool up from `src/mcp/tools.ts`. The tools today
-are `get_current_war_week`, `get_leaderboard`, `get_schedule`,
-`get_announcements` (a video is its URL in the plain-text body),
-`get_awards`, `get_faq`, `list_history`, `get_history`, `get_bracket` (a
-Competition's Bracket by name, with its kind, Match size, how many advance and
-whether it has a 3rd place match, each played Match's recorded time, its `winner` once the Bracket is Closed (`closed`, `matchSize`, `thirdPlaceMatch` and each Round's `matches` are the field names), and a
-Squad's `participants` by name; never who reported a result) and
-`get_league` (a League by name: Pairing, rounds, each Match with its result and Scores, and the standings with match points and tiebreaks; no emails; `get_bracket` and `get_games` on a League point to it) and
-`get_games` (a Head-to-head or Best score Competition, by name: its Format and settings (Score direction and unit, Best of, draws, Max attempts, Team score), leaderboard
-ranked by that Format and its `matches` (Head-to-head) or `attempts` (Best score) newest first, with `closed`; never an email or who
-logged one) and `get_participation` (a Competition run as Participation, by
-name: its settings, closed state, who took part by name and, in team
-scoring, each Team's headcount; never an email or who marked anyone), `get_placements` (a Placement Competition by name: Score direction, Placement Points, whether it's closed and each row by place with name, Team, Score and points; no emails; `get_bracket` on a Placement points to it) and `get_discretionary_points` (the current War Week's Discretionary points by name and reason; no emails). `get_bracket` (`src/mcp/bracket.ts`) is the model for a tool
-that looks something up by name and whitelists what it returns.
-
 ### Add or fix history
 
 ```text
@@ -1307,8 +1292,7 @@ Organizer wants kept, don't migrate; ask Paul. Then, as for R16 to R18:
 1. **Staging.** After the PR merges into `staging` and `migrate.yml`'s run is
    green, run the **Seed** workflow on `staging`, file blank (all seeds),
    **reset** ticked, `staging` typed in **confirm_reset**. Check:
-   `/xii/competitions` renders, a Head-to-head's `get_games` answers over MCP,
-   and the Bracket page answers 200.
+   `/xii/competitions` renders, and the Bracket page answers 200.
 2. **Production pre-check** before the `staging` → `main` PR merges: the report
    above, plus a look in Admin for anything an Organizer entered that should
    be kept.
@@ -1331,8 +1315,8 @@ admit a League. It converts and drops nothing, so there is no report script.
 After the PR merges into `staging`, 0034 applies on its own (the deploy
 migrates; nothing to run by hand). Once it has, run **`seed.yml`**
 (file blank, all seeds) so the XII demo gains **Chess Round Robin** and
-**Chess Swiss**. Check: `/xii/competitions` lists both, both pages answer 200
-and `get_league` answers over MCP. Repeat for production after the `main`
+**Chess Swiss**. Check: `/xii/competitions` lists both, and both pages answer 200.
+Repeat for production after the `main`
 merge. **Roll back only after deleting every League Competition**: an older
 deploy has no Format branch for a `league` Competition and would error on it.
 This release also changes Head-to-head: Close now waits for a decided or

@@ -74,7 +74,7 @@ test.describe("58 one Edit and Delete pattern for every admin list", () => {
       ["/admin/roster", "Roster"],
       ["/admin/faq", "FAQ Items"],
       ["/admin/awards", "Awards"],
-      ["/admin/announcements", "Announcements", { editIsLink: true }],
+      ["/admin/announcements", "Announcements"],
       ["/admin/organizers", "Organizers", { lastMayStay: true }],
     ];
     for (const viewport of [PHONE, DESKTOP]) {

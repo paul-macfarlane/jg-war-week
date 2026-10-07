@@ -1,6 +1,10 @@
 import { type Page, type TestInfo, expect, test } from "@playwright/test";
 
-import { openCompetitionPage, setFormat } from "./competition-page";
+import {
+  expectEntrantsSaved,
+  openCompetitionPage,
+  setFormat,
+} from "./competition-page";
 import {
   openForBracket,
   runQuery,
@@ -125,8 +129,7 @@ test("a Bracket is built, run and Closed into Points Entries, its podium 1st and
   }
   await expect(page.getByText("(4 chosen)")).toBeVisible();
   await page.keyboard.press("Escape");
-  await page.getByRole("button", { name: "Save Entrants" }).click();
-  await expect(page.getByText("Entrants saved", { exact: true })).toBeVisible();
+  await expectEntrantsSaved(page);
   await page.getByRole("button", { name: "Generate" }).click();
   await expect(page.getByText("Bracket generated")).toBeVisible();
   await page.screenshot({

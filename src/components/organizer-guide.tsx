@@ -31,7 +31,7 @@ export function OrganizerGuide({
     FAQ: "FAQ Items and their order on the public FAQ.",
     Finale: "Open the Finale on the projector, and order or hide its slides.",
     Settings:
-      "Story Theme, dates, mode, labels, links and the Appearance Theme; the Lifecycle box (Start, End, Unstart, Reopen) and Create next War Week.",
+      "Story Theme, dates, mode, labels, links and the Appearance Theme; the Lifecycle box (Start, End, Unstart, Reopen, and Create next War Week once the latest War Week has ended).",
     Organizers: "Who the Organizers are.",
     Guide: "This page.",
   };
@@ -240,16 +240,17 @@ export function OrganizerGuide({
           Entrants in finishing order, with scores, in a dialog centered on a
           screen or a bottom sheet on a phone; the tree shows when each Match
           was recorded. Only the latest result along a path changes: a Match a
-          later Match already used shows Edit and Clear result disabled with
-          &quot;Change that Match first&quot;, and in a Group Bracket every
-          Match before a round with a result says &quot;Change that round
-          first&quot;. To correct one, clear results back from the latest one,
-          then record again. Close, once every Match is played (the 3rd place
-          Match too), turns the Bracket&apos;s placings into Points Entries
-          marked &quot;From bracket&quot;; Reopen removes them so you can fix a
-          Match and Close again. While it&apos;s Closed, its settings except the
-          name, description, Group, Hosts and Placement Points are locked:
-          Reopen first (a Placement Points change applies at the next Close).
+          later Match already used shows a lock icon with Edit and Clear result
+          disabled (hover, focus or tap them for &quot;Change that Match
+          first&quot;), and in a Group Bracket every Match before a round with a
+          result is the same (&quot;Change that round first&quot;). To correct
+          one, clear results back from the latest one, then record again. Close,
+          once every Match is played (the 3rd place Match too), turns the
+          Bracket&apos;s placings into Points Entries marked &quot;From
+          bracket&quot;; Reopen removes them so you can fix a Match and Close
+          again. While it&apos;s Closed, its settings except the name,
+          description, Group, Hosts and Placement Points are locked: Reopen
+          first (a Placement Points change applies at the next Close).
         </p>
         <h3 className="font-semibold">Squads and self-report</h3>
         <p className="text-foreground/70">
@@ -357,15 +358,16 @@ export function OrganizerGuide({
           this one (it shows the Winner it will record — first place in the
           Standings, a &quot;Tie: A &amp; B&quot; when Teams or Participants
           tie, blank when nobody scored, with no way to type a different one —
-          and any highlights) before the next can Start. Create next War Week,
-          further down Settings, copies what you choose (settings by default;
-          Competitions, without Hosts, and the FAQ are off) and opens the new
-          edition as upcoming, so you can set it up while this one stays live.
-          The End confirm names any Bracket that isn&apos;t closed: close it
-          first so its placings count (it warns, it doesn&apos;t stop you). The
-          header&apos;s edition switcher (in More on a phone) moves the admin
-          between editions you may administer — a banner marks the Archive so
-          you don&apos;t mistake it for the live one.
+          and any highlights) before the next can Start. Once the latest War
+          Week has ended, its Lifecycle box shows Create next War Week: it
+          copies nothing (default settings, no Competitions, no FAQ) and opens
+          the new edition as upcoming. It isn&apos;t offered while the latest
+          War Week is upcoming or live, or on an older one. The End confirm
+          names any Bracket that isn&apos;t closed: close it first so its
+          placings count (it warns, it doesn&apos;t stop you). The header&apos;s
+          edition switcher (in More on a phone) moves the admin between editions
+          you may administer — a banner marks the Archive so you don&apos;t
+          mistake it for the live one.
         </p>
       </section>
 

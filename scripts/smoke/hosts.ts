@@ -550,7 +550,6 @@ async function assertAdminTrimmedForHost(
   for (const route of [
     "/admin/schedule",
     "/admin/announcements",
-    "/admin/announcements/new",
     "/admin/finale",
     `/admin/competitions/${fixture.otherCompetitionId}`,
   ]) {

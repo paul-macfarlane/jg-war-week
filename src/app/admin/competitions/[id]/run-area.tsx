@@ -156,6 +156,7 @@ export async function CompetitionRunArea({
           teams={options.teams}
           participants={options.participants}
           entrantsLock={entrantsLock}
+          teamLabel={warWeek.teamLabel}
         />
         <AdminLoggedResults
           competitionId={id}

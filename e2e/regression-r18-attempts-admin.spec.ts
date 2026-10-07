@@ -1,6 +1,10 @@
 import { type Page, expect, test } from "@playwright/test";
 
-import { addCompetition, openCompetitionPage } from "./competition-page";
+import {
+  addCompetition,
+  entrantsStatus,
+  openCompetitionPage,
+} from "./competition-page";
 import { addE2eHost, deleteXiCompetition } from "./db";
 import { E2E_HOST_EMAIL, asHost, asOrganizer } from "./session";
 
@@ -39,9 +43,7 @@ test("r18 104 a Host logs, edits and deletes a Best score Attempt from admin (in
       scoring: "Individual",
     });
     await openCompetitionPage(page, id);
-    await expect(
-      page.getByRole("button", { name: "Save Entrants" }),
-    ).toHaveCount(0);
+    await expect(entrantsStatus(page)).toHaveCount(0);
     await addE2eHost(id, E2E_HOST_EMAIL);
 
     const hostContext = await browser.newContext();

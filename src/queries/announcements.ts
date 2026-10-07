@@ -1,4 +1,4 @@
-import { and, desc, eq } from "drizzle-orm";
+import { desc, eq } from "drizzle-orm";
 
 import { DBOrTx, db } from "@/db";
 import {
@@ -14,7 +14,6 @@ import {
   sortAnnouncements,
 } from "@/lib/announcements";
 import type { ProfilesByEmail } from "@/lib/profile";
-import { isUuid } from "@/lib/uuid";
 import { getProfilesByEmail } from "@/queries/profile-join";
 
 async function loadSorted(
@@ -29,17 +28,12 @@ async function loadSorted(
   return sortAnnouncements(rows);
 }
 
-/**
- * A War Week's Announcements, pinned first then newest first. `limit` caps
- * the returned list; the feed page and MCP both use it.
- */
+/** A War Week's Announcements, pinned first then newest first. */
 export async function getAnnouncements(
   warWeek: Pick<WarWeek, "id">,
-  options: { limit?: number } = {},
   dbOrTx: DBOrTx = db,
 ): Promise<Announcement[]> {
-  const sorted = await loadSorted(warWeek.id, dbOrTx);
-  return options.limit != null ? sorted.slice(0, options.limit) : sorted;
+  return loadSorted(warWeek.id, dbOrTx);
 }
 
 /** The Announcement to show pinned on the edition home, if there is one. */
@@ -49,21 +43,6 @@ export async function getPinnedAnnouncement(
 ): Promise<Announcement | undefined> {
   const [first] = await loadSorted(warWeek.id, dbOrTx);
   return first?.pinned ? first : undefined;
-}
-
-/** One Announcement of a War Week, for the edit form. */
-export async function getAnnouncementForEdit(
-  warWeek: Pick<WarWeek, "id">,
-  id: string,
-  dbOrTx: DBOrTx = db,
-): Promise<Announcement | undefined> {
-  if (!isUuid(id)) return undefined;
-  const [found] = await dbOrTx
-    .select()
-    .from(announcement)
-    .where(and(eq(announcement.id, id), eq(announcement.warWeekId, warWeek.id)))
-    .limit(1);
-  return found;
 }
 
 /** A War Week's Participant emails, for `announcementAuthorName`'s match. */
@@ -115,14 +94,13 @@ function toCardData(row: Announcement, authors: Authors): AnnouncementCardData {
  * A War Week's Announcements as `AnnouncementCard` data (author display
  * name, not email). `/announcements` and the home feed both use this. The
  * admin pages show the name too; the email is only for the edit/ownership
- * check (MCP shows the same name).
+ * check (the feed shows the same name).
  */
 export async function getAnnouncementCards(
   warWeek: Pick<WarWeek, "id">,
-  options: { limit?: number } = {},
   dbOrTx: DBOrTx = db,
 ): Promise<AnnouncementCardData[]> {
-  const rows = await getAnnouncements(warWeek, options, dbOrTx);
+  const rows = await getAnnouncements(warWeek, dbOrTx);
   const authors = await loadAuthors(
     warWeek.id,
     rows.map((r) => r.authorEmail),
@@ -144,32 +122,15 @@ export async function getPinnedAnnouncementCard(
   );
 }
 
-/** An Announcement author's display name, by the shared resolver. */
-export async function getAnnouncementAuthorName(
-  warWeek: Pick<WarWeek, "id">,
-  authorEmail: string,
-  dbOrTx: DBOrTx = db,
-): Promise<string> {
-  const { participants, profiles } = await loadAuthors(
-    warWeek.id,
-    [authorEmail],
-    dbOrTx,
-  );
-  return announcementAuthorName(authorEmail, participants, profiles);
-}
-
 /**
- * A War Week's Announcements (pinned first, then newest; `limit` caps the
- * list), each with its author's display name added. Rows keep the author's
- * email for the edit check, so only the admin pages and the MCP builder
- * (which drops it) read them.
+ * A War Week's Announcements for the admin list: each row keeps its author's
+ * email (for the edit check) and adds the display name to show.
  */
-export async function getAnnouncementsWithAuthors(
+export async function getAdminAnnouncementRows(
   warWeek: Pick<WarWeek, "id">,
-  options: { limit?: number } = {},
   dbOrTx: DBOrTx = db,
 ): Promise<(Announcement & { authorName: string })[]> {
-  const rows = await getAnnouncements(warWeek, options, dbOrTx);
+  const rows = await getAnnouncements(warWeek, dbOrTx);
   const { participants, profiles } = await loadAuthors(
     warWeek.id,
     rows.map((r) => r.authorEmail),
@@ -179,15 +140,4 @@ export async function getAnnouncementsWithAuthors(
     ...row,
     authorName: announcementAuthorName(row.authorEmail, participants, profiles),
   }));
-}
-
-/**
- * A War Week's Announcements for the admin list: each row keeps its author's
- * email (for the edit check) and adds the display name to show.
- */
-export function getAdminAnnouncementRows(
-  warWeek: Pick<WarWeek, "id">,
-  dbOrTx: DBOrTx = db,
-): Promise<(Announcement & { authorName: string })[]> {
-  return getAnnouncementsWithAuthors(warWeek, {}, dbOrTx);
 }

@@ -1,6 +1,10 @@
 import { expect, test } from "@playwright/test";
 
-import { openCompetitionPage, setFormat } from "./competition-page";
+import {
+  expectEntrantsSaved,
+  openCompetitionPage,
+  setFormat,
+} from "./competition-page";
 import { openForBracket, xiCompetitionId } from "./db";
 import { asOrganizer } from "./session";
 
@@ -38,10 +42,7 @@ test("r15 87 the admin Bracket's unrecorded Match has a solid Record result butt
         .click();
     }
     await page.keyboard.press("Escape");
-    await page.getByRole("button", { name: "Save Entrants" }).click();
-    await expect(
-      page.getByText("Entrants saved", { exact: true }),
-    ).toBeVisible();
+    await expectEntrantsSaved(page);
     await page.getByRole("button", { name: "Generate" }).click();
     await expect(page.getByText("Bracket generated")).toBeVisible();
 

@@ -42,9 +42,12 @@ function render(over: Partial<Props["competition"]> = {}) {
 
 describe("LoggedResultsBuilder", () => {
   it("picks a Head-to-head's 2 Entrants, and gives Best score no Entrant list", () => {
-    expect(render({ format: "head-to-head" })).toContain("Pick Participants");
+    const headToHead = render({ format: "head-to-head" });
+    expect(headToHead).toContain("Participant A");
+    expect(headToHead).toContain("Participant B");
+    expect(headToHead).not.toContain("Save Entrants");
     const bestScore = render({ format: "best-score" });
-    expect(bestScore).not.toContain("Pick Participants");
+    expect(bestScore).not.toContain("Participant A");
     expect(bestScore).toContain("any Participant may log");
     expect(bestScore).toContain("an Attempt.");
   });

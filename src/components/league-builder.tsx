@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useState, useTransition } from "react";
+import { useTransition } from "react";
 import { toast } from "sonner";
 
 import {
@@ -11,8 +11,8 @@ import {
   pairNextRound,
   reopenLeague,
 } from "@/actions/league";
-import { saveCompetitionSetting } from "@/actions/setup";
 import { ConfirmActionButton } from "@/components/confirm-dialog";
+import { useEntrantsAutosave } from "@/components/entrants-autosave";
 import {
   EntrantsPicker,
   type EntrantsPickerItem,
@@ -33,8 +33,8 @@ type ParticipantTarget = Target & {
 
 /**
  * A League's run area on its Competition page (spec R23, decisions 10 and
- * 11): the Entrants (saved through the per-field save, locked once round 1
- * is paired), Pair rounds (round robin) or Pair round 1 / Pair next round
+ * 11): the Entrants (autosaved through the per-field save, locked once
+ * round 1 is paired), Pair rounds (round robin) or Pair round 1 / Pair next round
  * (Swiss), Clear pairings, and Close / Reopen. A button the server says is
  * off is disabled with its reason beside it, the same words the server
  * refuses with (Close names the Matches still to play). The rounds are
@@ -73,12 +73,10 @@ export function LeagueBuilder({
   const kind: EntrantKind = isTeam ? "team" : "participant";
   const closed = competition.closed;
 
-  const savedIds = entrants.map((e) => (e.teamId ?? e.participantId)!);
-  const [selected, setSelected] = useState<string[]>(savedIds);
-  const dirty =
-    selected.length !== savedIds.length ||
-    !selected.every((id) => savedIds.includes(id));
-  const [saving, setSaving] = useState(false);
+  const entrantsAutosave = useEntrantsAutosave(competition.id, {
+    kind,
+    targetIds: entrants.map((e) => (e.teamId ?? e.participantId)!),
+  });
   const [pending, startTransition] = useTransition();
 
   const items: EntrantsPickerItem[] = teams.map((t) => ({
@@ -86,21 +84,6 @@ export function LeagueBuilder({
     label: t.name,
   }));
   const participantOptions = optionsFromTargets(participants);
-
-  async function saveEntrants() {
-    setSaving(true);
-    const saved = await saveCompetitionSetting(competition.id, {
-      field: "entrants",
-      value: { kind, targetIds: selected },
-    });
-    setSaving(false);
-    if (saved.ok) {
-      toast.success("Entrants saved");
-      router.refresh();
-    } else {
-      toast.error(saved.error);
-    }
-  }
 
   function run(action: () => Promise<WriteResult>, success: string) {
     startTransition(async () => {
@@ -138,11 +121,11 @@ export function LeagueBuilder({
           kindLabel={teamLabel}
           options={items}
           participantOptions={participantOptions}
-          selected={selected}
-          onChange={setSelected}
-          onSave={saveEntrants}
-          disabled={saving || closed || entrantsLock !== null}
-          saveDisabled={!dirty}
+          selected={entrantsAutosave.value.targetIds}
+          onChange={(targetIds) => entrantsAutosave.edit({ kind, targetIds })}
+          disabled={closed || entrantsLock !== null}
+          status={entrantsAutosave.status}
+          error={entrantsAutosave.error}
         />
         {entrantsLock && (
           <p data-slot="lock-reason" className="text-foreground/70 text-sm">

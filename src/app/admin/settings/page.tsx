@@ -1,8 +1,7 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 
 import { AdminRefused, AdminShell } from "@/components/admin-shell";
-import { NextWarWeekForm } from "@/components/next-war-week-form";
+import { NextWarWeekButton } from "@/components/next-war-week-form";
 import { SeedOverwriteWarning } from "@/components/seed-overwrite-warning";
 import { Badge } from "@/components/ui/badge";
 import { WarWeekLifecycleControls } from "@/components/war-week-lifecycle-controls";
@@ -11,7 +10,9 @@ import { settingsInputFrom } from "@/lib/setup";
 import { teamSwatches } from "@/lib/theme";
 import {
   STATUS_LABELS,
+  canCreateNextWarWeek,
   defaultWinner,
+  latestWarWeek,
   nextEditionDefaults,
 } from "@/lib/war-week-lifecycle";
 import { getOpenUnscoredCompetitions } from "@/queries/open-unscored-competitions";
@@ -34,8 +35,9 @@ const STATUS_HELP = {
 } as const;
 
 /**
- * The War Week's settings, its Lifecycle (Start, End, Unstart, Reopen) and
- * Create next War Week, for Organizers.
+ * The War Week's settings and its Lifecycle (Start, End, Unstart, Reopen,
+ * and Create next War Week on the latest War Week once it is complete), for
+ * Organizers.
  */
 export default async function AdminSettingsPage() {
   const { warWeek, email, allowed, isOrganizer, editions } =
@@ -52,6 +54,7 @@ export default async function AdminSettingsPage() {
       isLive ? getUnclosedBrackets(warWeek) : [],
       isLive ? getOpenUnscoredCompetitions(warWeek) : [],
     ]);
+  const showCreateNext = canCreateNextWarWeek(warWeek, latestWarWeek(existing));
   const suggestedWinner = standings
     ? defaultWinner(standings)
     : (warWeek.winner ?? "");
@@ -94,12 +97,15 @@ export default async function AdminSettingsPage() {
               unclosedBrackets={unclosedBrackets.map((c) => c.name)}
               openUnscoredCompetitions={openUnscored}
             />
-            <Link
-              href="#create-next-war-week"
-              className="text-primary text-sm underline-offset-4 hover:underline"
-            >
-              Create next War Week
-            </Link>
+            {showCreateNext && (
+              <NextWarWeekButton
+                fromWarWeekId={warWeek.id}
+                defaults={nextEditionDefaults(
+                  existing,
+                  new Date().getFullYear(),
+                )}
+              />
+            )}
           </div>
         </section>
         <section
@@ -116,27 +122,6 @@ export default async function AdminSettingsPage() {
             initial={settingsInputFrom(warWeek)}
             dayDates={days.map((day) => day.date)}
             teamSwatches={teamSwatches(teams)}
-          />
-        </section>
-        <section
-          id="create-next-war-week"
-          aria-labelledby="create-next-war-week-heading"
-          className="flex scroll-mt-4 flex-col gap-2"
-        >
-          <h2
-            id="create-next-war-week-heading"
-            className="text-lg font-semibold"
-          >
-            Create next War Week
-          </h2>
-          <p className="text-foreground/70 text-sm">
-            It starts upcoming, so the current War Week stays current until you
-            start the new one.
-          </p>
-          <NextWarWeekForm
-            fromWarWeekId={warWeek.id}
-            fromEdition={warWeek.edition}
-            defaults={nextEditionDefaults(existing, new Date().getFullYear())}
           />
         </section>
       </section>

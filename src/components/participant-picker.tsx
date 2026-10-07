@@ -31,6 +31,8 @@ export type ParticipantPickerProps =
       /** The chosen Participant's id, or `""`. */
       value: string;
       onValueChange: (id: string) => void;
+      /** Shows a clear button with this name. */
+      clearLabel?: string;
     })
   | (CommonProps & {
       multiple: true;

@@ -262,6 +262,25 @@ test("r16 94 an individual Participation Competition gives N points to each Part
         .fill(who);
       await page.getByRole("checkbox", { name: new RegExp(who) }).click();
       await expect(page.getByText(`${who} took part`)).toBeVisible();
+      // R26 decision 7: the tick stays ticked through the save and refresh
+      // (it used to flip back until the page caught up).
+      await expect(
+        page.getByRole("checkbox", { name: new RegExp(who) }),
+      ).toBeChecked();
+      await page.waitForTimeout(1_500);
+      await expect(
+        page.getByRole("checkbox", { name: new RegExp(who) }),
+      ).toBeChecked();
+    }
+    // A reload confirms the saves: both are still ticked.
+    await page.reload();
+    for (const who of TOOK_PART) {
+      await page
+        .getByRole("searchbox", { name: "Search the roster" })
+        .fill(who);
+      await expect(
+        page.getByRole("checkbox", { name: new RegExp(who) }),
+      ).toBeChecked();
     }
 
     await page.getByRole("button", { name: "Close", exact: true }).click();

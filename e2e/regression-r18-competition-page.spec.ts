@@ -5,6 +5,7 @@ import {
   RUN_AREA_TITLE,
   addCompetition,
   chooseOption,
+  expectEntrantsSaved,
   expectSaved,
   openCompetitionPage,
   setFormat,
@@ -52,22 +53,21 @@ type FormatCase = {
   addResult: (page: Page) => Promise<void>;
 };
 
-/** Picks two Teams in a fixed-list Entrants picker and saves them. */
-async function enterRedAndBlue(page: Page, pickerId: string) {
-  const find = page.locator(`#${pickerId}`);
-  for (const team of ["Red", "Blue"]) {
+/**
+ * A Head-to-head's result: its two Entrants, Red vs Blue, picked in the run
+ * area's two pickers; the pair autosaves.
+ */
+async function addSeriesEntrants(page: Page) {
+  for (const [side, team] of [
+    ["a", "Red"],
+    ["b", "Blue"],
+  ] as const) {
+    const find = page.locator(`#series-entrants-${side}`);
+    await find.click();
     await find.fill(team);
     await page.getByRole("option", { name: new RegExp(`^${team}`) }).click();
   }
-  await expect(page.getByText("(2 chosen)")).toBeVisible();
-  await page.keyboard.press("Escape");
-  await page.getByRole("button", { name: "Save Entrants" }).click();
-  await expect(page.getByText("Entrants saved", { exact: true })).toBeVisible();
-}
-
-/** A Head-to-head's result: its two Entrants, entered from the run area. */
-async function addSeriesEntrants(page: Page) {
-  await enterRedAndBlue(page, "series-entrants");
+  await expectEntrantsSaved(page);
 }
 
 /** A Best score result: an Attempt, logged from the run area. */
@@ -156,10 +156,7 @@ const CASES: FormatCase[] = [
     addResult: async (page) => {
       await page.getByRole("button", { name: "All Teams" }).click();
       await expect(page.getByText("(2 chosen)")).toBeVisible();
-      await page.getByRole("button", { name: "Save Entrants" }).click();
-      await expect(
-        page.getByText("Entrants saved", { exact: true }),
-      ).toBeVisible();
+      await expectEntrantsSaved(page);
       // Entrants are a result; the match settings wait for a Match Result.
       await expect(
         page.getByRole("button", { name: "Group", exact: true }),

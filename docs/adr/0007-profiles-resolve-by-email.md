@@ -1,7 +1,8 @@
 # ADR 0007: Profiles resolve by email
 
-- Status: accepted (built in Epic R10, work package regression-r10)
+- Status: accepted (built in Epic R10, work package regression-r10); superseded in part by ADR 0013
 - Date: 2026-10-02
+- Superseded in part by ADR 0013 (Remove the MCP): its MCP mentions, including "MCP returns names only" (there is no MCP).
 - Extends: ADR 0001 (reads and writes stay in `src/queries` and `src/mutations`)
 
 ## Context

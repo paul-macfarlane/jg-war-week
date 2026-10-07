@@ -41,6 +41,7 @@ War Weeker). **War Week** alone always means the event, never the app.
 | **Competition**               | Anything that awards points. Scored as team or individual. Skill divisions are separate Competitions ("MTG Advanced", "MTG Beginner"). |
 | **Competition Group**         | An optional grouping of competitions ("Team Night Events").                                                                       |
 | **Competition page** (admin)  | A Competition's one admin page, `/admin/competitions/<id>`: its **Settings** on top, each field autosaving, and the Format's **run area** below it (Entrants and the Bracket tree, Entrants and Matches or Attempts with Log a Match / Log an Attempt, Record placements, or who took part, and Close or Reopen). The Competitions list's Edit opens it; Add Competition creates one in a sheet and then opens it. Organizers and that Competition's Hosts use it; a Participant is refused. |
+| **Create and edit rule**      | A record (Announcement, Award, FAQ Item, Schedule Item, Team, Participant…) is created and edited in the same dialog (`SetupSheet` / `ResponsiveSheetDialog`: a dialog on desktop, a bottom sheet on phones, full height for an Announcement's rich-text body), opened from its list; it has no `/new` or `/[id]` page. Only a thing you run gets a page: today a Competition (created in a dialog, then run on its page). |
 | **Settings lock**             | A Competition's settings lock only as play starts or when it is Closed, and the page and the server refuse a locked change with the same one-line reason. Name, description, Group, Hosts, Placement Points (and points per Participant) and **Score unit** (a label) **never lock**. Format, scoring and counts toward team lock **once any result exists** (an Entrant is one); **Score direction** locks per Format once play has started there (a Placement row, a Match or Attempt, a Bracket Match result); a Head-to-head Competition's draws and Best of, and a Best score Competition's Team score, lock **once it has a Match or Attempt** ("Locked once the Competition has a Match or Attempt.": a Best of needs its two Entrants first); the Bracket kind, Entrants per Match, how many advance, the 3rd place match, the Bracket's Entrants and building the Bracket lock **once a Match result exists**; a League's **Pairing**, **rounds**, **Score direction** and **Entrants** lock **once round 1 is paired** ("Locked once round 1 is paired."; its Score unit never locks and its self-report locks only while Closed, as on every Format); self-enroll, Entrant limit, self-report, check-in and **Max attempts** lock **only while Closed** (Max attempts also cannot go below the most Attempts any one person already has). While Closed everything but the never-locking settings is locked until Reopen. A points setting changed while Closed applies at the next Close. There are no scheduled times to lock (see the retired terms below). |
 | **Competition description**   | Rich text (the Announcement editor: headings, lists, links, images by URL), edited in the Competition page's Settings and shown in full on the Participant Competition page. |
 | **Points Entry**              | One ledger row: points awarded to a Team or Participant. Every Points Entry is either **generated** by a Competition's result (Close) or **Discretionary**. Nobody types one against a Competition. |
@@ -81,7 +82,7 @@ War Weeker). **War Week** alone always means the event, never the app.
 | **Log a Match** / **Log an Attempt** | Recording one Match in a Head-to-head Competition, or one Attempt in a Best score Competition, from a phone in seconds. An Organizer or Host logs for anyone; a Participant does it only with the Competition's self-report setting on, as themselves. |
 | **Close** / **Reopen**        | Every Format's pair (Finalize and Un-finalize are gone from the words people see): Close turns a Competition's result (a Placement's Places, a Bracket's decided places, a League's final standings, a Head-to-head series' or Best score leaderboard's places, or who took part) into generated Points Entries through its Placement Points (ties share a Place and its full points; unplaced rows earn nothing); Reopen withdraws them. A Bracket, a League and a Head-to-head series close only when finished: every Match played (a League: every round paired and every Match recorded, "Finish every Match before closing.", or a Swiss League with every played round complete and no next round pairable without a repeat Match, "Every pairing would repeat a Match. Close the League."; a League of fewer than 2 Entrants never closes; a series decided or drawn). Nothing closes by the clock: a Competition is Closed only when someone Closes it. A Closed Competition takes no writes from anyone, Organizers and Hosts included; Reopen first. Until it is Closed its points are **Provisional**. Stored as `competition.closed_at`. |
 | **Provisional** (points)      | The War Week points shown for a Competition that isn't Closed. The same rule that Close uses computes them, so they are what Close will write; the results table's points header carries a "Provisional" badge (a tooltip, reachable by keyboard and touch, says "Points become final when the Competition is Closed."). Closing removes the badge and the points become the generated Points Entries. |
-| **Winner**                    | The place-1 Entrant of a Competition (every tied first place), marked in the results table with a mark and the text "Winner". Replaces **Champion** everywhere (UI, MCP `winner`, Finale). No Winner is marked when nothing decides first place (no points and no Score, or every row tied). Not the War Week's Winner, which End records from first place in the main Standings. |
+| **Winner**                    | The place-1 Entrant of a Competition (every tied first place), marked in the results table with a mark and the text "Winner". Replaces **Champion** everywhere (UI, Finale). No Winner is marked when nothing decides first place (no points and no Score, or every row tied). Not the War Week's Winner, which End records from first place in the main Standings. |
 | **Results table**             | The one sortable table every ranked view uses (`ResultsTable`): Rank, Participant or Team, optional **stat columns** (a League's W, D, L, Match points and H2H, SB or Buchholz; below `sm` the W, D, L and tiebreak stats fold into one line under the name), Score (with its unit, left out when no row has a Score) and War Week points; every header sorts and the default is Rank; cells hold values only. Placement, League, Best score, team Participation and the Standings use it. |
 | **Top finishers**             | The summary block above a results table or Bracket: every place the Competition decides, each with its points, 1st highlighted as Winner. A Bracket shows 1st and 2nd from the final, 3rd and 4th only with a 3rd place match (a Group final shows the final Match's order). Placement and Best score show their top places. |
 | **Series view**               | A Head-to-head Competition shows no leaderboard: its Matches in order with both Scores and the Winner (or Draw), the series score ("2–1"), the series Winner once decided, and each Entrant's Placement Points (Provisional until Closed). A drawn series says so and names no series Winner. |
@@ -116,8 +117,8 @@ a Team adds up).
 `points_entry.generated` (replacing `finalized_at` and
 `generated_by_bracket`); `competition.score_direction`, `score_unit`,
 `series_config`, `best_score_config`, `max_attempts` and `self_report`.
-Route segments such as `/admin/competitions/<id>/games` and the MCP tool
-names `get_games` and `get_bracket` keep their old spellings.
+Route segments such as `/admin/competitions/<id>/games` keep their old
+spelling.
 
 Epic R16 retired **Game Type** (head-to-head and best score are Formats now),
 **ranked** Games and **Finish Points**, **Max Points** (a Competition's top
@@ -152,7 +153,7 @@ so it is allowed there.)
 Seed content copied verbatim from `old-wikis/` (e.g. a day theme literally
 called "Tournament Day") is exempt: it is historical data, not code.
 
-The banned-term scan (`src/lib/banned-terms.test.ts`) reads the string literals, template text and JSX text of every non-test `.ts`/`.tsx` under `src/`, plus the property names of MCP output under `src/mcp/`; other identifiers and comments aren't scanned, nor are `scripts/` or `drizzle/`. **Match** is no longer banned: it is the word for a Bracket's or Head-to-head's contest. **League** is no longer banned: it is the Format for round robin and Swiss play (Tournament and ELO stay banned: League copy says chess, never "tournament" or "Elo"). The allowlist in `banned-terms.test.ts` (one file, one term, the exact literal, a reason) now holds only the Team score labels: **"Best member"** and **"Sum of members"** in `src/lib/best-score/config.ts`, excepted from the banned **Member** because the spec names those two options. Heat, Game and Finalize have no exceptions in code.
+The banned-term scan (`src/lib/banned-terms.test.ts`) reads the string literals, template text and JSX text of every non-test `.ts`/`.tsx` under `src/`; other identifiers and comments aren't scanned, nor are `scripts/` or `drizzle/`. **Match** is no longer banned: it is the word for a Bracket's or Head-to-head's contest. **League** is no longer banned: it is the Format for round robin and Swiss play (Tournament and ELO stay banned: League copy says chess, never "tournament" or "Elo"). The allowlist in `banned-terms.test.ts` (one file, one term, the exact literal, a reason) now holds only the Team score labels: **"Best member"** and **"Sum of members"** in `src/lib/best-score/config.ts`, excepted from the banned **Member** because the spec names those two options. Heat, Game and Finalize have no exceptions in code.
 
 ## Schedule display rules
 
@@ -248,7 +249,7 @@ Now/next is computed on the ET clock, whatever the viewer's timezone.
   name or picture.
 - **Profile name:** empty means the roster name shows. It shows on the
   roster, Standings, Brackets, Head-to-head and Best score, Awards, Recent results,
-  Announcement "Posted by", Host names and MCP (names only, never emails).
+  Announcement "Posted by" and Host names (names only, never emails).
 - **Avatar picture:** the Profile's picture URL (`https://` only), else the
   Google photo (only a `https://lh3.googleusercontent.com/` URL counts),
   else initials. "Use Google photo" clears the picture URL. The Profile page
@@ -300,7 +301,7 @@ Now/next is computed on the ET clock, whatever the viewer's timezone.
   at least 32 characters is set (`TEST_SIGN_IN_SECRET`) and `VERCEL_ENV` is
   not `production`. It is typed alongside a JG email, marks its session
   (`session.test_sign_in`), shows a "Test sign-in: <email>" banner on every
-  page, and counts as anonymous everywhere (pages, proxy, MCP) once it is
+  page, and counts as anonymous everywhere (pages and the proxy) once it is
   off. There is no impersonation (ADR 0008). Any email whose domain isn't exactly
   `jahnelgroup.com` is refused: better-auth never creates a user for it,
   and a session with such an email counts as anonymous.
@@ -388,18 +389,6 @@ Now/next is computed on the ET clock, whatever the viewer's timezone.
   `scripts/about-media.ts`): it never reads the database or the session.
   `/privacy` and `/terms` are static the same way: copy only, no database
   or session reads.
-- `/api/mcp` also lets in `Authorization: Bearer <MCP_TOKEN>` (off when
-  `MCP_TOKEN` is unset or blank). `canUseMcp` in `src/lib/access.ts` is the
-  one check. Every MCP tool is read-only and returns only what a signed-in
-  Participant sees: never an email, the Organizer list or Hosts.
-  `get_leaderboard` always returns the Standings. `get_bracket` returns one
-  Competition's Bracket of the current War Week by name: Entrants and Matches
-  by name, with places, scores, when a played Match was recorded, which Match is the 3rd place match, the Bracket's Match size, how many advance and whether it has a 3rd place match, and the `winner` (the final's winner once the Bracket is Closed); its fields are `matchSize`, `advancing`, `thirdPlaceMatch`, `closed` and each Round's `matches`. `get_games` returns a Head-to-head or Best score Competition's `closed` flag, its settings (Score direction, unit, Best of, draws, Max attempts, Team score), its leaderboard and its `matches` (Head-to-head) or `attempts` (Best score), newest first. `get_bracket` also names the Bracket kind and each Match's size and advancing count. A
-  Squad's Participants by name, and never who reported a result.
-  `get_placements` returns one Placement Competition's rows by place, with
-  names, Teams, Scores and points, and whether it's closed;
-  `get_discretionary_points` the current War Week's Discretionary points,
-  names and reasons. Neither carries an email.
 - **Discretionary points** (`discretionary.create`, `.edit`, `.delete`, ADR
   0010) are Organizer-only: a Host or Participant is refused, and a Host
   opening `/admin/discretionary-points` sees "Organizers and Hosts only."
@@ -438,7 +427,7 @@ Now/next is computed on the ET clock, whatever the viewer's timezone.
   it is for, whoever logged it. A Closed Competition refuses everyone: Reopen
   first. Only the Host or an Organizer turns self-report on or off or writes
   Squads. The reporter's email is stored on the result and never sent to the
-  client or MCP; the results screen shows their Participant name ("Reported
+  client; the results screen shows their Participant name ("Reported
   by Ashley Schuliger").
 
 ## War Week lifecycle rules
@@ -469,15 +458,15 @@ Now/next is computed on the ET clock, whatever the viewer's timezone.
   - Reopen works only for the most recently ended edition, and not while a
     later edition is upcoming ("War Week XII is next; reopen isn't
     available").
-- **Create next War Week** (on `/admin/settings`, Organizers only) makes an
-  `upcoming` edition from any edition, prefilled with the next Roman
-  numeral, edition number and year. It can copy settings with the
-  Appearance Theme (on), Competitions with new ids and no Hosts (off) and
-  the FAQ (off). It never copies Hosts: the new roster is empty, so there is
-  no Participant to point at, and Organizers add Hosts once it exists
-  (ADR 0012). It never copies Organizers: the Organizer list is global.
-  Teams, roster, Days, Schedule, Points Entries, Awards and Announcements
-  are never copied. It doesn't change what's current until it starts.
+- **Create next War Week** (a button in the Lifecycle section of
+  `/admin/settings`, Organizers only, opening a dialog) shows only on the
+  latest War Week by start date once it is `complete`. It makes an `upcoming`
+  edition prefilled with the next Roman numeral, edition number and year,
+  starting after the latest War Week ends, with default settings and nothing
+  copied: no settings, Competitions, FAQ, Hosts, Teams, roster, Days,
+  Schedule, Points Entries, Awards or Announcements (Organizers are global).
+  The server refuses it while the latest War Week is `upcoming` or `live`. It
+  doesn't change what's current until it starts.
 
 ## Points Entry and Discretionary points rules
 
@@ -602,13 +591,14 @@ Now/next is computed on the ET clock, whatever the viewer's timezone.
   played isn't recorded.
 - **Editing a result** (ADR 0011, D1c): only the latest result along a path
   can change. A Match whose result a later Match already used offers no edit
-  or Clear result: both are disabled with the visible reason "A later Match
-  already used this result. Change that Match first.", and the server
+  or Clear result: the Match shows a lock icon, both controls are disabled
+  with the reason "A later Match already used this result. Change that Match
+  first." as their tooltip (by hover, keyboard focus or tap), and the server
   refuses a direct request. A correction clears results back from the latest
   one; nothing resets later Matches for you. In a Group Bracket a Match is
   editable only while no later Round has a result; otherwise its Edit and
-  Clear result are disabled with "A later round already has a result. Change
-  that round first.", and the server refuses it. An
+  Clear result are disabled the same way, with "A later round already has a
+  result. Change that round first." as the tooltip, and the server refuses it. An
   edit after a Round is complete, with the next Match unplayed (D1f), is
   allowed: the next Round re-fills from the new advancers and any moves or
   overrides made there are lost.
@@ -751,8 +741,7 @@ Now/next is computed on the ET clock, whatever the viewer's timezone.
   again while check-in is open; the Host turns Self check-in off to stop
   that.
 - Who ticked someone is kept for audit and never sent to a page, an action
-  payload or MCP (`get_participation`: names, Teams and whether they checked
-  in themselves).
+  payload.
 - Changing a Competition's scoring is refused once anyone is marked ("Locked
   once the Competition has a result."), and so is deleting it ("Remove who
   took part first.").

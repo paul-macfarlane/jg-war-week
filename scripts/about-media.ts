@@ -2,9 +2,7 @@
  * Writes the About page's media (tickets 28, 03, 04, 43) from the current
  * War Week's seeded demo, never by hand: `public/about/finale-poster.png`
  * (its Finale's Title slide on a phone, which gives nothing away; a still
- * only — no Finale video is written or shown), the hero's
- * `standings-before.png` / `standings-entry.png` / `standings-after.png`
- * (an Organizer's real Discretionary points moving the home Standings), and one
+ * only — no Finale video is written or shown), and one
  * still per feature card at `public/about/<slug>.png`. Every one of them is
  * written twice (the About dark stills fix): `<name>.png` under the light
  * Display and `<name>-dark.png` under the dark one, so `/about` can show
@@ -25,14 +23,14 @@
  * as a made-up Organizer (`about-demo@jahnelgroup.com`) that it adds to the
  * Organizer list and lends the War Week's seeded Points Entries and
  * Announcements for the run, so no real email is in any file, and restores
- * everything after, including the one Points Entry the Standings hero saves:
+ * everything after:
  *   pnpm tsx scripts/about-media.ts
  *
  * `--edition <slug>` (default `xii`) names the War Week the stills are of:
  * before shooting, the run fails unless the War Week `/` resolves to it, and
  * says to run `pnpm seed:demo:<slug>` first.
  *
- * `--stills` rewrites the feature-card and Standings-hero stills (both
+ * `--stills` rewrites the feature-card stills (both
  * schemes) and leaves the Finale poster alone (both schemes):
  *   pnpm tsx scripts/about-media.ts --stills
  */
@@ -55,7 +53,6 @@ import { ABOUT_FEATURES } from "@/lib/about";
 import { DISPLAY_CHANGE_EVENT, DISPLAY_STORAGE_KEY } from "@/lib/display";
 import { FINALE_MAX_MS } from "@/lib/finale";
 import { backgroundColorScheme } from "@/lib/theme";
-import type { LeaderboardResult } from "@/mcp/leaderboard";
 
 import {
   type DemoServer,
@@ -82,6 +79,8 @@ const AUTH_SECRET = `about-media-secret-${randomUUID()}`;
 const DEMO_EMAIL = "about-demo@jahnelgroup.com";
 const STILL = { width: 1280, height: 720 };
 const PHONE = { width: 390, height: 844 };
+/** The phone feature stills (`<slug>-phone.png`): a phone-wide, 640px-tall capture at 2x (780x1280). */
+const PHONE_STILL = { width: 390, height: 640 };
 /** After the Standings countdown: this long on its final state. */
 const HOLD_MS = 3_500;
 /** Between the presenter's → presses on the way to the countdown. */
@@ -103,6 +102,7 @@ type CurrentWarWeek = {
   edition: string;
   mode: "teams" | "free-for-all";
   background_color: string;
+  team_label: string;
 };
 
 let current: CurrentWarWeek;
@@ -135,10 +135,6 @@ const switchDisplay = (scheme: Scheme) =>
     "__S__",
     scheme,
   );
-/** Teams-mode Standings rank Teams; free-for-all, Participants. */
-const standingsKind = () =>
-  current.mode === "teams" ? ("team" as const) : ("individual" as const);
-
 const createSession = (email: string) =>
   createDemoSession(email, AUTH_SECRET, "About demo");
 
@@ -150,7 +146,7 @@ const createSession = (email: string) =>
  */
 async function resolveCurrentWarWeek(): Promise<CurrentWarWeek> {
   const [row] = await query<CurrentWarWeek>(
-    `select id, edition, mode, background_color from war_week
+    `select id, edition, mode, background_color, team_label from war_week
      where status in ('live', 'upcoming', 'complete')
      order by case status when 'live' then 0 when 'upcoming' then 1 else 2 end,
        case when status = 'upcoming' then start_date end asc,
@@ -525,18 +521,30 @@ async function still(
   target: string,
   prepare?: (page: Page) => Promise<void>,
   viewport: { width: number; height: number } = STILL,
+  file = slug,
 ) {
   for (const scheme of SCHEMES) {
     const page = await Page.open(scheme);
-    await page.viewport(viewport, viewport === PHONE);
+    await page.viewport(viewport, viewport.width <= PHONE.width);
     await page.cookie(cookie);
     await page.goto(target);
     if (prepare) await prepare(page);
     await assertNoRealEmail(page, slug);
-    await page.screenshot(path.join(MEDIA, stillFile(slug, scheme)));
+    await page.screenshot(path.join(MEDIA, stillFile(file, scheme)));
     await page.close();
-    note(`still: ${stillFile(slug, scheme)} from ${target}`);
+    note(`still: ${stillFile(file, scheme)} from ${target}`);
   }
+}
+
+/** A feature still at the desktop size, then again as `<slug>-phone` at 390. */
+async function featureStills(
+  slug: string,
+  cookie: string,
+  target: string,
+  prepare?: (page: Page) => Promise<void>,
+) {
+  await still(slug, cookie, target, prepare);
+  await still(slug, cookie, target, prepare, PHONE_STILL, `${slug}-phone`);
 }
 
 /**
@@ -579,64 +587,6 @@ const scrollToText = (text: string) => `(() => {
   window.scrollBy(0, -16);
   return Boolean(el);
 })()`;
-
-/** The real `get_leaderboard` answer from `/api/mcp`, as a signed-in user. */
-async function askMcp(cookie: string): Promise<LeaderboardResult> {
-  const call = async (body: Record<string, unknown>, sessionId?: string) => {
-    const res = await fetch(`${BASE_URL}/api/mcp`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Accept: "application/json, text/event-stream",
-        cookie: `better-auth.session_token=${cookie}`,
-        ...(sessionId ? { "mcp-session-id": sessionId } : {}),
-      },
-      body: JSON.stringify(body),
-    });
-    const text = await res.text();
-    const data = (res.headers.get("content-type") ?? "").includes(
-      "event-stream",
-    )
-      ? text
-          .split("\n")
-          .filter((l) => l.startsWith("data:"))
-          .map((l) => l.slice(5).trim())
-          .filter(Boolean)
-          .at(-1)
-      : text;
-    return {
-      json: data ? (JSON.parse(data) as Record<string, unknown>) : undefined,
-      sessionId: res.headers.get("mcp-session-id") ?? undefined,
-    };
-  };
-  const init = await call({
-    jsonrpc: "2.0",
-    id: 1,
-    method: "initialize",
-    params: {
-      protocolVersion: "2025-06-18",
-      capabilities: {},
-      clientInfo: { name: "about-media", version: "0.1.0" },
-    },
-  });
-  const answer = await call(
-    {
-      jsonrpc: "2.0",
-      id: 2,
-      method: "tools/call",
-      params: {
-        name: "get_leaderboard",
-        arguments: { kind: standingsKind() },
-      },
-    },
-    init.sessionId,
-  );
-  const text = (
-    answer.json?.result as { content?: { text: string }[] } | undefined
-  )?.content?.[0]?.text;
-  if (!text) throw new Error("get_leaderboard returned nothing");
-  return JSON.parse(text) as LeaderboardResult;
-}
 
 // ---------------------------------------------------------------------------
 // A logged Match, as evidence beside the "competitions" still (R3)
@@ -827,146 +777,6 @@ async function teardownSeriesDemo() {
 }
 
 // ---------------------------------------------------------------------------
-// The About hero: Standings moving after a Points Entry (ticket 04)
-
-/**
- * Three stills for the About page's hero (ticket 04): the home Standings
- * before, the Discretionary points form about to save a big win for
- * whoever is currently in last place (a Team, or in free-for-all a
- * Participant), and the same home Standings right after, reordered. Uses the
- * real Discretionary points form and the real `get_leaderboard` MCP tool to
- * read the Standings, not a hand-crafted fixture.
- */
-async function captureStandingsDemo(cookie: string): Promise<void> {
-  await still(
-    "standings-before",
-    cookie,
-    `${home()}/leaderboard`,
-    () => sleep(500),
-    PHONE,
-  );
-
-  const before = await askMcp(cookie);
-  const last = before.standings.at(-1);
-  const first = before.standings[0];
-  if (!last || !first || before.standings.length < 2) {
-    throw new Error("need at least two in the Standings for the demo");
-  }
-  // Enough to overtake first place outright, so the reorder is unmistakable.
-  const margin = Math.max(first.total - last.total + 15, 15);
-  note(
-    `standings demo: moving ${JSON.stringify(last.name)} from last (${last.total}) past first (${first.total}) with +${margin}`,
-  );
-
-  const page = await Page.open(SCHEMES[0]);
-  await page.viewport(PHONE, true);
-  await page.cookie(cookie);
-  await page.goto("/admin/discretionary-points");
-  await clickButton(page, "Give Discretionary points");
-  await sleep(500);
-  await selectComboboxOption(
-    page,
-    standingsKind() === "team"
-      ? `${before.teamLabel} or Participant`
-      : "Participant",
-    last.name,
-  );
-  await page.evaluate(`document.querySelector('input[name="points"]').focus()`);
-  await page.send("Input.insertText", { text: String(margin) });
-  await page.evaluate(`document.querySelector('input[name="reason"]').focus()`);
-  await page.send("Input.insertText", { text: "Spirit award" });
-  await sleep(400);
-  await assertNoRealEmail(page, "standings-entry");
-  // One filled-in form, shot in each scheme: the Display switches in place,
-  // so only one Points Entry is ever saved.
-  for (const scheme of SCHEMES) {
-    await page.evaluate(switchDisplay(scheme));
-    await sleep(400);
-    await page.screenshot(
-      path.join(MEDIA, stillFile("standings-entry", scheme)),
-    );
-    note(
-      `still: ${stillFile("standings-entry", scheme)} from /admin/discretionary-points, filled in`,
-    );
-  }
-
-  // The save may land even if a later check throws: remember how many
-  // entries the demo Organizer holds now, so the teardown can tell.
-  standingsEntryBaseline = await demoEntryCount();
-  await page.evaluate(
-    `document.querySelector('form[aria-label="New Discretionary points"] button[type="submit"]').click()`,
-  );
-  // The Sheet closes once the entry saves.
-  let saved = false;
-  for (let i = 0; i < 40; i++) {
-    await sleep(200);
-    const open = await page.evaluate<boolean>(
-      `Boolean(document.querySelector('form[aria-label="New Discretionary points"]'))`,
-    );
-    if (!open) {
-      saved = true;
-      break;
-    }
-  }
-  if (!saved) {
-    throw new Error("the demo Discretionary points never finished saving");
-  }
-  await page.close();
-
-  await still(
-    "standings-after",
-    cookie,
-    `${home()}/leaderboard`,
-    () => sleep(500),
-    PHONE,
-  );
-
-  const after = await askMcp(cookie);
-  const lastAfter = after.standings.find((row) => row.name === last.name);
-  note(
-    `standings demo: ${JSON.stringify(last.name)} is now #${
-      after.standings.findIndex((row) => row.name === last.name) + 1
-    } of ${after.standings.length} (${lastAfter?.total} pts)`,
-  );
-  if (after.standings[0]?.name !== last.name) {
-    throw new Error(
-      "the demo Discretionary points did not move last place to first",
-    );
-  }
-}
-
-/** Points Entries credited to the demo Organizer (the lent seeded ones too). */
-async function demoEntryCount(): Promise<number> {
-  const [row] = await query<{ n: string }>(
-    `select count(*)::text as n from points_entry where entered_by_email = $1`,
-    [DEMO_EMAIL],
-  );
-  return Number(row.n);
-}
-
-/** The demo Organizer's entry count just before the Standings save; null before. */
-let standingsEntryBaseline: number | null = null;
-
-/**
- * Undoes the Points Entry `captureStandingsDemo` saved, if one landed: the
- * seeded entries are lent to the demo Organizer (`lendAuthorship`), so this
- * runs before the authorship is restored and removes only the newest one,
- * and only when the count grew past the baseline.
- */
-async function teardownStandingsDemo() {
-  if (standingsEntryBaseline === null) return;
-  if ((await demoEntryCount()) > standingsEntryBaseline) {
-    await query(
-      `delete from points_entry where id = (
-         select id from points_entry where entered_by_email = $1
-         order by created_at desc limit 1)`,
-      [DEMO_EMAIL],
-    );
-  }
-  standingsEntryBaseline = null;
-}
-
-// ---------------------------------------------------------------------------
 // Evidence: /about as an anonymous visitor
 
 async function evidence() {
@@ -989,10 +799,10 @@ async function evidence() {
   await desktop.viewport({ width: 1440, height: 900 }, false, 1);
   await desktop.goto("/about", 3_000);
   const hero = await desktop.evaluate<Record<string, unknown>>(
-    `(() => { const imgs = Array.from(document.querySelectorAll('[data-standings-step]')).filter((i) => i.checkVisibility()); return { steps: imgs.map((i) => i.dataset.standingsStep), loaded: imgs.every((i) => i.complete && i.naturalWidth > 0), finalePoster: document.querySelector('img[src="/about/finale-poster.png"]') !== null, noVideo: document.querySelector("video") === null }; })()`,
+    `(() => ({ noStandingsDemo: document.querySelector('[data-standings-step]') === null, finalePoster: Array.from(document.images).some((i) => decodeURIComponent(i.src).includes("/about/finale-poster.png")), noVideo: document.querySelector("video") === null }))()`,
   );
   note(`evidence: desktop hero ${JSON.stringify(hero)}`);
-  if (!hero.noVideo)
+  if (!hero.noVideo || !hero.noStandingsDemo)
     throw new Error("the About page hero must be stills, not a video");
   await desktop.screenshot(path.join(EVIDENCE, "about-desktop.png"), true);
 
@@ -1009,7 +819,7 @@ async function evidence() {
     const shown = await desktopScheme.evaluate<
       { src: string; loaded: boolean }[]
     >(
-      `Array.from(document.querySelectorAll("img[data-still-scheme]")).filter((i) => i.checkVisibility()).map((i) => ({ src: new URL(i.currentSrc).pathname, loaded: i.complete && i.naturalWidth > 0 }))`,
+      `Array.from(document.querySelectorAll("img[data-still-scheme]")).filter((i) => i.checkVisibility()).map((i) => ({ src: new URL(new URL(i.currentSrc).searchParams.get("url") ?? i.currentSrc, location.href).pathname, loaded: i.complete && i.naturalWidth > 0 }))`,
     );
     const wrong = shown.filter(
       (s) => s.src.endsWith("-dark.png") !== (scheme === "dark") || !s.loaded,
@@ -1017,7 +827,7 @@ async function evidence() {
     note(
       `evidence: /about desktop under the ${scheme} Display shows ${shown.length} stills, ${wrong.length} wrong or unloaded`,
     );
-    if (shown.length !== 11 || wrong.length > 0)
+    if (shown.length !== 8 || wrong.length > 0)
       throw new Error(
         `/about under the ${scheme} Display: ${JSON.stringify(shown)}`,
       );
@@ -1064,7 +874,7 @@ async function scheduleTime(): Promise<string> {
   return new TZDate(y, m - 1, d, 12, 15, 0, "America/New_York").toISOString();
 }
 
-/** Only the feature-card and Standings-hero stills; the Finale poster stays as it is. */
+/** Only the feature-card stills; the Finale poster stays as it is. */
 const STILLS_ONLY = process.argv.includes("--stills");
 
 async function main() {
@@ -1097,16 +907,12 @@ async function main() {
     await server.ready();
     await waitForChrome();
 
-    // Undone straight away, so the later stills show the seeded Standings.
-    await captureStandingsDemo(cookie);
-    await teardownStandingsDemo();
-
     if (!STILLS_ONLY)
       for (const scheme of SCHEMES) await recordFinale(cookie, scheme);
 
     const slugs = ABOUT_FEATURES.map((f) => f.slug);
-    await still("organizer-admin", cookie, "/admin/schedule");
-    await still(
+    await featureStills("organizer-admin", cookie, "/admin/schedule");
+    await featureStills(
       "points",
       cookie,
       "/admin/discretionary-points",
@@ -1120,7 +926,7 @@ async function main() {
         if (!form) throw new Error("no Discretionary points form on screen");
       },
     );
-    await still(
+    await featureStills(
       "schedule",
       cookie,
       `${home()}?at=${encodeURIComponent(scheduleAt)}`,
@@ -1130,10 +936,13 @@ async function main() {
         if (!found) throw new Error(`no Now / Next section on ${home()}`);
       },
     );
-    await still("announcements", cookie, `${home()}/announcements`, () =>
-      sleep(2_000),
+    await featureStills(
+      "announcements",
+      cookie,
+      `${home()}/announcements`,
+      () => sleep(2_000),
     );
-    await still(
+    await featureStills(
       "competitions",
       cookie,
       `${home()}/competitions/${bracketCompetitionId}`,
@@ -1145,7 +954,7 @@ async function main() {
         if (!found) throw new Error("no Top finishers on the Bracket view");
       },
     );
-    await still(
+    await featureStills(
       "league",
       cookie,
       `${home()}/competitions/${await findLeagueDemo()}`,
@@ -1158,15 +967,12 @@ async function main() {
       },
     );
     await captureSeriesDemo(cookie);
-    await still("archive", cookie, "/history");
+    await featureStills("archive", cookie, "/history");
     await evidence();
 
     for (const name of [
       ...(STILLS_ONLY ? [] : ["finale-poster"]),
-      "standings-before",
-      "standings-entry",
-      "standings-after",
-      ...slugs,
+      ...slugs.flatMap((slug) => [slug, `${slug}-phone`]),
     ].flatMap((still) => SCHEMES.map((scheme) => stillFile(still, scheme)))) {
       note(
         `wrote public/about/${name}: ${(statSync(path.join(MEDIA, name)).size / 1024).toFixed(0)} KB`,
@@ -1188,7 +994,6 @@ async function main() {
     await attempt(() =>
       rmSync(chrome.dir, { recursive: true, force: true, maxRetries: 3 }),
     );
-    await attempt(() => teardownStandingsDemo());
     await attempt(() => teardownSeriesDemo());
     await attempt(() =>
       query(`delete from organizer where email = $1`, [DEMO_EMAIL]),

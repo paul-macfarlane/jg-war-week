@@ -1,13 +1,17 @@
 import { and, eq, ne, or, sql } from "drizzle-orm";
 
 import { DBOrTx, db } from "@/db";
-import { type WarWeek, competition, faqItem, warWeek } from "@/db/schema";
+import { type WarWeek, warWeek } from "@/db/schema";
+import type { FieldErrors } from "@/lib/result";
 import {
   type ClosingValues,
   DEFAULT_SETTINGS,
   type NextWarWeekValues,
+  createNextWarWeekError,
   defaultWinner,
+  latestWarWeek,
   moveError,
+  nextStartDateError,
   transitionError,
   unstartError,
 } from "@/lib/war-week-lifecycle";
@@ -183,51 +187,40 @@ async function takenError(
 }
 
 /**
- * Create next War Week: inserts an `upcoming` War Week and the chosen
- * copies from the War Week `ctx` names in one transaction. Copies settings
- * with the Appearance Theme, Competitions (new ids, no Hosts: the new roster
- * is empty, and no Points Entries) and the FAQ as chosen; never Teams,
- * roster, Days, Schedule, Points Entries, Awards or Announcements.
- * Organizers are global, so there are none to copy.
+ * Create next War Week: inserts an `upcoming` War Week with default
+ * settings and nothing copied (no Competitions, FAQ, Teams or roster), from
+ * the War Week `ctx` names. Refused while the latest War Week by start date
+ * is `upcoming` or `live` (`createNextWarWeekError`), and when the new start
+ * date isn't after that War Week's end date (`nextStartDateError`). Organizers are global.
  */
 export async function createNextWarWeek(
   values: NextWarWeekValues,
   ctx: MutationContext,
   dbOrTx: DBOrTx = db,
-): Promise<{ ok: true; edition: string } | { ok: false; error: string }> {
+): Promise<
+  | { ok: true; edition: string }
+  | { ok: false; error: string; fieldErrors?: FieldErrors }
+> {
   try {
     return await dbOrTx.transaction(async (tx) => {
       const [source] = await tx
-        .select()
+        .select({ id: warWeek.id })
         .from(warWeek)
         .where(eq(warWeek.id, ctx.warWeekId));
       if (!source) return { ok: false as const, error: WAR_WEEK_NOT_FOUND };
+      const latest = latestWarWeek(await tx.select().from(warWeek));
+      const unfinished = createNextWarWeekError(latest);
+      if (unfinished) return { ok: false as const, error: unfinished };
+      const tooEarly = nextStartDateError(latest, values.startDate);
+      if (tooEarly) {
+        return {
+          ok: false as const,
+          error: tooEarly,
+          fieldErrors: { startDate: tooEarly },
+        };
+      }
       const taken = await takenError(values, tx);
       if (taken) return { ok: false as const, error: taken };
-
-      const settings = values.copySettings
-        ? {
-            mode: source.mode,
-            teamLabel: source.teamLabel,
-            leaderTitle: source.leaderTitle,
-            slackChannelUrl: source.slackChannelUrl,
-            wikiUrl: source.wikiUrl,
-            primaryColor: source.primaryColor,
-            primaryForegroundColor: source.primaryForegroundColor,
-            accentColor: source.accentColor,
-            backgroundColor: source.backgroundColor,
-            foregroundColor: source.foregroundColor,
-            overridePrimaryColor: source.overridePrimaryColor,
-            overridePrimaryForegroundColor:
-              source.overridePrimaryForegroundColor,
-            overrideAccentColor: source.overrideAccentColor,
-            overrideBackgroundColor: source.overrideBackgroundColor,
-            overrideForegroundColor: source.overrideForegroundColor,
-            fontPreset: source.fontPreset,
-            logoUrl: source.logoUrl,
-            bannerUrl: source.bannerUrl,
-          }
-        : DEFAULT_SETTINGS;
 
       const [created] = await tx
         .insert(warWeek)
@@ -239,46 +232,9 @@ export async function createNextWarWeek(
           endDate: values.endDate,
           storyTheme: values.storyTheme,
           status: "upcoming",
-          ...settings,
+          ...DEFAULT_SETTINGS,
         })
         .returning({ id: warWeek.id });
-
-      if (values.copyCompetitions) {
-        const competitions = await tx
-          .select()
-          .from(competition)
-          .where(eq(competition.warWeekId, source.id));
-        if (competitions.length > 0) {
-          await tx.insert(competition).values(
-            competitions.map((c) => ({
-              warWeekId: created.id,
-              name: c.name,
-              description: c.description,
-              placementPoints: c.placementPoints,
-              scoring: c.scoring,
-              countsTowardTeam: c.countsTowardTeam,
-              competitionGroup: c.competitionGroup,
-            })),
-          );
-        }
-      }
-
-      if (values.copyFaq) {
-        const items = await tx
-          .select()
-          .from(faqItem)
-          .where(eq(faqItem.warWeekId, source.id));
-        if (items.length > 0) {
-          await tx.insert(faqItem).values(
-            items.map((item) => ({
-              warWeekId: created.id,
-              question: item.question,
-              answer: item.answer,
-              sortOrder: item.sortOrder,
-            })),
-          );
-        }
-      }
 
       return { ok: true as const, edition: values.edition };
     });

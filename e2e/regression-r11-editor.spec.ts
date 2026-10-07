@@ -47,7 +47,8 @@ test("r11 64 an Organizer posts a heading, a quote, a captioned image and a vide
   try {
     await asOrganizer(context);
     await page.setViewportSize(DESKTOP);
-    await page.goto("/admin/announcements/new");
+    await page.goto("/admin/announcements");
+    await page.getByRole("button", { name: "New Announcement" }).click();
 
     // The empty editor shows its placeholder, named to assistive technology.
     const surface = page.locator(".ProseMirror");
@@ -125,7 +126,9 @@ test("r11 64 an Organizer posts a heading, a quote, a captioned image and a vide
     await expect(surface.locator("img")).toHaveCount(1);
 
     await page.getByRole("button", { name: "Post Announcement" }).click();
-    await expect(page).toHaveURL(/\/admin\/announcements$/);
+    await expect(
+      page.getByRole("dialog", { name: "New Announcement" }),
+    ).toBeHidden();
 
     const [stored] = await runQuery<{ body: unknown }>(
       `select body from announcement where title = $1`,

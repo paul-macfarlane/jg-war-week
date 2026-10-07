@@ -1,6 +1,7 @@
 import { type Page, expect, test } from "@playwright/test";
 
 import {
+  expectEntrantsSaved,
   expectSaved,
   openCompetitionPage,
   setFormat,
@@ -133,8 +134,7 @@ test("a head-to-head Bracket of 8 with a 3rd place Match is run to Close, its po
   }
   await expect(page.getByText("(8 chosen)")).toBeVisible();
   await page.keyboard.press("Escape");
-  await page.getByRole("button", { name: "Save Entrants" }).click();
-  await expect(page.getByText("Entrants saved", { exact: true })).toBeVisible();
+  await expectEntrantsSaved(page);
 
   await expect(thirdPlace).toBeEnabled();
   await expect(thirdPlace).not.toBeChecked();

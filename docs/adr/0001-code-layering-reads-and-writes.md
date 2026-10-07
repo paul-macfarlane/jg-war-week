@@ -1,7 +1,8 @@
 # ADR 0001: Code layering for reads, business rules and writes
 
-- Status: accepted
+- Status: accepted; superseded in part by ADR 0013
 - Date: 2026-09-23
+- Superseded in part by ADR 0013 (Remove the MCP): the MCP server as an entry point and `src/mcp/` (the MCP route and its serializers are removed; the layering of pages, queries, mutations and lib stands).
 - Context: ticket 06 review (PR #13)
 
 ## Context

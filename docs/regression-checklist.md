@@ -146,13 +146,22 @@ line that no longer matches the app is a bug in this file.
 - [ ] **Sign-in wears the current War Week.** Open `/sign-in`; its colors
       and font match the current War Week (theme check above).
 - [ ] **About wears the current War Week, stills included.** Open `/about`;
-      the page passes the theme check, and every still (the hero Standings,
-      the Finale poster and each "What it does" card) shows the current
+      the page passes the theme check, and every still (the Finale poster and
+      each "What it does" feature) shows the current
       War Week's colors, not a past edition's. If not, refresh them:
       `pnpm build && pnpm seed:demo:<edition>`, then
       `pnpm tsx scripts/about-media.ts`.
+- [ ] **About's features are one per row and readable, with no Standings
+      demo.** Open `/about` at 1440×900 and 390×844, light and dark. There is
+      no three-phone Standings demo. Each "What it does" feature is its own
+      row: at 1440 the still is large with its caption beside it, at 390 the
+      caption sits below the still, and the still shown there is the phone
+      capture (`<feature>-phone` in its src), the desktop one at 1440. You can
+      read the text in every still at that size (a feature whose still is not
+      readable is cut or re-shot),
+      every image loads, and nothing scrolls sideways.
 - [ ] **About is up to date, without redundancy or salesy copy.** Read
-      `/about` against the app today: every "What it does" card describes a
+      `/about` against the app today: every "What it does" feature describes a
       feature that exists, in the app's navigation order; nothing is said
       twice; no hackathon leftovers, maintainer pitch or over-promise; no
       copy assumes Teams mode (the current War Week may be free-for-all).
@@ -205,11 +214,12 @@ on the matching War Week page.
       (Days and Items), Roster (Teams and Participants), Announcements,
       Awards, FAQ and Organizers, each row shows a visible **Edit** and a
       **Delete** button (touch targets at least 44px at 390). Edit opens the
-      form in a dialog at 1440 and a bottom sheet at 390 (Announcements'
-      Edit and Competitions' Edit go to their own page); Delete opens a confirm and ends in a
+      form in a dialog at 1440 and a bottom sheet at 390 (only Competitions'
+      Edit goes to its own page); Delete opens a confirm and ends in a
       toast. There is no whole-row hidden button. Schedule, FAQ and Awards
       have no `/new` or `/[id]` page: `/admin/schedule/new`,
-      `/admin/faq/new` and `/admin/awards/new` redirect to their list.
+      `/admin/faq/new` and `/admin/awards/new` redirect to their list;
+      `/admin/announcements/new` and `/admin/announcements/<id>` answer 404.
 - [ ] **Settings autosave and show.** In Settings, change the Story Theme,
       the dates (DateRangePicker: picking the end date leaves it open until
       Done), the Slack URL and one Appearance Theme color. There is no Save
@@ -277,8 +287,8 @@ on the matching War Week page.
       with Placement Points 5/3/1, a Bracket Competition, and a
       Head-to-head Competition (Add Competition creates it in a sheet and
       opens its Competition page: on the Bracket turn on "Participants can
-      enroll", on the Head-to-head pick its two Entrants; each saves as you
-      change it); assign
+      enroll", on the Head-to-head pick its two Entrants in the "A vs B"
+      pickers; each saves as you change it); assign
       the roster Participant whose email is `e2e-host@jahnelgroup.com` as
       Host of the Placement one (the Hosts field is in its page's Settings,
       not in Add; see the Competition page lines below). The Format select
@@ -339,16 +349,11 @@ on the matching War Week page.
       about 10 s, and the points breakdown reads "Discretionary: <reason>".
       `/admin/points` redirects to this page. *(Host refused: see Admin, as a
       Host.)*
-- [ ] **MCP: `get_placements` and `get_discretionary_points`.** Call each
-      against a signed-in session or `MCP_TOKEN`: `get_placements` for the
-      Placement Competition by name returns its Score direction, Placement
-      Points, closed state and rows by place with names, Teams, Scores and
-      points; `get_discretionary_points` returns the current War Week's
-      entries by name and reason. Neither output contains an `@`. For a
-      Placement Competition `get_bracket` points to `get_placements`.
 - [ ] **Run a Bracket end to end.** On the Bracket Competition's page
       (Format "Bracket"), leave the Bracket kind on Head-to-head (the toggle
-      beside Group; 2 per Match, 1 advancing, no size fields shown), pick Entrants and Save Entrants, then
+      beside Group; 2 per Match, 1 advancing, no size fields shown), pick
+      Entrants (no Save button: they save as you pick, "Saving…" then
+      "Saved" beside the Entrants legend, and a reload keeps them), then
       Generate to build it. There is no By Standings button and no Time &
       place. *(teams)* A new Competition scores by Team: Add Squad two
       Squads per Team, set Entrants are to Squads and press All Squads; the
@@ -388,6 +393,9 @@ on the matching War Week page.
 - [ ] **Bracket tree: full width and Jump to your Match.** From 768 up the
       Participant page's tree uses the full width of the page (not a narrow
       column); at 390 it scrolls sideways only in its own "Rounds" region.
+      A small Bracket (4 Entrants) is centered in its region at 1440, on the
+      Participant page and in admin; at 390 it is wider than the region, so it
+      starts at the left edge and scrolls, as the 64-Entrant one does at both.
       As an Entrant, "Jump to your Match" scrolls to and highlights your next
       unplayed Match; once you're out, or the Bracket is Closed, it goes to
       your last played one. A signed-in Participant who isn't an Entrant
@@ -423,7 +431,12 @@ on the matching War Week page.
       and edits or deletes a result they could have logged, including one a
       Host logged; another Participant cannot. Closed, nobody can.
 - [ ] **Head-to-head: two Entrants, Best of.** A Head-to-head Competition
-      shows exactly two Entrants (no enrollment, no "open to everyone"), and
+      shows exactly two Entrants (no enrollment, no "open to everyone"),
+      picked "A vs B": Participant A and Participant B (the Team Label's A
+      and B for team scoring) side by side at 1440, stacked with "vs"
+      between at 390 with no sideways scroll; each leaves out the other's
+      choice, the pair saves (no Save button) once both are set, and
+      clearing one side then reloading shows the saved pair unchanged.
       Log a Match has two fixed rows and no player picker. In a Best of 3,
       log 2–0: the series is decided, Log a Match is disabled with a visible
       reason and the server refuses a third. Delete or edit a Match and
@@ -433,8 +446,12 @@ on the matching War Week page.
       higher place's full points.
 - [ ] **League: set up and pair.** Add Competition, Format League (a new
       one is Round robin; Swiss shows a Rounds field). At 1440 and 390 add 5
-      Participants with the picker (no email in any option) and press Pair
-      rounds: 5 rounds, each Entrant sits out once. Clear pairings, switch to
+      Participants with the picker (no email in any option; no Save button,
+      they save as you pick and "Saved" shows beside Entrants) and press Pair
+      rounds: 5 rounds, each Entrant sits out once. With the page also open
+      in a second tab from before the pairing, change its Entrants there:
+      the server's "Locked once round 1 is paired." shows under the picker
+      and it goes back to the saved Entrants. Clear pairings, switch to
       Swiss with 6 Entrants, Pair round 1: 3 Matches; Pairing, rounds, Score
       direction and the Entrants now read "Locked once round 1 is paired.";
       Score unit and self-report stay editable. Edit pairings swaps two
@@ -481,12 +498,17 @@ on the matching War Week page.
       gives places 1 to 4 their points.
 - [ ] **Bracket: edit a result only along the latest path.** Record two
       Matches that feed a Final and the Final. Each semifinal's Edit and
-      Clear result are disabled with "A later Match already used this result.
-      Change that Match first." as visible text (also at 390), and a posted
-      change is refused by the server. Clear the Final, then a semifinal's
+      Clear result are disabled and the Match shows a lock icon; the text "A
+      later Match already used this result." is not printed under it, and the
+      reason "Change that Match first." shows as a tooltip on the disabled
+      control by keyboard focus (Tab reaches it) and hover at 1440 and by a
+      tap at 390; the pointer over it shows the not-allowed cursor, and
+      clicking it does nothing. A posted change
+      is refused by the server. Clear the Final, then a semifinal's
       Edit is offered again. In a Group Bracket, once any later round has a
-      result, every earlier Match's Edit and Clear result are disabled with
-      "A later round already has a result. Change that round first."
+      result, every earlier Match's Edit and Clear result are disabled, with
+      "A later round already has a result. Change that round first." as the
+      tooltip (no repeated line).
 - [ ] **Close a Head-to-head Competition.** In a Best of 3 Head-to-head
       Competition with Placement Points, log one Match as the Organizer (Log
       a Match on its public Competition page): Close is disabled with "Finish
@@ -506,7 +528,8 @@ on the matching War Week page.
       reads "Who took part"). Settings: *(individual)* Points per
       Participant; *(teams)* Placement Points 3/2/1 by headcount (there is no
       per-Participant N and no per-person mode); turn on
-      Self check-in. Tick two Participants, untick one, then Close: the
+      Self check-in. Tick two Participants (each box stays ticked through the save and
+      reload keeps it; unticking holds too), untick one, then Close: the
       generated Points Entries ("From participation") appear in the leaderboard's points breakdown
       and the Standings move. Closed, the ticks and the Settings are disabled with their reason (the server's
       refusals are covered by unit tests and smoke). Reopen withdraws them. Changing the scoring while anyone is ticked is locked ("Locked once the
@@ -549,7 +572,6 @@ on the matching War Week page.
       pickable and marked "Can't sign in". Pick one (it saves at once),
       remove it, and open the Competition as that Host once their roster email
       is set (with no email nobody signs in as them: the admin page refuses).
-      Create next War Week copies no Hosts.
 - [ ] **Competition page: rich-text description.** Write a description with
       a heading, a list, a link and an image by URL; it saves on its own.
       On `/<edition>/competitions/<id>` the Participant sees it formatted,
@@ -570,7 +592,9 @@ on the matching War Week page.
       that Day with its time in ET and links to the Competition. Edit it
       (sheet or dialog, no separate page), then delete it (confirm and
       toast).
-- [ ] **Announcements.** Post an Announcement with a heading, a quote, a
+- [ ] **Announcements.** New Announcement opens a dialog at 1440 and a
+      full-height sheet at 390, with the rich-text body; Edit opens the same
+      one. Post an Announcement with a heading, a quote, a
       link, a captioned image (by URL) and a video (the editor's Video
       button), then pin it. The form has no Video links field, and the
       editor's toolbar buttons show their keyboard shortcut in a tooltip. It
@@ -580,9 +604,8 @@ on the matching War Week page.
       War Week, after anything posted today, so unpin the seeded pinned one
       first and pin it again at the end. Unpin, then delete. The admin list
       shows "Posted by <name>" (the poster's display name or the part of
-      their email before the @, never the email) and no video count. MCP
-      `get_announcements` returns no `videoUrls`; the video shows as its URL
-      in the plain-text body.
+      their email before the @, never the email) and no video count; a
+      video shows as its URL in the plain-text body.
 - [ ] **Awards.** Give an Award to two Participants (and a Team,
       *(teams)*); it shows on `/<edition>/awards`. Delete it.
 - [ ] **Award presets.** On `/admin/awards`, Add Award: the Preset picker
@@ -600,11 +623,22 @@ on the matching War Week page.
       "The last Organizer can't be removed." If others are listed, delete
       their rows from the local `organizer` table for this check and put
       them back after; never remove a real Organizer in the app.
-- [ ] **Lifecycle.** On Settings (the Lifecycle box and Create next War
-      Week live there, not on a separate page; the seed-overwrite warning
-      shows there too, and only there), Create next War Week makes an Upcoming edition (copy
-      settings only). Start on it is refused while the current one is live
-      ("End <X> first."). End the current War Week: its confirm names any
+- [ ] **Lifecycle.** On Settings (the Lifecycle box and its Create next
+      War Week button live there, not on a separate page; the seed-overwrite
+      warning shows there too, and only there), at 1440 and 390: while the
+      latest War Week by start date is Upcoming or Live (XII in the seed) there
+      is no Create next War Week button and no hint, on it or on any older
+      War Week. Start on XII is refused while the current one is live
+      ("End <X> first."). Once the latest War Week is ended (End XII after
+      XI), Create next War Week shows on it and only on it (not on an older
+      Archive edition): it opens a dialog (a bottom sheet at 390) with
+      edition, number and year prefilled, dates and Story Theme; a start date
+      on or before the latest War Week's end date is refused on the Dates
+      field ("Start date must be after War Week XII ends (<date>)."), and
+      once the new one exists the older War Week loses the button (the new,
+      Upcoming one is the latest); creating
+      makes an Upcoming edition with default settings, no Competitions and no
+      FAQ. End the current War Week: its confirm names any
       generated Bracket that isn't closed, any open Head-to-head or Best score
       Competition with at least one Match or Attempt and any open Participation
       Competition with anyone ticked (linked to its Competition page), and on End it records the Winner
@@ -670,8 +704,7 @@ Competition (from the Organizer run).
       Announcements or Finale); at 390 the bar is Competitions and More
       (Guide in More). Competitions lists only the Host's Competition, with
       its Edit.
-- [ ] **Organizer-only pages refuse.** Schedule, Announcements (and New
-      Announcement), Finale, Settings, Roster, FAQ, Awards and
+- [ ] **Organizer-only pages refuse.** Schedule, Announcements, Finale, Settings, Roster, FAQ, Awards and
       Organizers (open their URLs directly) each show "Organizers and Hosts
       only."; there is no Lifecycle box, no Create next War Week and no
       Add Competition or Days editor.
@@ -767,7 +800,9 @@ that nothing personal shows (no You highlight, no Log a Match or Log an Attempt)
 - [ ] **Competitions.** `/<edition>/competitions` lists every Competition;
       when there are Groups the Group tabs wrap onto more lines instead of
       scrolling sideways, and every tab (Other Competitions too) shows at
-      390. Each row shows its status: Not started, Underway (a Bracket adds
+      390. Choosing a tab sets `?group=<slug>` in the URL without adding history
+      entries; opening a Competition and going Back returns to that tab, and
+      an unknown or missing `?group` opens the first tab. Each row shows its status: Not started, Underway (a Bracket adds
       "Round N of M" or "Final"), Closed, or Done · Winner: X (a tie reads
       "Winners: A, B"; a Closed Placement or Bracket with no Placement
       Points is just Done), a description preview of two lines at most, and
@@ -837,16 +872,6 @@ that nothing personal shows (no You highlight, no Log a Match or Log an Attempt)
       Competitions list and the Competition page's Settings show no
       Individual/Team choice and no "Individual" label; a Competition that
       is already Team shows "Team".
-- [ ] **MCP: `get_bracket` and `get_games` words.** Call each against the
-      Bracket and the Head-to-head and Best score Competitions: `get_bracket`
-      returns the Bracket kind, `matchSize`, `advancing` (per Match),
-      `thirdPlaceMatch`, `closed`, each
-      Round's `matches` and a `winner` (the final's winner once Closed;
-      null before); `get_games` returns `closed`, the Score direction and
-      unit, Best of, draws, Max attempts and Team score, a leaderboard and
-      `matches` (Head-to-head) or `attempts` (Best score), with no count
-      (best/total) field. `get_placements` shows the direction and unit. No field or
-      description says Heat, Champion, Finalize or Game, and there is no `@`.
 - [ ] **Announcements.** The Announcements page (`/<edition>/announcements`;
       at 390 it is More's first item and More is highlighted there)
       lists the pinned Announcement first, renders rich text (headings,

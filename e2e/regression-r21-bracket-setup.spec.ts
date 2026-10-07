@@ -6,7 +6,11 @@ import {
   test,
 } from "@playwright/test";
 
-import { addCompetition, expectSaved } from "./competition-page";
+import {
+  addCompetition,
+  expectEntrantsSaved,
+  expectSaved,
+} from "./competition-page";
 import {
   deleteXiCompetition,
   runQuery,
@@ -202,10 +206,7 @@ test("r21 AC12 AC13 a Bracket toggles Head-to-head / Group, and a Group of 11 is
     await expect(page.getByText("(11 chosen)")).toBeVisible();
     await page.keyboard.press("Escape");
     await expect(page.getByRole("listbox")).toBeHidden();
-    await page.getByRole("button", { name: "Save Entrants" }).click();
-    await expect(
-      page.getByText("Entrants saved", { exact: true }),
-    ).toBeVisible();
+    await expectEntrantsSaved(page);
     await page.getByRole("button", { name: "Generate" }).click();
     await expect(page.getByText("Bracket generated")).toBeVisible();
     expect(await storedShape(id)).toEqual([
