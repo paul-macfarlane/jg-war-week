@@ -270,9 +270,12 @@ redirect to their new homes.
   Delete opens a `ConfirmDialog` and ends in a toast. The Add button sits
   below the list. Competitions' Edit opens the Competition's page (Add
   creates it in a sheet, then opens the page); Days, Schedule Items, Teams,
-  Participants, FAQ, Awards and Organizers all use it; Announcements' Edit links to their
-  own full page. There are no `/new` or `/[id]` pages for Schedule, FAQ or
-  Awards. A Team's row reads "Edit <Team Label> <name>". The Hosts field is
+  Participants, FAQ, Awards, Announcements and Organizers all use it. A record
+  is created and edited in the same dialog (`SetupSheet` /
+  `ResponsiveSheetDialog`, a full-height sheet on phones); only a thing you
+  run gets a page, which today is a Competition (created in a dialog, then
+  run on its page). There are no `/new` or `/[id]` pages for Schedule, FAQ,
+  Awards or Announcements (the last answers 404). A Team's row reads "Edit <Team Label> <name>". The Hosts field is
   in the Competition page's Settings and saves as you pick.
 - **You comes from the roster email only.** A signed-in person is "You" (the
   highlight, Log a Match or Attempt, reporting a Match) only when their email matches a

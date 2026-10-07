@@ -76,7 +76,8 @@ describe("the admin redirects (next.config)", () => {
     "/admin/finale",
     "/admin/settings",
     "/admin/awards",
-    // Announcements keep their full-page editor.
+    // Announcements have no /new or /[id] page: those answer 404, not a
+    // redirect.
     "/admin/announcements/new",
     "/admin/announcements/abc-123",
   ])("leaves the new home %s alone", async (path) => {
