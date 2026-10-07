@@ -1,15 +1,18 @@
 import { notFound } from "next/navigation";
 
+import { CompetitionGroupTabs } from "@/components/competition-group-tabs";
 import { CompetitionList } from "@/components/competitions";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { groupTabSlug, resolveGroupTab } from "@/lib/competition-group-tab";
 import { getCompetitions } from "@/queries/competitions";
 
 import { getWarWeekForEdition } from "../../war-week";
 
 export default async function CompetitionsPage({
   params,
+  searchParams,
 }: PageProps<"/[edition]/competitions">) {
   const { edition } = await params;
+  const { group } = await searchParams;
   const warWeek = await getWarWeekForEdition(edition);
   if (!warWeek) notFound();
 
@@ -29,35 +32,23 @@ export default async function CompetitionsPage({
         ? [{ name: "Other Competitions", competitions: ungrouped }]
         : []),
     ];
+    const tabs = sections.map((section) => ({
+      slug: groupTabSlug(section.name),
+      name: section.name,
+      content: (
+        <CompetitionList competitions={section.competitions} {...listProps} />
+      ),
+    }));
     return (
       <main className="mx-auto flex max-w-md flex-col gap-6 px-4 py-6 md:max-w-3xl">
         <h1 className="text-2xl font-bold">Competitions</h1>
-        <Tabs defaultValue="0">
-          <TabsList className="w-full flex-wrap justify-start gap-1 group-data-horizontal/tabs:h-auto">
-            {sections.map((section, index) => (
-              <TabsTrigger
-                key={section.name}
-                value={String(index)}
-                className="h-auto min-h-11 max-w-full flex-none px-3 text-left whitespace-normal"
-              >
-                {section.name}
-              </TabsTrigger>
-            ))}
-          </TabsList>
-          {sections.map((section, index) => (
-            <TabsContent
-              key={section.name}
-              value={String(index)}
-              keepMounted
-              className="pt-2"
-            >
-              <CompetitionList
-                competitions={section.competitions}
-                {...listProps}
-              />
-            </TabsContent>
-          ))}
-        </Tabs>
+        <CompetitionGroupTabs
+          initial={resolveGroupTab(
+            tabs.map((tab) => tab.slug),
+            group,
+          )}
+          tabs={tabs}
+        />
       </main>
     );
   }

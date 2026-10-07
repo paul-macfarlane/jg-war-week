@@ -768,7 +768,9 @@ that nothing personal shows (no You highlight, no Log a Match or Log an Attempt)
 - [ ] **Competitions.** `/<edition>/competitions` lists every Competition;
       when there are Groups the Group tabs wrap onto more lines instead of
       scrolling sideways, and every tab (Other Competitions too) shows at
-      390. Each row shows its status: Not started, Underway (a Bracket adds
+      390. Choosing a tab sets `?group=<slug>` in the URL without adding history
+      entries; opening a Competition and going Back returns to that tab, and
+      an unknown or missing `?group` opens the first tab. Each row shows its status: Not started, Underway (a Bracket adds
       "Round N of M" or "Final"), Closed, or Done · Winner: X (a tie reads
       "Winners: A, B"; a Closed Placement or Bracket with no Placement
       Points is just Done), a description preview of two lines at most, and
