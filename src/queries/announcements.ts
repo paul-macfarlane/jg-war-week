@@ -1,4 +1,4 @@
-import { and, desc, eq } from "drizzle-orm";
+import { desc, eq } from "drizzle-orm";
 
 import { DBOrTx, db } from "@/db";
 import {
@@ -14,7 +14,6 @@ import {
   sortAnnouncements,
 } from "@/lib/announcements";
 import type { ProfilesByEmail } from "@/lib/profile";
-import { isUuid } from "@/lib/uuid";
 import { getProfilesByEmail } from "@/queries/profile-join";
 
 async function loadSorted(
@@ -49,21 +48,6 @@ export async function getPinnedAnnouncement(
 ): Promise<Announcement | undefined> {
   const [first] = await loadSorted(warWeek.id, dbOrTx);
   return first?.pinned ? first : undefined;
-}
-
-/** One Announcement of a War Week, for the edit form. */
-export async function getAnnouncementForEdit(
-  warWeek: Pick<WarWeek, "id">,
-  id: string,
-  dbOrTx: DBOrTx = db,
-): Promise<Announcement | undefined> {
-  if (!isUuid(id)) return undefined;
-  const [found] = await dbOrTx
-    .select()
-    .from(announcement)
-    .where(and(eq(announcement.id, id), eq(announcement.warWeekId, warWeek.id)))
-    .limit(1);
-  return found;
 }
 
 /** A War Week's Participant emails, for `announcementAuthorName`'s match. */
@@ -142,20 +126,6 @@ export async function getPinnedAnnouncementCard(
     pinned,
     await loadAuthors(warWeek.id, [pinned.authorEmail], dbOrTx),
   );
-}
-
-/** An Announcement author's display name, by the shared resolver. */
-export async function getAnnouncementAuthorName(
-  warWeek: Pick<WarWeek, "id">,
-  authorEmail: string,
-  dbOrTx: DBOrTx = db,
-): Promise<string> {
-  const { participants, profiles } = await loadAuthors(
-    warWeek.id,
-    [authorEmail],
-    dbOrTx,
-  );
-  return announcementAuthorName(authorEmail, participants, profiles);
 }
 
 /**

@@ -158,14 +158,20 @@ function SetupSheet({
   onOpenChange,
   title,
   form,
+  fullHeight,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   title: string;
   form: (close: () => void) => ReactNode;
+  fullHeight?: boolean;
 }) {
   return (
-    <ResponsiveSheetDialog open={open} onOpenChange={onOpenChange}>
+    <ResponsiveSheetDialog
+      open={open}
+      onOpenChange={onOpenChange}
+      fullHeight={fullHeight}
+    >
       {open ? (
         <>
           <ResponsiveSheetDialogHeader>
@@ -244,6 +250,7 @@ export function SetupListRow({
   leading,
   aside,
   form,
+  fullHeight,
   editHref,
   onDelete,
   deleteTitle,
@@ -267,6 +274,8 @@ export function SetupListRow({
   aside?: ReactNode;
   /** The edit form, opened in a Sheet. */
   form?: (close: () => void) => ReactNode;
+  /** Below `md`, the edit Sheet fills the screen's height. */
+  fullHeight?: boolean;
   /** Instead of `form`: the row's full-page editor. */
   editHref?: string;
   /** Runs once the Organizer confirms the delete. */
@@ -385,6 +394,7 @@ export function SetupListRow({
           onOpenChange={setEditing}
           title={`${editLabel} ${rowLabel}`}
           form={form}
+          fullHeight={fullHeight}
         />
       )}
       {onDelete && (
@@ -406,9 +416,12 @@ export function SetupListRow({
 export function SetupAddButton({
   label,
   form,
+  fullHeight,
 }: {
   label: string;
   form: (close: () => void) => ReactNode;
+  /** Below `md`, the Sheet fills the screen's height. */
+  fullHeight?: boolean;
 }) {
   const [open, setOpen] = useState(false);
   return (
@@ -428,6 +441,7 @@ export function SetupAddButton({
         onOpenChange={setOpen}
         title={label}
         form={form}
+        fullHeight={fullHeight}
       />
     </div>
   );

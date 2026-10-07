@@ -205,11 +205,12 @@ on the matching War Week page.
       (Days and Items), Roster (Teams and Participants), Announcements,
       Awards, FAQ and Organizers, each row shows a visible **Edit** and a
       **Delete** button (touch targets at least 44px at 390). Edit opens the
-      form in a dialog at 1440 and a bottom sheet at 390 (Announcements'
-      Edit and Competitions' Edit go to their own page); Delete opens a confirm and ends in a
+      form in a dialog at 1440 and a bottom sheet at 390 (only Competitions'
+      Edit goes to its own page); Delete opens a confirm and ends in a
       toast. There is no whole-row hidden button. Schedule, FAQ and Awards
       have no `/new` or `/[id]` page: `/admin/schedule/new`,
-      `/admin/faq/new` and `/admin/awards/new` redirect to their list.
+      `/admin/faq/new` and `/admin/awards/new` redirect to their list;
+      `/admin/announcements/new` and `/admin/announcements/<id>` answer 404.
 - [ ] **Settings autosave and show.** In Settings, change the Story Theme,
       the dates (DateRangePicker: picking the end date leaves it open until
       Done), the Slack URL and one Appearance Theme color. There is no Save
@@ -562,7 +563,9 @@ on the matching War Week page.
       that Day with its time in ET and links to the Competition. Edit it
       (sheet or dialog, no separate page), then delete it (confirm and
       toast).
-- [ ] **Announcements.** Post an Announcement with a heading, a quote, a
+- [ ] **Announcements.** New Announcement opens a dialog at 1440 and a
+      full-height sheet at 390, with the rich-text body; Edit opens the same
+      one. Post an Announcement with a heading, a quote, a
       link, a captioned image (by URL) and a video (the editor's Video
       button), then pin it. The form has no Video links field, and the
       editor's toolbar buttons show their keyboard shortcut in a tooltip. It
@@ -668,8 +671,7 @@ Competition (from the Organizer run).
       Announcements or Finale); at 390 the bar is Competitions and More
       (Guide in More). Competitions lists only the Host's Competition, with
       its Edit.
-- [ ] **Organizer-only pages refuse.** Schedule, Announcements (and New
-      Announcement), Finale, Settings, Roster, FAQ, Awards and
+- [ ] **Organizer-only pages refuse.** Schedule, Announcements, Finale, Settings, Roster, FAQ, Awards and
       Organizers (open their URLs directly) each show "Organizers and Hosts
       only."; there is no Lifecycle box, no Create next War Week and no
       Add Competition or Days editor.
