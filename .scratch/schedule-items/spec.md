@@ -83,7 +83,11 @@ Participants.
        the start/end refine;
      - the seed duplicate key `${item.startTime} ${item.title}`
        (`src/seed/schema.ts`), which would otherwise read "undefined …"
-       without a type error, and the row mapping in `src/seed/load.ts`.
+       without a type error, and the row mapping in `src/seed/load.ts`;
+     - `src/queries/schedule.ts`;
+     - the smoke fixtures in `scripts/smoke/hosts.ts` and
+       `scripts/smoke/setup.ts`, which still post `host: ""` and a
+       `competitionId` with category `"social"`. Clean these up.
    - R26 has deleted the MCP by then; R25 adds nothing to it.
    - The unique key on (day, start time, title) becomes
      `NULLS NOT DISTINCT`, so two untimed items with the same title can't
@@ -137,10 +141,11 @@ Participants.
       `getHostedCompetitions` (`src/queries/organizers.ts`, the query
       `getActor` uses) returns nothing for them (vitest against seeded
       local Postgres, beside the existing `organizers.test.ts` cases).
-      Smoke reuses the smoke Host flow in `scripts/smoke/hosts.ts`,
-      giving its signed-in Participant only a `schedule_item_host` row,
-      and shows an admin Competition page refusing them. It removes the
-      row afterwards.
+      Smoke reuses the smoke Host flow in `scripts/smoke/hosts.ts`. After
+      `assertFormerHostRefused` has removed the smoke Host's Competition,
+      it gives them a `schedule_item_host` row (so it is their only Host
+      row), and shows an admin Competition page refusing them.
+      `deleteSmokeHosts` removes the row with the rest.
 - [ ] No email reaches the HTML or RSC payload of `/admin/schedule` (as an
       Organizer) or `/xi/schedule` (as a Participant). The picker-leak
       check in `scripts/smoke/pickers.ts` covers both. Before fetching, it
@@ -154,7 +159,12 @@ Participants.
 - [ ] An end time without a start time is refused with "Add a start time
       first." (vitest).
 - [ ] Two untimed items with the same title on one day are refused with the
-      untimed wording (vitest against seeded local Postgres).
+      untimed wording (vitest against seeded local Postgres). The database
+      also refuses a raw insert of such a duplicate (in the 0035 migration
+      test), so the constraint itself is proven, not only the code check.
+- [ ] A reload keeps an untimed item: a loader vitest loads an untimed
+      item, adds a `schedule_item_host` row, reloads, and finds the same
+      item id with the same Host (seeded local Postgres).
 - [ ] The migration applies over a database holding today's schema with
       `schedule_item` rows (some with a free-text `host`): every row
       survives with its `start_time`, and `host` is gone (a case in
@@ -191,8 +201,9 @@ Participants.
       - Schedule item and Now/Next for untimed items;
       - the Schedule Item natural key `(day_id, start_time, title)`, now
         nulls not distinct;
-      - the seed entry "Hosts aren't in seeds", now covering Schedule item
-        Hosts.
+      - the seed entry "Hosts aren't in seeds", corrected: the seed format
+        still accepts a Competition's `hosts` (roster names, insert only),
+        and has no Schedule item Hosts.
 - [ ] `docs/maintainers-guide.md`, `docs/regression-checklist.md` (Schedule
       lines at both viewports) and `/about` copy and media updated where
       affected.
