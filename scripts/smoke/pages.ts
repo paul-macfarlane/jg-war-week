@@ -818,17 +818,22 @@ export async function assertYouHighlight(sessions: {
 
 export async function assertAboutPage() {
   const check =
-    "anonymous GET /about is 200 with the Standings-hero stills, the Finale still, every feature card, the XI link and no sign-in redirect";
+    "anonymous GET /about is 200 with no Standings demo, the Finale still, every feature card, the XI link and no sign-in redirect";
   try {
     const res = await fetch(`${BASE_URL}/about`, { redirect: "manual" });
     const body = await res.text();
     const checks = {
       noVideo: !/<video/i.test(body),
-      standingsHero:
-        body.includes('src="/about/standings-before.png"') &&
-        body.includes('src="/about/standings-entry.png"') &&
-        body.includes('src="/about/standings-after.png"'),
-      finalePoster: body.includes('src="/about/finale-poster.png"'),
+      noStandingsDemo:
+        !body.includes("data-standings-step") &&
+        !body
+          .replaceAll("&amp;", "&")
+          .replaceAll("%2F", "/")
+          .includes("/about/standings-"),
+      finalePoster: body
+        .replaceAll("&amp;", "&")
+        .replaceAll("%2F", "/")
+        .includes("/about/finale-poster.png"),
       cards:
         (body.match(/data-feature="/g) ?? []).length === ABOUT_FEATURES.length,
       xi: body.includes('href="/xi"'),
