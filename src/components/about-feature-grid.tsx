@@ -25,6 +25,13 @@ export function AboutFeatureGrid() {
             width={2560}
             height={1440}
             sizes="(min-width: 1152px) 760px, (min-width: 768px) 65vw, 100vw"
+            phone={{
+              width: 780,
+              height: 1280,
+              sizes: "100vw",
+              className:
+                "border-border mx-auto aspect-[780/1280] w-full max-w-sm rounded-lg border object-cover object-top",
+            }}
             alt={feature.alt}
           />
           <div className="flex flex-col gap-2 p-2 md:p-0 md:pr-4">

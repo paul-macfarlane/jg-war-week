@@ -818,7 +818,7 @@ export async function assertYouHighlight(sessions: {
 
 export async function assertAboutPage() {
   const check =
-    "anonymous GET /about is 200 with no Standings demo, the Finale still, every feature card, the XI link and no sign-in redirect";
+    "anonymous GET /about is 200 with no Standings demo, the Finale still, every feature card with its phone stills, the XI link and no sign-in redirect";
   try {
     const res = await fetch(`${BASE_URL}/about`, { redirect: "manual" });
     const body = await res.text();
@@ -836,6 +836,13 @@ export async function assertAboutPage() {
         .includes("/about/finale-poster.png"),
       cards:
         (body.match(/data-feature="/g) ?? []).length === ABOUT_FEATURES.length,
+      phoneStills: ABOUT_FEATURES.every((feature) => {
+        const decoded = body.replaceAll("&amp;", "&").replaceAll("%2F", "/");
+        return (
+          decoded.includes(`/about/${feature.slug}-phone.png`) &&
+          decoded.includes(`/about/${feature.slug}-phone-dark.png`)
+        );
+      }),
       xi: body.includes('href="/xi"'),
       noTooling: !/claude code|atlas/i.test(body),
     };

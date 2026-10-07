@@ -155,8 +155,10 @@ line that no longer matches the app is a bug in this file.
       demo.** Open `/about` at 1440×900 and 390×844, light and dark. There is
       no three-phone Standings demo. Each "What it does" feature is its own
       row: at 1440 the still is large with its caption beside it, at 390 the
-      caption sits below the still. You can read the text in every still at
-      that size (a feature whose still is not readable is cut or re-shot),
+      caption sits below the still, and the still shown there is the phone
+      capture (`<feature>-phone` in its src), the desktop one at 1440. You can
+      read the text in every still at that size (a feature whose still is not
+      readable is cut or re-shot),
       every image loads, and nothing scrolls sideways.
 - [ ] **About is up to date, without redundancy or salesy copy.** Read
       `/about` against the app today: every "What it does" feature describes a
