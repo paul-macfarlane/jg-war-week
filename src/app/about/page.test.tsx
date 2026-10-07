@@ -118,6 +118,8 @@ describe("AboutPage", () => {
       expect(html).toContain(`data-feature="${feature.slug}"`);
       expect(decoded).toContain(`/about/${feature.slug}.png`);
       expect(decoded).toContain(`/about/${feature.slug}-dark.png`);
+      expect(decoded).toContain(`/about/${feature.slug}-phone.png`);
+      expect(decoded).toContain(`/about/${feature.slug}-phone-dark.png`);
       expect(text).toContain(feature.title);
     }
   });
@@ -128,16 +130,35 @@ describe("AboutPage", () => {
     const imgs = decoded.match(/<img [^>]*>/g) ?? [];
     const stills = imgs.filter((img) => img.includes("/about/"));
 
-    // 7 features and the Finale poster, each twice.
-    expect(stills).toHaveLength(16);
+    // 7 features in a phone and a desktop capture, and the Finale poster
+    // (one capture), each in both schemes.
+    expect(stills).toHaveLength(7 * 4 + 2);
     const light = stills.filter((img) =>
       img.includes('data-still-scheme="light"'),
     );
     const dark = stills.filter((img) =>
       img.includes('data-still-scheme="dark"'),
     );
-    expect(light).toHaveLength(8);
-    expect(dark).toHaveLength(8);
+    expect(light).toHaveLength(15);
+    expect(dark).toHaveLength(15);
+
+    // Each feature's phone capture shows below md only, its desktop one from md up.
+    const phone = stills.filter((img) =>
+      img.includes('data-still-size="phone"'),
+    );
+    const desktop = stills.filter((img) =>
+      img.includes('data-still-size="desktop"'),
+    );
+    expect(phone).toHaveLength(14);
+    expect(desktop).toHaveLength(16);
+    for (const img of phone) {
+      expect(img).toMatch(/\/about\/[a-z-]+-phone(-dark)?\.png/);
+      expect(img).toMatch(/class="[^"]*\bmd:hidden\b/);
+    }
+    for (const img of desktop.filter((i) => !i.includes("finale-poster"))) {
+      expect(img).not.toContain("-phone");
+      expect(img).toMatch(/class="[^"]*\bhidden md:block\b/);
+    }
     for (const img of dark) {
       expect(img).toMatch(/src="[^"]*\/about\/[a-z-]+-dark\.png/);
       expect(img).toMatch(/alt="[^"]+"/);

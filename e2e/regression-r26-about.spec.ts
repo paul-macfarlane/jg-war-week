@@ -3,7 +3,8 @@ import { type Page, expect, test } from "@playwright/test";
 import { DISPLAY_STORAGE_KEY } from "../src/lib/display";
 
 // R26 Decision 11: /about's "What it does" is one feature per row (the still
-// beside its caption at 1440, the caption below it at 390), and the
+// beside its caption at 1440, the caption below it at 390, each with its own
+// phone or desktop capture), and the
 // three-phone Standings demo is gone. Anonymous and read-only: it changes no
 // data. Screenshots at 1440 and 390 in light and dark.
 
@@ -57,6 +58,10 @@ for (const display of ["light", "dark"] as const) {
         const copy = feature.locator("p");
         // Exactly the Display's own still shows (the other is display:none).
         await expect(still).toHaveCount(1);
+        // The phone capture at 390, the desktop one at 1440.
+        const src = decodeURIComponent((await still.getAttribute("src")) ?? "");
+        if (label === "390") expect(src).toContain("-phone");
+        else expect(src).not.toContain("-phone");
         // Loaded, not just in the markup.
         await expect
           .poll(() =>

@@ -210,10 +210,16 @@ poster alone). The page has no Standings demo and no hero stills: its
 only media are the feature stills and the Finale poster.
 
 Every About still comes in light and dark: the script writes `<name>.png`
-under the light Display and `<name>-dark.png` under the dark one (16 files
-in `public/about/`), and `/about` shows the pair member matching the
-viewer's Display (`AboutStill`, `data-still-scheme` in `globals.css`).
-Never add or replace only one of a pair.
+under the light Display and `<name>-dark.png` under the dark one, and
+`/about` shows the pair member matching the viewer's Display (`AboutStill`,
+`data-still-scheme` in `globals.css`). Each "What it does" feature also has a
+phone set, `<slug>-phone.png` and `<slug>-phone-dark.png` (390 wide, 640 tall,
+2x, the same screen as the desktop still), so it reads at 390: `/about`
+shows the phone set below `md` and the desktop set from `md` up
+(`data-still-size`). The same `pnpm tsx scripts/about-media.ts` run writes
+all of them (30 files in `public/about/`: 7 features x 4, plus the poster
+pair). Run it against a fresh build and a server it starts itself, so it
+serves the new files. Never add or replace only one of a pair.
 
 ### Run a new War Week or change this year's theme (no code first)
 

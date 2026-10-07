@@ -79,6 +79,8 @@ const AUTH_SECRET = `about-media-secret-${randomUUID()}`;
 const DEMO_EMAIL = "about-demo@jahnelgroup.com";
 const STILL = { width: 1280, height: 720 };
 const PHONE = { width: 390, height: 844 };
+/** The phone feature stills (`<slug>-phone.png`): a phone-wide, 640px-tall capture at 2x (780x1280). */
+const PHONE_STILL = { width: 390, height: 640 };
 /** After the Standings countdown: this long on its final state. */
 const HOLD_MS = 3_500;
 /** Between the presenter's → presses on the way to the countdown. */
@@ -519,18 +521,30 @@ async function still(
   target: string,
   prepare?: (page: Page) => Promise<void>,
   viewport: { width: number; height: number } = STILL,
+  file = slug,
 ) {
   for (const scheme of SCHEMES) {
     const page = await Page.open(scheme);
-    await page.viewport(viewport, viewport === PHONE);
+    await page.viewport(viewport, viewport.width <= PHONE.width);
     await page.cookie(cookie);
     await page.goto(target);
     if (prepare) await prepare(page);
     await assertNoRealEmail(page, slug);
-    await page.screenshot(path.join(MEDIA, stillFile(slug, scheme)));
+    await page.screenshot(path.join(MEDIA, stillFile(file, scheme)));
     await page.close();
-    note(`still: ${stillFile(slug, scheme)} from ${target}`);
+    note(`still: ${stillFile(file, scheme)} from ${target}`);
   }
+}
+
+/** A feature still at the desktop size, then again as `<slug>-phone` at 390. */
+async function featureStills(
+  slug: string,
+  cookie: string,
+  target: string,
+  prepare?: (page: Page) => Promise<void>,
+) {
+  await still(slug, cookie, target, prepare);
+  await still(slug, cookie, target, prepare, PHONE_STILL, `${slug}-phone`);
 }
 
 /**
@@ -897,8 +911,8 @@ async function main() {
       for (const scheme of SCHEMES) await recordFinale(cookie, scheme);
 
     const slugs = ABOUT_FEATURES.map((f) => f.slug);
-    await still("organizer-admin", cookie, "/admin/schedule");
-    await still(
+    await featureStills("organizer-admin", cookie, "/admin/schedule");
+    await featureStills(
       "points",
       cookie,
       "/admin/discretionary-points",
@@ -912,7 +926,7 @@ async function main() {
         if (!form) throw new Error("no Discretionary points form on screen");
       },
     );
-    await still(
+    await featureStills(
       "schedule",
       cookie,
       `${home()}?at=${encodeURIComponent(scheduleAt)}`,
@@ -922,10 +936,13 @@ async function main() {
         if (!found) throw new Error(`no Now / Next section on ${home()}`);
       },
     );
-    await still("announcements", cookie, `${home()}/announcements`, () =>
-      sleep(2_000),
+    await featureStills(
+      "announcements",
+      cookie,
+      `${home()}/announcements`,
+      () => sleep(2_000),
     );
-    await still(
+    await featureStills(
       "competitions",
       cookie,
       `${home()}/competitions/${bracketCompetitionId}`,
@@ -937,7 +954,7 @@ async function main() {
         if (!found) throw new Error("no Top finishers on the Bracket view");
       },
     );
-    await still(
+    await featureStills(
       "league",
       cookie,
       `${home()}/competitions/${await findLeagueDemo()}`,
@@ -950,12 +967,12 @@ async function main() {
       },
     );
     await captureSeriesDemo(cookie);
-    await still("archive", cookie, "/history");
+    await featureStills("archive", cookie, "/history");
     await evidence();
 
     for (const name of [
       ...(STILLS_ONLY ? [] : ["finale-poster"]),
-      ...slugs,
+      ...slugs.flatMap((slug) => [slug, `${slug}-phone`]),
     ].flatMap((still) => SCHEMES.map((scheme) => stillFile(still, scheme)))) {
       note(
         `wrote public/about/${name}: ${(statSync(path.join(MEDIA, name)).size / 1024).toFixed(0)} KB`,
