@@ -8,6 +8,7 @@ import { toast } from "sonner";
 import { deleteSquad } from "@/actions/brackets";
 import { saveCompetitionSetting } from "@/actions/setup";
 import { ConfirmDialog } from "@/components/confirm-dialog";
+import { useEntrantsAutosave } from "@/components/entrants-autosave";
 import { EntrantsPicker } from "@/components/entrants-picker";
 import { OptionSelect } from "@/components/option-select";
 import { ResponsiveSheetDialog } from "@/components/responsive-sheet-dialog";
@@ -41,12 +42,6 @@ type BracketAction = {
   success: string;
 };
 
-/** Same Entrants, in any order (Generate reorders them by Seed Position). */
-function sameSet(a: string[], b: string[]) {
-  const set = new Set(b);
-  return a.length === b.length && a.every((id) => set.has(id));
-}
-
 /** "Red · Ashley Schuliger, Sam Schantz": a Squad's detail in a list. */
 function squadDetail(squad: SquadRow): string {
   return squadLabel({ ...squad, name: "" });
@@ -57,8 +52,9 @@ function squadDetail(squad: SquadRow): string {
  * Competition's Squads, the Entrants ("All Teams", "All Squads" or picked
  * ones for team scoring, picked Participants for individual) and their Seed
  * Positions with Generate / Re-roll. Its settings (match size, self-report,
- * enrollment) are in the page's Settings. Saving Entrants and Generate go
- * through the per-field save, so once a Match has a result they're locked
+ * enrollment) are in the page's Settings. The Entrants autosave
+ * (`useEntrantsAutosave`; a kind change alone waits for a pick) and
+ * Generate go through the per-field save, so once a Match has a result they're locked
  * (`entrantsLock`, shown with its reason). The Entrants and Seed Positions
  * then fold into one closed Collapsible; the Squads fold with them because
  * they're locked together (intended).
@@ -100,12 +96,14 @@ export function BracketBuilder({
     : isTeam
       ? "team"
       : "participant";
-  const [kind, setKind] = useState<EntrantKind>(savedKind);
-  const [selected, setSelected] = useState<string[]>(saved);
+  const entrantsAutosave = useEntrantsAutosave(competition.id, {
+    kind: savedKind,
+    targetIds: saved,
+  });
+  const { kind, targetIds: selected } = entrantsAutosave.value;
   const [squadSheet, setSquadSheet] = useState<SquadRow | "new" | null>(null);
   const [deleting, setDeleting] = useState<SquadRow | null>(null);
-  const dirty =
-    !sameSet(selected, saved) || (kind !== savedKind && selected.length > 0);
+  const dirty = entrantsAutosave.dirty;
   const bySquads = kind === "squad";
   // "Entrants are" shows once there's a Squad to choose, or Squads are saved.
   const showKind = isTeam && (squads.length > 0 || savedKind === "squad");
@@ -126,8 +124,11 @@ export function BracketBuilder({
 
   function changeKind(next: string) {
     const nextKind = next as EntrantKind;
-    setKind(nextKind);
-    setSelected(nextKind === savedKind ? saved : []);
+    // Switching kind saves nothing until an Entrant of the new kind is picked.
+    entrantsAutosave.edit(
+      { kind: nextKind, targetIds: nextKind === savedKind ? saved : [] },
+      false,
+    );
   }
 
   function removeSquad(squad: SquadRow) {
@@ -242,7 +243,7 @@ export function BracketBuilder({
               : bySquads
                 ? `A ${teamLabel} Competition entering Squads; each Squad's points go to its ${teamLabel}.`
                 : `A ${teamLabel} Competition, so its Entrants are ${teamLabel}s.`}{" "}
-            Saving new Entrants clears the Bracket.
+            Changing the Entrants clears the Bracket.
           </>
         }
         kind={kind}
@@ -250,19 +251,10 @@ export function BracketBuilder({
         options={items}
         participantOptions={participantOptions}
         selected={selected}
-        onChange={setSelected}
-        onSave={() =>
-          runAction({
-            run: () =>
-              saveCompetitionSetting(competition.id, {
-                field: "entrants",
-                value: { kind, targetIds: selected },
-              }),
-            success: "Entrants saved",
-          })
-        }
+        onChange={(targetIds) => entrantsAutosave.edit({ kind, targetIds })}
         disabled={pending || locked}
-        saveDisabled={!dirty}
+        status={entrantsAutosave.status}
+        error={entrantsAutosave.error}
         note={
           <>
             {showKind && (
@@ -290,7 +282,10 @@ export function BracketBuilder({
                 className="min-h-11 w-fit"
                 disabled={pending || locked}
                 onClick={() =>
-                  setSelected((bySquads ? squads : teams).map((t) => t.id))
+                  entrantsAutosave.edit({
+                    kind,
+                    targetIds: (bySquads ? squads : teams).map((t) => t.id),
+                  })
                 }
               >
                 {bySquads ? "All Squads" : `All ${teamLabel}s`}
@@ -330,7 +325,7 @@ export function BracketBuilder({
         )}
         {dirty && (
           <p className="text-foreground/70 text-sm">
-            Save the Entrants before generating.
+            Generate waits for the Entrants to save.
           </p>
         )}
         <div className="flex flex-wrap gap-2">

@@ -277,8 +277,8 @@ on the matching War Week page.
       with Placement Points 5/3/1, a Bracket Competition, and a
       Head-to-head Competition (Add Competition creates it in a sheet and
       opens its Competition page: on the Bracket turn on "Participants can
-      enroll", on the Head-to-head pick its two Entrants; each saves as you
-      change it); assign
+      enroll", on the Head-to-head pick its two Entrants in the "A vs B"
+      pickers; each saves as you change it); assign
       the roster Participant whose email is `e2e-host@jahnelgroup.com` as
       Host of the Placement one (the Hosts field is in its page's Settings,
       not in Add; see the Competition page lines below). The Format select
@@ -348,7 +348,9 @@ on the matching War Week page.
       Placement Competition `get_bracket` points to `get_placements`.
 - [ ] **Run a Bracket end to end.** On the Bracket Competition's page
       (Format "Bracket"), leave the Bracket kind on Head-to-head (the toggle
-      beside Group; 2 per Match, 1 advancing, no size fields shown), pick Entrants and Save Entrants, then
+      beside Group; 2 per Match, 1 advancing, no size fields shown), pick
+      Entrants (no Save button: they save as you pick, "Saving…" then
+      "Saved" beside the Entrants legend, and a reload keeps them), then
       Generate to build it. There is no By Standings button and no Time &
       place. *(teams)* A new Competition scores by Team: Add Squad two
       Squads per Team, set Entrants are to Squads and press All Squads; the
@@ -423,7 +425,12 @@ on the matching War Week page.
       and edits or deletes a result they could have logged, including one a
       Host logged; another Participant cannot. Closed, nobody can.
 - [ ] **Head-to-head: two Entrants, Best of.** A Head-to-head Competition
-      shows exactly two Entrants (no enrollment, no "open to everyone"), and
+      shows exactly two Entrants (no enrollment, no "open to everyone"),
+      picked "A vs B": Participant A and Participant B (the Team Label's A
+      and B for team scoring) side by side at 1440, stacked with "vs"
+      between at 390 with no sideways scroll; each leaves out the other's
+      choice, the pair saves (no Save button) once both are set, and
+      clearing one side then reloading shows the saved pair unchanged.
       Log a Match has two fixed rows and no player picker. In a Best of 3,
       log 2–0: the series is decided, Log a Match is disabled with a visible
       reason and the server refuses a third. Delete or edit a Match and
@@ -433,8 +440,12 @@ on the matching War Week page.
       higher place's full points.
 - [ ] **League: set up and pair.** Add Competition, Format League (a new
       one is Round robin; Swiss shows a Rounds field). At 1440 and 390 add 5
-      Participants with the picker (no email in any option) and press Pair
-      rounds: 5 rounds, each Entrant sits out once. Clear pairings, switch to
+      Participants with the picker (no email in any option; no Save button,
+      they save as you pick and "Saved" shows beside Entrants) and press Pair
+      rounds: 5 rounds, each Entrant sits out once. With the page also open
+      in a second tab from before the pairing, change its Entrants there:
+      the server's "Locked once round 1 is paired." shows under the picker
+      and it goes back to the saved Entrants. Clear pairings, switch to
       Swiss with 6 Entrants, Pair round 1: 3 Matches; Pairing, rounds, Score
       direction and the Entrants now read "Locked once round 1 is paired.";
       Score unit and self-report stay editable. Edit pairings swaps two

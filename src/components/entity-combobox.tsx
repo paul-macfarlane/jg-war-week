@@ -53,6 +53,8 @@ type SingleProps = CommonProps & {
   /** The selected item's id, or `""` when nothing is selected. */
   value: string;
   onValueChange: (id: string) => void;
+  /** Shows a clear button with this name, which empties the choice. */
+  clearLabel?: string;
 };
 
 type MultipleProps = CommonProps & {
@@ -211,6 +213,8 @@ export function EntityCombobox(props: EntityComboboxProps) {
         aria-invalid={ariaInvalid}
         placeholder={placeholder}
         disabled={disabled}
+        showClear={!!props.clearLabel}
+        clearLabel={props.clearLabel}
         className="h-11 sm:h-9"
       />
       <ComboboxContent className="max-w-[calc(100vw-2rem)]">

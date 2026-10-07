@@ -46,6 +46,19 @@ export async function expectSaved(page: Page) {
   await expect(autosaveStatus(page)).toHaveText("Saved");
 }
 
+/** The Entrants' own "Saving…" / "Saved" line, beside their legend. */
+export function entrantsStatus(page: Page) {
+  return page.locator('[data-slot="entrants-autosave-status"]');
+}
+
+/**
+ * Waits for the Entrants to save (they autosave, with no Save button). A
+ * change shows "Saving…" at once, so this can't pass on an earlier save.
+ */
+export async function expectEntrantsSaved(page: Page) {
+  await expect(entrantsStatus(page)).toHaveText("Saved");
+}
+
 /** Picks `option` in the select labelled `label`. */
 export async function chooseOption(page: Page, label: string, option: string) {
   await page.getByRole("combobox", { name: label, exact: true }).click();

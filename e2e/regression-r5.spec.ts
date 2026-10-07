@@ -8,6 +8,7 @@ import {
 
 import {
   addCompetition,
+  expectEntrantsSaved,
   expectSaved,
   openCompetitionPage,
 } from "./competition-page";
@@ -939,10 +940,7 @@ test("r5 38 Escape keeps chosen Entrants; Tree shows Recorded <time>; Format hel
       .getByRole("option", { name: new RegExp(`^${teams[3].name}`) })
       .click();
     await page.keyboard.press("Escape");
-    await page.getByRole("button", { name: "Save Entrants" }).click();
-    await expect(
-      page.getByText("Entrants saved", { exact: true }),
-    ).toBeVisible();
+    await expectEntrantsSaved(page);
     await page.getByRole("button", { name: "Generate" }).click();
     await expect(page.getByText("Bracket generated")).toBeVisible();
 

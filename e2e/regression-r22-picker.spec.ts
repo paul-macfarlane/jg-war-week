@@ -100,14 +100,16 @@ async function exerciseScalePicker(
   testInfo: TestInfo,
   shot: string,
   size: (typeof VIEWPORTS)[number],
+  /** How many it offers: all 100, or fewer where a choice is left out. */
+  total = 100,
 ) {
   const [width, viewport] = size;
   const options = page.getByRole("option");
   await picker.click();
-  // No cap: every one of the 100 is offered.
-  await expect(options).toHaveCount(100);
+  // No cap: every one offered is listed.
+  await expect(options).toHaveCount(total);
   const names = await namesOf(options);
-  expect(new Set(names).size).toBe(100);
+  expect(new Set(names).size).toBe(total);
   expect(names.every(Boolean)).toBe(true);
   // Avatar and name on each row, and no Team text in a free-for-all.
   const last = options.last();
@@ -117,7 +119,7 @@ async function exerciseScalePicker(
   const beside = await last.locator("span.truncate").allTextContents();
   expect(beside.length).toBeGreaterThanOrEqual(1);
   expect(beside.slice(1).every((text) => text === "Can't sign in")).toBe(true);
-  await expect(last).toContainText(names[99]);
+  await expect(last).toContainText(names[total - 1]);
   await expectRowsDoNotWrap(options);
   if (viewport === PHONE) await expectNoSidewaysScroll(page);
 
@@ -225,12 +227,16 @@ test.describe("100 Participants in the XII scale demo", () => {
           size,
         );
         await page.goto(`/admin/competitions/${cornhole}`);
+        // Head-to-head picks "A vs B": Participant A, emptied (which saves
+        // nothing), offers the 99 who aren't Participant B.
+        await page.getByRole("button", { name: "Clear Participant A" }).click();
         await exerciseScalePicker(
           page,
-          page.getByRole("combobox", { name: /^Pick Participants/ }),
+          page.getByRole("combobox", { name: "Participant A", exact: true }),
           testInfo,
           "entrants",
           size,
+          99,
         );
         await page.goto(`/admin/competitions/${darts}`);
         await page.getByRole("button", { name: "Log an Attempt" }).click();

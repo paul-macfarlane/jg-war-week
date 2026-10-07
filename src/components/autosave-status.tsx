@@ -113,10 +113,16 @@ export function AutosaveStatusLine({
   state,
   guard,
   fieldLabel,
+  slot = "autosave-status",
 }: {
   state: AutosaveSnapshot;
   guard: LeaveGuard;
   fieldLabel: (field: string) => string;
+  /**
+   * The line's `data-slot`: a second autosaving field on a page (the
+   * Entrants under the Competition's Settings) names its own.
+   */
+  slot?: string;
 }) {
   const [refused] = Object.entries(state.fieldErrors);
   return (
@@ -124,7 +130,7 @@ export function AutosaveStatusLine({
       <p
         role="status"
         aria-live="polite"
-        data-slot="autosave-status"
+        data-slot={slot}
         data-status={state.status}
         className={
           state.status === "failed"

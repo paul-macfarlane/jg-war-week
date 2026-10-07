@@ -1,7 +1,7 @@
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 
-import { EntrantsPicker } from "./entrants-picker";
+import { EntrantsPair, EntrantsPicker } from "./entrants-picker";
 
 const noop = () => {};
 
@@ -15,7 +15,6 @@ describe("EntrantsPicker", () => {
         options={[{ id: "t1", label: "Red" }]}
         selected={["t1"]}
         onChange={noop}
-        onSave={noop}
       />,
     );
     expect(html).toContain("Cabins (1 chosen)");
@@ -31,7 +30,6 @@ describe("EntrantsPicker", () => {
         options={[]}
         selected={[]}
         onChange={noop}
-        onSave={noop}
       />,
     );
     expect(html).toContain("Find a Cabin");
@@ -45,7 +43,6 @@ describe("EntrantsPicker", () => {
         options={[]}
         selected={[]}
         onChange={noop}
-        onSave={noop}
       />,
     );
     expect(html).toContain("Pick Participants (0 chosen)");
@@ -61,7 +58,6 @@ describe("EntrantsPicker", () => {
         options={[]}
         selected={[]}
         onChange={noop}
-        onSave={noop}
       />,
     );
     expect(html).toContain("Squads (0 chosen)");
@@ -76,14 +72,13 @@ describe("EntrantsPicker", () => {
         options={[]}
         selected={[]}
         onChange={noop}
-        onSave={noop}
         note={<p>All Teams</p>}
       />,
     );
     expect(html).toContain("All Teams");
   });
 
-  it("disables Save when there's nothing to save", () => {
+  it("has no Save button: Entrants autosave", () => {
     const html = renderToStaticMarkup(
       <EntrantsPicker
         description="d"
@@ -91,11 +86,66 @@ describe("EntrantsPicker", () => {
         options={[]}
         selected={[]}
         onChange={noop}
-        onSave={noop}
-        saveDisabled
       />,
     );
-    const button = html.match(/<button[^>]*>Save Entrants<\/button>/)?.[0];
-    expect(button).toContain("disabled");
+    expect(html).not.toContain("Save Entrants");
+    expect(html).not.toContain("<button");
+  });
+
+  it("shows the autosave status beside the legend and a refusal under the picker", () => {
+    const html = renderToStaticMarkup(
+      <EntrantsPicker
+        description="d"
+        kind="team"
+        options={[]}
+        selected={[]}
+        onChange={noop}
+        status={<p>Saving…</p>}
+        error="Locked once a Match has a result."
+      />,
+    );
+    expect(html).toMatch(/Entrants<\/legend><p>Saving…<\/p>/);
+    expect(html).toMatch(
+      /role="alert"[^>]*>Locked once a Match has a result\.<\/div>/,
+    );
+  });
+});
+
+describe("EntrantsPair", () => {
+  it("picks a Head-to-head's two Participants as A vs B", () => {
+    const html = renderToStaticMarkup(
+      <EntrantsPair
+        description="d"
+        kind="participant"
+        options={[]}
+        participantOptions={[]}
+        value={["", ""]}
+        onChange={noop}
+      />,
+    );
+    expect(html).toContain(">Participant A</label>");
+    expect(html).toContain(">vs<");
+    expect(html).toContain(">Participant B</label>");
+    expect(html).not.toContain("Save");
+  });
+
+  it("labels a team pair by the Team label", () => {
+    const html = renderToStaticMarkup(
+      <EntrantsPair
+        description="d"
+        kind="team"
+        kindLabel="Cabin"
+        options={[
+          { id: "t1", label: "Red" },
+          { id: "t2", label: "Blue" },
+        ]}
+        value={["t1", "t2"]}
+        onChange={noop}
+      />,
+    );
+    expect(html).toContain(">Cabin A</label>");
+    expect(html).toContain(">Cabin B</label>");
+    expect(html).toContain("Red");
+    expect(html).toContain("Blue");
   });
 });
