@@ -231,8 +231,9 @@ redirect to their new homes.
   Roster's Team controls, and keeps their saved values for if you switch
   back to Teams), the Appearance Theme (colors, font, logo, banner), the
   **Lifecycle** box (Start, End with the computed Winner and highlights,
-  Unstart while nothing is scored and it has never been ended, Reopen) and
-  **Create next War Week**. The seed-overwrite warning shows here. **The
+  Unstart while nothing is scored and it has never been ended, Reopen, and
+  **Create next War Week**, which shows only on the latest War Week by start
+  date once it is complete). The seed-overwrite warning shows here. **The
   form saves itself**: each field saves a moment after you stop
   typing, with "Saving…" then "Saved" by the heading and no Save button; a
   value the server refuses (a Slack URL that isn't `https`) shows its error
@@ -284,15 +285,7 @@ redirect to their new homes.
 
 To start next year's edition in the app:
 
-1. In `/admin/settings`, press **Create next War Week**. The edition, number
-   and year are prefilled (XII, 12, next year); add the dates and Story
-   Theme, and choose what to copy (settings are on; Competitions, with
-   no Hosts, and the FAQ are off: the new roster is empty, so add Hosts once it
-   exists). Organizers are global, so there's
-   nothing to copy for them. It starts `upcoming`, and the admin
-   switches to it so you can set it up while XI stays current.
-2. When XI is over, switch back to XI in the header's edition switcher and
-   press **End War Week**: the dialog shows the Winner it will record —
+1. When XI is over, open `/admin/settings` on XI and press **End War Week**: the dialog shows the Winner it will record —
    whoever is first in the Standings, "Tie: A & B" when two or more Teams
    or Participants tie for first, blank when nobody scored — and lets you
    add any highlights. There is no way to type a different Winner. XI moves
@@ -300,7 +293,13 @@ To start next year's edition in the app:
    and any open Head-to-head or Best score Competition with Matches or Attempts, or `participation` Competition
    with anyone marked, each linked to its Competition page. Close them first so their placings
    count; it warns, it doesn't stop you.
-3. Switch to XII and press **Start War Week**. `/` and `/admin` now go to
+2. With XI ended and the latest War Week, its Lifecycle box shows **Create
+   next War Week** (only then: not while the latest is upcoming or live, and
+   not on an older War Week). The edition, number and year are prefilled
+   (XII, 12, next year); add the dates and Story Theme. It copies nothing:
+   default settings, no Competitions, no FAQ, no Teams or roster. It starts
+   `upcoming`, and the admin switches to it so you can set it up.
+3. Press **Start War Week** on XII. `/` and `/admin` now go to
    XII. Only one War Week can be live, so XI must end first.
 
 Organizers can still pick any Archive edition in the switcher to correct

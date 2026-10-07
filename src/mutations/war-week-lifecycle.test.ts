@@ -209,9 +209,6 @@ function next(overrides: Partial<NextWarWeekValues> = {}): NextWarWeekValues {
     startDate: "2100-01-01",
     endDate: "2100-01-05",
     storyTheme: "Next one",
-    copySettings: true,
-    copyCompetitions: false,
-    copyFaq: false,
     ...overrides,
   };
 }
@@ -600,12 +597,34 @@ describe.skipIf(!isLocalDatabase)("Start, End and Reopen", () => {
 });
 
 describe.skipIf(!isLocalDatabase)("createNextWarWeek", () => {
-  it("copies settings by default and nothing else", async () => {
+  /**
+   * Another test file may have committed a later War Week, so the fixture's
+   * is moved past every other: it is the latest by start date.
+   */
+  async function makeLatest(tx: DBTx, id: string) {
+    const { warWeek } = await import("@/db/schema");
+    await tx
+      .update(warWeek)
+      .set({ startDate: "9998-01-01", endDate: "9998-01-05" })
+      .where(eq(warWeek.id, id));
+  }
+
+  /** End the fixture's War Week (`makeLatest` first). */
+  async function endFixtureWarWeek(tx: DBTx, id: string) {
+    const { warWeek } = await import("@/db/schema");
+    await tx
+      .update(warWeek)
+      .set({ status: "complete" })
+      .where(eq(warWeek.id, id));
+  }
+
+  it("creates an upcoming War Week with default settings and nothing copied", async () => {
     await inRolledBackTransaction(async (tx) => {
       const { createNextWarWeek } =
         await import("@/mutations/war-week-lifecycle");
       const { live, schema, counts } = await fixture(tx);
-      const { eq } = await import("drizzle-orm");
+      await makeLatest(tx, live.id);
+      await endFixtureWarWeek(tx, live.id);
       expect(await counts(live.id)).toEqual(ONE_OF_EVERYTHING);
 
       const result = await createNextWarWeek(next(), ctxOf(live.id), tx);
@@ -615,6 +634,7 @@ describe.skipIf(!isLocalDatabase)("createNextWarWeek", () => {
         .select()
         .from(schema.warWeek)
         .where(eq(schema.warWeek.edition, "tii"));
+      // The source has House, serif and its own colors; none carries over.
       expect(created).toMatchObject({
         editionNumber: 9302,
         year: 9302,
@@ -625,19 +645,21 @@ describe.skipIf(!isLocalDatabase)("createNextWarWeek", () => {
         winner: null,
         highlights: [],
         mode: "teams",
-        teamLabel: "House",
-        leaderTitle: "Head of House",
-        slackChannelUrl: "https://example.slack.com/archives/lifecycle",
-        wikiUrl: "https://example.com/wiki",
-        primaryColor: "#123456",
-        primaryForegroundColor: "#fefefe",
-        accentColor: "#abcdef",
-        backgroundColor: "#101010",
-        foregroundColor: "#efefef",
-        fontPreset: "serif",
-        logoUrl: "/themes/t/logo.svg",
-        bannerUrl: "/themes/t/banner.svg",
+        teamLabel: "Team",
+        leaderTitle: "Captain",
+        slackChannelUrl: "https://jahnelgroup.slack.com/",
+        wikiUrl: null,
+        primaryColor: "#1d4ed8",
+        primaryForegroundColor: "#ffffff",
+        accentColor: "#f59e0b",
+        backgroundColor: "#ffffff",
+        foregroundColor: "#111827",
+        overridePrimaryColor: null,
+        fontPreset: "sans",
+        logoUrl: null,
+        bannerUrl: null,
       });
+      // No Competitions, no FAQ, and none of the rest either.
       expect(await counts(created.id)).toEqual({
         team: 0,
         participant: 0,
@@ -652,114 +674,41 @@ describe.skipIf(!isLocalDatabase)("createNextWarWeek", () => {
     });
   });
 
-  it("copies the derived palette's overrides with the settings", async () => {
+  it("refuses while the latest War Week is live, and writes nothing", async () => {
     await inRolledBackTransaction(async (tx) => {
       const { createNextWarWeek } =
         await import("@/mutations/war-week-lifecycle");
       const { live, schema } = await fixture(tx);
-      const { eq } = await import("drizzle-orm");
+      await makeLatest(tx, live.id);
+
+      expect(await createNextWarWeek(next(), ctxOf(live.id), tx)).toEqual({
+        ok: false,
+        error: "End War Week TI before creating the next one.",
+      });
+      const created = await tx
+        .select()
+        .from(schema.warWeek)
+        .where(eq(schema.warWeek.edition, "tii"));
+      expect(created).toEqual([]);
+    });
+  });
+
+  it("refuses while the latest War Week is upcoming", async () => {
+    await inRolledBackTransaction(async (tx) => {
+      const { createNextWarWeek } =
+        await import("@/mutations/war-week-lifecycle");
+      const { live, schema } = await fixture(tx);
+      await makeLatest(tx, live.id);
       await tx
         .update(schema.warWeek)
-        .set({ overridePrimaryColor: "#0a7a1f" })
+        .set({ status: "upcoming" })
         .where(eq(schema.warWeek.id, live.id));
 
-      await createNextWarWeek(next(), ctxOf(live.id), tx);
-      const [created] = await tx
-        .select()
-        .from(schema.warWeek)
-        .where(eq(schema.warWeek.edition, "tii"));
-      expect(created).toMatchObject({
-        overridePrimaryColor: "#0a7a1f",
-        overridePrimaryForegroundColor: null,
-        overrideAccentColor: null,
-        overrideBackgroundColor: null,
-        overrideForegroundColor: null,
+      expect(await createNextWarWeek(next(), ctxOf(live.id), tx)).toEqual({
+        ok: false,
+        error:
+          "War Week TI hasn't happened yet. Create the next one after it ends.",
       });
-    });
-  });
-
-  it("copies Competitions and the FAQ with new ids when chosen", async () => {
-    await inRolledBackTransaction(async (tx) => {
-      const { createNextWarWeek } =
-        await import("@/mutations/war-week-lifecycle");
-      const { live, chess, schema, counts } = await fixture(tx);
-      const { eq } = await import("drizzle-orm");
-
-      await createNextWarWeek(
-        next({ copyCompetitions: true, copyFaq: true }),
-        ctxOf(live.id),
-        tx,
-      );
-      const [created] = await tx
-        .select({ id: schema.warWeek.id })
-        .from(schema.warWeek)
-        .where(eq(schema.warWeek.edition, "tii"));
-      // Teams, roster, Days, Schedule, Points Entries, Awards and
-      // Announcements are never copied, even with everything else on.
-      expect(await counts(created.id)).toEqual({
-        team: 0,
-        participant: 0,
-        day: 0,
-        scheduleItem: 0,
-        competition: 1,
-        pointsEntry: 0,
-        faqItem: 1,
-        award: 0,
-        announcement: 0,
-      });
-      const competitions = await tx
-        .select()
-        .from(schema.competition)
-        .where(eq(schema.competition.warWeekId, created.id));
-      expect(competitions).toHaveLength(1);
-      expect(competitions[0]).toMatchObject({
-        name: "Chess",
-        description: ONE_V_ONE,
-        placementPoints: [10, 5],
-        scoring: "team",
-        countsTowardTeam: false,
-        competitionGroup: "Tabletop",
-      });
-      expect(competitions[0].id).not.toBe(chess.id);
-      const entries = await tx
-        .select()
-        .from(schema.pointsEntry)
-        .where(eq(schema.pointsEntry.competitionId, competitions[0].id));
-      expect(entries).toEqual([]);
-      const faq = await tx
-        .select({ question: schema.faqItem.question })
-        .from(schema.faqItem)
-        .where(eq(schema.faqItem.warWeekId, created.id));
-      expect(faq).toEqual([{ question: "Where?" }]);
-    });
-  });
-
-  it("uses defaults without settings", async () => {
-    await inRolledBackTransaction(async (tx) => {
-      const { createNextWarWeek } =
-        await import("@/mutations/war-week-lifecycle");
-      const { live, schema } = await fixture(tx);
-      const { eq } = await import("drizzle-orm");
-
-      await createNextWarWeek(
-        next({ copySettings: false }),
-        ctxOf(live.id),
-        tx,
-      );
-      const [created] = await tx
-        .select()
-        .from(schema.warWeek)
-        .where(eq(schema.warWeek.edition, "tii"));
-      expect(created).toMatchObject({
-        mode: "teams",
-        teamLabel: "Team",
-        leaderTitle: "Captain",
-        wikiUrl: null,
-        logoUrl: null,
-        bannerUrl: null,
-        fontPreset: "sans",
-      });
-      expect(created.primaryColor).not.toBe("#123456");
     });
   });
 
@@ -768,6 +717,8 @@ describe.skipIf(!isLocalDatabase)("createNextWarWeek", () => {
       const { createNextWarWeek } =
         await import("@/mutations/war-week-lifecycle");
       const { live } = await fixture(tx);
+      await makeLatest(tx, live.id);
+      await endFixtureWarWeek(tx, live.id);
 
       expect(
         await createNextWarWeek(next({ edition: "ti" }), ctxOf(live.id), tx),
@@ -785,57 +736,6 @@ describe.skipIf(!isLocalDatabase)("createNextWarWeek", () => {
       expect(
         await createNextWarWeek(next({ year: 9301 }), ctxOf(live.id), tx),
       ).toEqual({ ok: false, error: "9301 already has War Week TI." });
-    });
-  });
-
-  it("copies no Hosts with the Competitions", async () => {
-    await inRolledBackTransaction(async (tx) => {
-      const { createNextWarWeek } =
-        await import("@/mutations/war-week-lifecycle");
-      const { live, chess, schema } = await fixture(tx);
-      const { and, eq } = await import("drizzle-orm");
-      const [tony] = await tx
-        .insert(schema.participant)
-        .values({
-          warWeekId: live.id,
-          displayName: "Tony",
-          email: "tony@jahnelgroup.com",
-        })
-        .returning();
-      await tx
-        .insert(schema.competitionHost)
-        .values({ competitionId: chess.id, participantId: tony.id });
-
-      await createNextWarWeek(
-        next({ copyCompetitions: true }),
-        ctxOf(live.id),
-        tx,
-      );
-      const [created] = await tx
-        .select({ id: schema.warWeek.id })
-        .from(schema.warWeek)
-        .where(eq(schema.warWeek.edition, "tii"));
-      const [copy] = await tx
-        .select({ id: schema.competition.id })
-        .from(schema.competition)
-        .where(
-          and(
-            eq(schema.competition.warWeekId, created.id),
-            eq(schema.competition.name, "Chess"),
-          ),
-        );
-      // The Competition is copied, with no Hosts; the source keeps its own.
-      expect(copy).toBeDefined();
-      const copyHosts = await tx
-        .select()
-        .from(schema.competitionHost)
-        .where(eq(schema.competitionHost.competitionId, copy.id));
-      expect(copyHosts).toEqual([]);
-      const sourceHosts = await tx
-        .select()
-        .from(schema.competitionHost)
-        .where(eq(schema.competitionHost.competitionId, chess.id));
-      expect(sourceHosts.map((h) => h.participantId)).toEqual([tony.id]);
     });
   });
 
