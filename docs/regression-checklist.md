@@ -589,7 +589,17 @@ on the matching War Week page.
       `/admin/competitions/<id>` (a 308).
 - [ ] **Schedule Items.** On `/admin/schedule`, add a Schedule Item on a
       Day, linked to a Competition; it shows on `/<edition>/schedule` under
-      that Day with its time in ET and links to the Competition. Edit it
+      that Day with its time in ET and links to the Competition. At 1440
+      and 390 the form asks Category before Competition; Competition shows
+      only for the Competition category, changing Category clears it, and
+      picking one fills an empty title but never a typed one; Day, Start time and
+      End time sit on one row at 1440 with equal top and bottom edges; at 390
+      Day has its own row and Start time and End time share the next, a picked
+      "10:30 AM" read in full. Add an item
+      with two Hosts picked by name: no Hosts field when a Competition is
+      linked, and the schedule shows "Hosted by" the two names with an Avatar
+      each. Add one with no start time: it reads "Any time" on `/admin/schedule`
+      and `/<edition>/schedule` and is first in its Day. Edit it
       (sheet or dialog, no separate page), then delete it (confirm and
       toast).
 - [ ] **Announcements.** New Announcement opens a dialog at 1440 and a
@@ -795,8 +805,10 @@ that nothing personal shows (no You highlight, no Log a Match or Log an Attempt)
 - [ ] **Schedule.** `/<edition>/schedule` lists every Day with its Day
       Theme, Day description (when it has one: in the XI demo, Sun Feb 22
       "The Matrix Has You" reads "Opening Sunday: Black Midnight from 12:01
-      AM, …") and Items in time order (ET), filterable by Day; each linked
-      Competition opens.
+      AM, …") and Items in time order (ET; an item with no start time reads
+      "Any time" and comes first), filterable by Day; each linked Competition
+      opens; an item with Hosts (its own, or its Competition's) shows "Hosted
+      by" with an Avatar beside each name, and no email, at 1440 and 390.
 - [ ] **Competitions.** `/<edition>/competitions` lists every Competition;
       when there are Groups the Group tabs wrap onto more lines instead of
       scrolling sideways, and every tab (Other Competitions too) shows at

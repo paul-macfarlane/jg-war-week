@@ -255,7 +255,13 @@ redirect to their new homes.
   from the avatar **account menu** at the top right of every header.
 - **`/admin/schedule`**: the War Week's Days (with Day Themes and an
   optional short Day description) and each Day's Schedule Items on one
-  page. **`/admin/roster`**: Teams and Participants, with Add Participant and an
+  page. A Schedule Item's form asks Category first; the Competition field
+  appears only for the Competition category (optional there, cleared if you
+  change Category, and picking one fills an empty title). Start time is
+  optional: an item with none reads "Any time" and sorts first in its Day. The
+  Hosts field picks roster Participants by name; it is hidden when a
+  Competition is linked, and then the schedule shows that Competition's
+  Hosts. **`/admin/roster`**: Teams and Participants, with Add Participant and an
   Organizer-only Import (paste from Google Sheets or upload a CSV, preview,
   then Import) at the top, and a search box that filters the list by name or
   email ("N of M").
@@ -348,8 +354,8 @@ signed in is a **Participant** (`CONTEXT.md`, "Access rules").
   by name only, no emails). Schedule, Announcements and the Finale are
   Organizer-only, and the server refuses a Host there. Remove the Participant
   from the Hosts field to take access away; it applies on their next request.
-  A Schedule Item's "host" text is only what the schedule shows; it doesn't
-  make anyone a Host.
+  A Schedule Item's Hosts are only who the schedule shows as "Hosted by"; they
+  don't make anyone a Competition Host.
 - **A fresh database** gets its first Organizers from a seed's `organizers`
   list: a seed load adds any that are missing and never removes one, even
   with `--reset`. After that, manage them in the app. Hosts never come from

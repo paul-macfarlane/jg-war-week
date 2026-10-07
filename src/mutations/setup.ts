@@ -56,7 +56,29 @@ const DAY_NOT_FOUND = "That Day no longer exists.";
 const TEAM_NOT_FOUND = "That Team no longer exists.";
 const PARTICIPANT_NOT_FOUND = "That Participant no longer exists.";
 const COMPETITION_NOT_FOUND = "That Competition no longer exists.";
-const HOST_NOT_ON_ROSTER = "A Host must be on this War Week's roster.";
+export const HOST_NOT_ON_ROSTER = "A Host must be on this War Week's roster.";
+
+/**
+ * Whether every one of the (distinct) `participantIds` is on the roster of
+ * the War Week `ctx.warWeekId`: the write-time rule for a Host.
+ */
+export async function onWarWeekRoster(
+  participantIds: string[],
+  ctx: MutationContext,
+  tx: DBOrTx,
+): Promise<boolean> {
+  if (participantIds.length === 0) return true;
+  const onRoster = await tx
+    .select({ id: participant.id })
+    .from(participant)
+    .where(
+      and(
+        eq(participant.warWeekId, ctx.warWeekId),
+        inArray(participant.id, participantIds),
+      ),
+    );
+  return onRoster.length === participantIds.length;
+}
 
 /** Postgres unique_violation: another save took the natural key meanwhile. */
 export function isUniqueViolation(error: unknown): boolean {
@@ -1016,19 +1038,8 @@ export async function setCompetitionHosts(
     if (!(await locked(competition, competitionId, ctx, tx))) {
       return { ok: false, error: COMPETITION_NOT_FOUND };
     }
-    if (hosts.length > 0) {
-      const onRoster = await tx
-        .select({ id: participant.id })
-        .from(participant)
-        .where(
-          and(
-            eq(participant.warWeekId, ctx.warWeekId),
-            inArray(participant.id, hosts),
-          ),
-        );
-      if (onRoster.length !== hosts.length) {
-        return { ok: false, error: HOST_NOT_ON_ROSTER };
-      }
+    if (!(await onWarWeekRoster(hosts, ctx, tx))) {
+      return { ok: false, error: HOST_NOT_ON_ROSTER };
     }
     await tx
       .delete(competitionHost)

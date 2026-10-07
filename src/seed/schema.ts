@@ -303,7 +303,8 @@ export const warWeekSeedSchema = z
       unique(
         ["days", dayIndex, "scheduleItems"],
         d.scheduleItems,
-        (item) => `${item.startTime} ${item.title}`,
+        // No start time is a key value of its own ("Any time").
+        (item) => `${item.startTime ?? "any time"} ${item.title}`,
         "title",
         "Schedule Item (start time and title)",
       ),

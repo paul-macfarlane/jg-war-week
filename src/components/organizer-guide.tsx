@@ -144,8 +144,9 @@ export function OrganizerGuide({
           host and this Guide in Admin: they record a Competition&apos;s
           results, run its Bracket, Matches and Attempts, and change its
           settings. Schedule, Announcements, the Finale and everything else stay
-          with Organizers. A Schedule Item&apos;s host text is just what the
-          schedule shows; it doesn&apos;t make anyone a Host.
+          with Organizers. A Schedule Item&apos;s Hosts are just who the
+          Schedule shows as &ldquo;Hosted by&rdquo;; they don&apos;t make anyone
+          a Host.
         </p>
       </section>
 

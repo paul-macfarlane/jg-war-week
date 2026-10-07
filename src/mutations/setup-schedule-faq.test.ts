@@ -76,7 +76,7 @@ async function fixture(tx: DBTx) {
     startTime: "09:00",
     endTime: "10:00",
     title: "Kickoff",
-    host: null,
+    hostIds: [],
     location: null,
     virtualLink: null,
     category: "competition",
@@ -178,6 +178,242 @@ describe.skipIf(!isLocalDatabase)("Schedule Item mutations", () => {
         ),
       ).toEqual(refusal);
       expect(await deleteScheduleItem(row.id, ctx, tx)).toEqual(refusal);
+    });
+  });
+});
+
+/** The fixture plus roster Participants: Ana and Ben at home, Cal elsewhere. */
+async function hostFixture(tx: DBTx) {
+  const f = await fixture(tx);
+  const { participant, scheduleItem, scheduleItemHost } = f.schema;
+  const [ana, ben] = await tx
+    .insert(participant)
+    .values([
+      {
+        warWeekId: f.home.warWeekId,
+        displayName: "Ana",
+        email: "ana@jahnelgroup.com",
+      },
+      { warWeekId: f.home.warWeekId, displayName: "Ben" },
+    ])
+    .returning({ id: participant.id });
+  const [cal] = await tx
+    .insert(participant)
+    .values({ warWeekId: f.other.warWeekId, displayName: "Cal" })
+    .returning({ id: participant.id });
+  /** An unlinked item, so it may have its own Hosts. */
+  const social: ScheduleItemValues = {
+    ...f.item,
+    title: "Board games",
+    category: "social",
+    competitionId: null,
+  };
+  const itemId = async (title: string) =>
+    (
+      await tx
+        .select({ id: scheduleItem.id })
+        .from(scheduleItem)
+        .where(eq(scheduleItem.title, title))
+    )[0]?.id;
+  const hostIdsOf = async (id: string) =>
+    (
+      await tx
+        .select({ participantId: scheduleItemHost.participantId })
+        .from(scheduleItemHost)
+        .where(eq(scheduleItemHost.scheduleItemId, id))
+    )
+      .map((row) => row.participantId)
+      .sort();
+  return {
+    ...f,
+    anaId: ana.id,
+    benId: ben.id,
+    calId: cal.id,
+    social,
+    itemId,
+    hostIdsOf,
+  };
+}
+
+describe.skipIf(!isLocalDatabase)("Schedule Item Hosts", () => {
+  it("saves an unlinked item's Hosts, replaces them on edit, and getSchedule shows them by name, never an email", async () => {
+    await inRolledBackTransaction(async (tx) => {
+      const { createScheduleItem, updateScheduleItem } =
+        await import("@/mutations/setup-schedule-faq");
+      const { getSchedule } = await import("@/queries/schedule");
+      const f = await hostFixture(tx);
+
+      expect(
+        await createScheduleItem(
+          { ...f.social, hostIds: [f.anaId, f.benId] },
+          f.ctx,
+          tx,
+        ),
+      ).toEqual({ ok: true });
+      const id = await f.itemId("Board games");
+      expect(await f.hostIdsOf(id)).toEqual([f.anaId, f.benId].sort());
+
+      const [day] = await getSchedule(f.home.warWeekId, {}, tx);
+      expect(day.items[0].hosts).toEqual([
+        { id: f.anaId, displayName: "Ana", image: null, teamColor: null },
+        { id: f.benId, displayName: "Ben", image: null, teamColor: null },
+      ]);
+      expect(JSON.stringify(day)).not.toContain("ana@jahnelgroup.com");
+
+      expect(
+        await updateScheduleItem(
+          id,
+          { ...f.social, hostIds: [f.benId] },
+          f.ctx,
+          tx,
+        ),
+      ).toEqual({ ok: true });
+      expect(await f.hostIdsOf(id)).toEqual([f.benId]);
+    });
+  });
+
+  it("refuses a Host from another War Week's roster, on create and on edit", async () => {
+    await inRolledBackTransaction(async (tx) => {
+      const { createScheduleItem, updateScheduleItem } =
+        await import("@/mutations/setup-schedule-faq");
+      const f = await hostFixture(tx);
+      const refusal = {
+        ok: false,
+        error: "A Host must be on this War Week's roster.",
+      };
+
+      expect(
+        await createScheduleItem(
+          { ...f.social, hostIds: [f.anaId, f.calId] },
+          f.ctx,
+          tx,
+        ),
+      ).toEqual(refusal);
+      expect(await f.itemId("Board games")).toBeUndefined();
+
+      await createScheduleItem({ ...f.social, hostIds: [f.anaId] }, f.ctx, tx);
+      const id = await f.itemId("Board games");
+      expect(
+        await updateScheduleItem(
+          id,
+          { ...f.social, hostIds: [f.calId] },
+          f.ctx,
+          tx,
+        ),
+      ).toEqual(refusal);
+      expect(await f.hostIdsOf(id)).toEqual([f.anaId]);
+    });
+  });
+
+  it("discards Hosts posted with a Competition, and linking a Competition deletes the item's Hosts", async () => {
+    await inRolledBackTransaction(async (tx) => {
+      const { createScheduleItem, updateScheduleItem } =
+        await import("@/mutations/setup-schedule-faq");
+      const { getSchedule } = await import("@/queries/schedule");
+      const f = await hostFixture(tx);
+      const linked = { ...f.item, hostIds: [f.anaId] };
+
+      // Posted with a Competition: saved, but no Host row.
+      expect(await createScheduleItem(linked, f.ctx, tx)).toEqual({
+        ok: true,
+      });
+      expect(await f.hostIdsOf(await f.itemId("Kickoff"))).toEqual([]);
+
+      // An unlinked item with Hosts, then linked to the Competition.
+      await createScheduleItem(
+        { ...f.social, hostIds: [f.anaId, f.benId] },
+        f.ctx,
+        tx,
+      );
+      const id = await f.itemId("Board games");
+      expect(await f.hostIdsOf(id)).toHaveLength(2);
+      expect(
+        await updateScheduleItem(
+          id,
+          {
+            ...f.social,
+            category: "competition",
+            competitionId: f.home.competitionId,
+            hostIds: [f.anaId],
+          },
+          f.ctx,
+          tx,
+        ),
+      ).toEqual({ ok: true });
+      expect(await f.hostIdsOf(id)).toEqual([]);
+
+      // A linked item shows its Competition's Hosts instead.
+      await tx.insert(f.schema.competitionHost).values({
+        competitionId: f.home.competitionId,
+        participantId: f.benId,
+      });
+      const [day] = await getSchedule(f.home.warWeekId, {}, tx);
+      expect(day.items.map((item) => item.hosts.map((h) => h.id))).toEqual([
+        [f.benId],
+        [f.benId],
+      ]);
+    });
+  });
+
+  it("refuses a second untimed item with the same title on a Day, in the untimed wording", async () => {
+    await inRolledBackTransaction(async (tx) => {
+      const { createScheduleItem, updateScheduleItem } =
+        await import("@/mutations/setup-schedule-faq");
+      const { getSchedule } = await import("@/queries/schedule");
+      const f = await hostFixture(tx);
+      const untimed = { ...f.social, startTime: null, endTime: null };
+
+      expect(await createScheduleItem(untimed, f.ctx, tx)).toEqual({
+        ok: true,
+      });
+      const [day] = await getSchedule(f.home.warWeekId, {}, tx);
+      expect(day.items[0]).toMatchObject({
+        title: "Board games",
+        startTime: null,
+      });
+
+      const refusal = {
+        ok: false,
+        error:
+          'There\'s already a Schedule Item "Board games" with no start time on that Day.',
+      };
+      expect(await createScheduleItem(untimed, f.ctx, tx)).toEqual(refusal);
+
+      // A timed "Board games" is another key, but can't become untimed.
+      await createScheduleItem(f.social, f.ctx, tx);
+      const timed = (await getSchedule(f.home.warWeekId, {}, tx))[0].items.find(
+        (item) => item.startTime !== null,
+      )!;
+      expect(await updateScheduleItem(timed.id, untimed, f.ctx, tx)).toEqual(
+        refusal,
+      );
+    });
+  });
+
+  it("refuses a Competition on any category but Competition", async () => {
+    await inRolledBackTransaction(async (tx) => {
+      const { createScheduleItem, updateScheduleItem } =
+        await import("@/mutations/setup-schedule-faq");
+      const f = await hostFixture(tx);
+      const refusal = {
+        ok: false,
+        error: "Only a Competition item can link a Competition.",
+      };
+
+      expect(
+        await createScheduleItem({ ...f.item, category: "social" }, f.ctx, tx),
+      ).toEqual(refusal);
+      expect(await f.itemId("Kickoff")).toBeUndefined();
+
+      await createScheduleItem(f.item, f.ctx, tx);
+      expect(
+        await updateScheduleItem(
+          await f.itemId("Kickoff"),
+          { ...f.item, category: "meal" },
+          f.ctx,
+          tx,
+        ),
+      ).toEqual(refusal);
     });
   });
 });

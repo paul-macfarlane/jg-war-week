@@ -6,12 +6,12 @@ import {
   PartyPopper,
   Shapes,
   Trophy,
-  User,
   Utensils,
   Video,
 } from "lucide-react";
 import Link from "next/link";
 
+import { Avatar } from "@/components/avatar";
 import { RichText } from "@/components/rich-text";
 import type { ScheduleItem } from "@/db/schema";
 import { type ScheduleEntry, formatTimeRange } from "@/lib/schedule";
@@ -93,21 +93,39 @@ export function ScheduleItemCard({
         <CategoryBadge category={item.category} />
       </div>
       <h3 className="text-base font-semibold">{item.title}</h3>
-      {item.host || item.location ? (
+      {item.location ? (
         <div className="text-foreground/70 flex flex-wrap gap-x-4 gap-y-1 text-sm">
-          {item.host ? (
-            <span className="inline-flex items-center gap-1">
-              <User aria-hidden className="size-3.5" />
-              {item.host}
-            </span>
-          ) : null}
-          {item.location ? (
-            <span className="inline-flex items-center gap-1">
-              <MapPin aria-hidden className="size-3.5" />
-              {item.location}
-            </span>
-          ) : null}
+          <span className="inline-flex items-center gap-1">
+            <MapPin aria-hidden className="size-3.5" />
+            {item.location}
+          </span>
         </div>
+      ) : null}
+      {item.hosts.length > 0 ? (
+        <p
+          data-testid="schedule-item-hosts"
+          className="text-foreground/70 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm"
+        >
+          <span>Hosted by</span>
+          {item.hosts.map((host, index) => (
+            <span
+              key={host.id}
+              data-testid="schedule-item-host"
+              className="inline-flex items-center gap-1.5"
+            >
+              <Avatar
+                name={host.displayName}
+                teamColor={host.teamColor}
+                image={host.image}
+                className="size-5"
+              />
+              <span className="text-foreground">
+                {host.displayName}
+                {index < item.hosts.length - 1 ? "," : ""}
+              </span>
+            </span>
+          ))}
+        </p>
       ) : null}
       {item.description ? (
         <div className="text-sm">

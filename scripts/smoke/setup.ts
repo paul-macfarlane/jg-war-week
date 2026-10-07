@@ -567,7 +567,7 @@ export async function assertSetupScheduleFaq(sessions: {
     startTime: "23:10",
     endTime: "23:50",
     title,
-    host: "",
+    hostIds: [],
     location: "",
     virtualLink: "",
     category: "social",

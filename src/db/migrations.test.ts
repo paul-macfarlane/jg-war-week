@@ -442,7 +442,7 @@ describe.skipIf(!isLocalDatabase)(
               const applied = await client.query(
                 "select count(*)::int as n from drizzle.__drizzle_migrations",
               );
-              expect(applied.rows[0].n).toBe(35);
+              expect(applied.rows[0].n).toBe(36);
 
               const brackets = await client.query(
                 `select id, format::text as format, bracket_config,
@@ -599,7 +599,7 @@ describe.skipIf(!isLocalDatabase)(
               const applied = await client.query(
                 "select count(*)::int as n from drizzle.__drizzle_migrations",
               );
-              expect(applied.rows[0].n).toBe(35);
+              expect(applied.rows[0].n).toBe(36);
               const after = await client.query(
                 `select id, description is null as cleared,
                   pg_typeof(description)::text as type
@@ -837,7 +837,7 @@ describe.skipIf(!isLocalDatabase)(
                     "select count(*)::int as n from drizzle.__drizzle_migrations",
                   )
                 )[0].n,
-              ).toBe(35);
+              ).toBe(36);
 
               // Bracket configs under their new keys; null is the default.
               const configs = Object.fromEntries(
@@ -1537,6 +1537,128 @@ describe.skipIf(!isLocalDatabase)("league (0034)", () => {
       );
     } finally {
       rmSync(upTo0033, { recursive: true, force: true });
+    }
+  }, 60_000);
+});
+
+describe.skipIf(!isLocalDatabase)("schedule items (0035)", () => {
+  it("keeps every Schedule Item with its start time, drops the free-text host, and refuses two untimed items with one title on a Day", async () => {
+    const upTo0034 = migrationsUpTo(34);
+    const [WW, DAY, ANA] = [id(1), id(2), id(3)];
+    const [KICKOFF, QUIZ, LUNCH] = [id(10), id(11), id(12)];
+    try {
+      await withThrowawayDatabase(
+        async (url) => {
+          await migrateTo(url, upTo0034);
+          const client = new Client({ connectionString: url });
+          await client.connect();
+          try {
+            await client.query(`
+              insert into war_week (id, edition, edition_number, year,
+                start_date, end_date, story_theme, status, mode, team_label,
+                leader_title, slack_channel_url, primary_color,
+                primary_foreground_color, accent_color, background_color,
+                foreground_color, font_preset)
+              values ('${WW}', 'xi', 9811, 9811, '2026-02-23',
+                '2026-02-27', 'Eleven', 'live', 'teams', 'Team', 'Captain',
+                'https://slack.example', '#000000', '#ffffff', '#ff0000',
+                '#ffffff', '#000000', 'sans');
+              insert into day (id, war_week_id, date, day_theme)
+                values ('${DAY}', '${WW}', '2026-02-23', 'Tournament Day');
+              insert into participant (id, war_week_id, display_name)
+                values ('${ANA}', '${WW}', 'Ana');
+              insert into schedule_item (id, day_id, start_time, end_time,
+                title, host, category)
+              values
+                ('${KICKOFF}', '${DAY}', '09:00', '10:00', 'Kickoff',
+                  'Jet Breuer', 'social'),
+                ('${QUIZ}', '${DAY}', '18:30', null, 'Quiz', null, 'social'),
+                ('${LUNCH}', '${DAY}', '12:00', null, 'Lunch', 'Emily',
+                  'meal');`);
+            await migrateTo(url, DRIZZLE_DIR);
+            const q = async (text: string) => (await client.query(text)).rows;
+
+            expect(
+              await q(
+                `select id, start_time, end_time, title from schedule_item
+                 order by start_time`,
+              ),
+            ).toEqual([
+              {
+                id: KICKOFF,
+                start_time: "09:00:00",
+                end_time: "10:00:00",
+                title: "Kickoff",
+              },
+              {
+                id: LUNCH,
+                start_time: "12:00:00",
+                end_time: null,
+                title: "Lunch",
+              },
+              {
+                id: QUIZ,
+                start_time: "18:30:00",
+                end_time: null,
+                title: "Quiz",
+              },
+            ]);
+            expect(
+              await q(
+                `select column_name from information_schema.columns
+                 where table_name = 'schedule_item' and column_name = 'host'`,
+              ),
+            ).toEqual([]);
+
+            // An untimed item saves; a second with its title on the Day
+            // doesn't, though one on another time does.
+            await client.query(
+              `insert into schedule_item (day_id, title, category)
+               values ('${DAY}', 'Step Challenge', 'other')`,
+            );
+            await expect(
+              client.query(
+                `insert into schedule_item (day_id, title, category)
+                 values ('${DAY}', 'Step Challenge', 'other')`,
+              ),
+            ).rejects.toMatchObject({ code: "23505" });
+            await client.query(
+              `insert into schedule_item (day_id, start_time, title, category)
+               values ('${DAY}', '08:00', 'Step Challenge', 'other')`,
+            );
+
+            // A Schedule Item Host: once per item, gone with the item or
+            // the Participant.
+            await client.query(
+              `insert into schedule_item_host (schedule_item_id, participant_id)
+               values ('${KICKOFF}', '${ANA}'), ('${QUIZ}', '${ANA}')`,
+            );
+            await expect(
+              client.query(
+                `insert into schedule_item_host (schedule_item_id, participant_id)
+                 values ('${KICKOFF}', '${ANA}')`,
+              ),
+            ).rejects.toMatchObject({ code: "23505" });
+            await client.query(
+              `delete from schedule_item where id = '${KICKOFF}'`,
+            );
+            expect(
+              (await q("select count(*)::int as n from schedule_item_host"))[0]
+                .n,
+            ).toBe(1);
+            await client.query(`delete from participant where id = '${ANA}'`);
+            expect(
+              (await q("select count(*)::int as n from schedule_item_host"))[0]
+                .n,
+            ).toBe(0);
+          } finally {
+            await client.end();
+          }
+        },
+        { migrations: false },
+      );
+    } finally {
+      rmSync(upTo0034, { recursive: true, force: true });
     }
   }, 60_000);
 });
