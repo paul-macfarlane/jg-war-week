@@ -1,10 +1,18 @@
 "use client";
 
+import { Lock } from "lucide-react";
+import { useState } from "react";
+
 import {
   type BracketViewEntrant,
   EntrantMark,
 } from "@/components/entrant-mark";
 import { Button } from "@/components/ui/button";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { advancePerMatchLabel } from "@/lib/bracket/config";
 import { resultLockReason } from "@/lib/bracket/self-report";
 import {
@@ -176,6 +184,51 @@ function SlotRow({
 }
 
 /**
+ * A disabled Edit or Clear control of a locked Match. A disabled button gets
+ * no focus or pointer events, so a focusable wrapper carries the tooltip with
+ * the reason: shown on hover and keyboard focus, and on a tap (touch gives no
+ * hover; the tooltip closes when focus moves elsewhere).
+ */
+function LockedControl({
+  reason,
+  label,
+  children,
+}: {
+  reason: string;
+  label: string;
+  children: React.ReactNode;
+}) {
+  const [open, setOpen] = useState(false);
+  return (
+    <Tooltip open={open} onOpenChange={setOpen}>
+      <TooltipTrigger
+        closeOnClick={false}
+        onClick={() => setOpen(true)}
+        render={
+          <span role="group" aria-label={`${label}: ${reason}`} tabIndex={0} />
+        }
+        data-slot="locked-control"
+        className="focus-visible:ring-ring/50 inline-flex rounded-lg outline-none focus-visible:ring-3"
+      >
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          // A disabled button swallows clicks: let the wrapper get the tap.
+          className="pointer-events-none min-h-11 sm:min-h-8"
+          aria-label={label}
+          disabled
+          tabIndex={-1}
+        >
+          {children}
+        </Button>
+      </TooltipTrigger>
+      <TooltipContent>{reason}</TooltipContent>
+    </Tooltip>
+  );
+}
+
+/**
  * The one tree of a Bracket, for admin and Participants alike: Rounds as
  * columns left to right, each Match a box of its Entrants with those going
  * through highlighted, and (head-to-head) connector lines to the Match
@@ -318,38 +371,22 @@ export function BracketTree({
             </span>
           )}
           {lockReason && (
-            <div className="mt-1 flex flex-col gap-1">
-              <div className="flex flex-wrap gap-2">
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  className="min-h-11 sm:min-h-8"
-                  aria-label={`Edit ${match.name}`}
-                  aria-describedby={`${match.id}-lock-reason`}
-                  disabled
-                >
-                  Edit
-                </Button>
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  className="min-h-11 sm:min-h-8"
-                  aria-label={`Clear result of ${match.name}`}
-                  aria-describedby={`${match.id}-lock-reason`}
-                  disabled
-                >
-                  Clear result
-                </Button>
-              </div>
-              <p
-                id={`${match.id}-lock-reason`}
-                data-slot="match-lock-reason"
-                className="text-foreground/70 px-1.5 text-xs"
+            <div className="mt-1 flex flex-wrap items-center gap-2">
+              <Lock
+                role="img"
+                aria-label="Result locked"
+                data-slot="match-lock-icon"
+                className="text-foreground/70 size-4 shrink-0"
+              />
+              <LockedControl reason={lockReason} label={`Edit ${match.name}`}>
+                Edit
+              </LockedControl>
+              <LockedControl
+                reason={lockReason}
+                label={`Clear result of ${match.name}`}
               >
-                {lockReason}
-              </p>
+                Clear result
+              </LockedControl>
             </div>
           )}
           {recordable.has(match.id) && (
@@ -379,7 +416,7 @@ export function BracketTree({
         tabIndex={0}
         className="focus-visible:ring-ring/50 min-w-0 overflow-x-auto rounded-lg pb-2 outline-none focus-visible:ring-3"
       >
-        <div className="flex w-max min-w-full gap-8">
+        <div className="flex w-max min-w-full justify-center gap-8">
           {tree.rounds.map((round) => (
             <div
               key={round.round}

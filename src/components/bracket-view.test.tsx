@@ -261,7 +261,7 @@ describe("BracketView's Record result in the tree", () => {
     expect(html).not.toContain("Report result");
   });
 
-  it("a Match a later Match already used shows Edit disabled with the reason beside it (D1c)", () => {
+  it("a Match a later Match already used shows a lock icon and Edit disabled with the reason as a tooltip (D1c)", () => {
     // Four people: Neo beats Morpheus, Trinity beats Tank, Neo wins the
     // Final, which used Neo's semifinal.
     const four = ["Neo", "Trinity", "Morpheus", "Tank"].map((label, i) => ({
@@ -296,8 +296,12 @@ describe("BracketView's Record result in the tree", () => {
     expect(recordButtons(html)).toEqual([]);
     expect(html).toMatch(/<button[^>]*disabled[^>]*>Edit<\/button>/);
     expect(html).toMatch(/<button[^>]*disabled[^>]*>Clear result<\/button>/);
-    expect(html).toContain(
-      "A later Match already used this result. Change that Match first.",
+    // The reason is the tooltip's, not printed under the Match.
+    expect(html).toContain('data-slot="match-lock-icon"');
+    expect(html).toContain('aria-label="Result locked"');
+    expect(html).not.toContain('data-slot="match-lock-reason"');
+    expect(html).toMatch(
+      /aria-label="Edit Semifinal[^"]*: A later Match already used this result\. Change that Match first\."/,
     );
   });
 });

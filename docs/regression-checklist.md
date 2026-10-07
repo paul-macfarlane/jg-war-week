@@ -393,6 +393,9 @@ on the matching War Week page.
 - [ ] **Bracket tree: full width and Jump to your Match.** From 768 up the
       Participant page's tree uses the full width of the page (not a narrow
       column); at 390 it scrolls sideways only in its own "Rounds" region.
+      A small Bracket (4 Entrants) is centered in its region at 1440 and 390,
+      on the Participant page and in admin; the 64-Entrant one starts at the
+      left edge and scrolls.
       As an Entrant, "Jump to your Match" scrolls to and highlights your next
       unplayed Match; once you're out, or the Bracket is Closed, it goes to
       your last played one. A signed-in Participant who isn't an Entrant
@@ -495,12 +498,15 @@ on the matching War Week page.
       gives places 1 to 4 their points.
 - [ ] **Bracket: edit a result only along the latest path.** Record two
       Matches that feed a Final and the Final. Each semifinal's Edit and
-      Clear result are disabled with "A later Match already used this result.
-      Change that Match first." as visible text (also at 390), and a posted
-      change is refused by the server. Clear the Final, then a semifinal's
+      Clear result are disabled and the Match shows a lock icon; the text "A
+      later Match already used this result." is not printed under it, and the
+      reason "Change that Match first." shows as a tooltip on the disabled
+      control by keyboard focus at 1440 and by a tap at 390. A posted change
+      is refused by the server. Clear the Final, then a semifinal's
       Edit is offered again. In a Group Bracket, once any later round has a
-      result, every earlier Match's Edit and Clear result are disabled with
-      "A later round already has a result. Change that round first."
+      result, every earlier Match's Edit and Clear result are disabled, with
+      "A later round already has a result. Change that round first." as the
+      tooltip (no repeated line).
 - [ ] **Close a Head-to-head Competition.** In a Best of 3 Head-to-head
       Competition with Placement Points, log one Match as the Organizer (Log
       a Match on its public Competition page): Close is disabled with "Finish

@@ -240,16 +240,17 @@ export function OrganizerGuide({
           Entrants in finishing order, with scores, in a dialog centered on a
           screen or a bottom sheet on a phone; the tree shows when each Match
           was recorded. Only the latest result along a path changes: a Match a
-          later Match already used shows Edit and Clear result disabled with
-          &quot;Change that Match first&quot;, and in a Group Bracket every
-          Match before a round with a result says &quot;Change that round
-          first&quot;. To correct one, clear results back from the latest one,
-          then record again. Close, once every Match is played (the 3rd place
-          Match too), turns the Bracket&apos;s placings into Points Entries
-          marked &quot;From bracket&quot;; Reopen removes them so you can fix a
-          Match and Close again. While it&apos;s Closed, its settings except the
-          name, description, Group, Hosts and Placement Points are locked:
-          Reopen first (a Placement Points change applies at the next Close).
+          later Match already used shows a lock icon with Edit and Clear result
+          disabled (hover, focus or tap them for &quot;Change that Match
+          first&quot;), and in a Group Bracket every Match before a round with a
+          result is the same (&quot;Change that round first&quot;). To correct
+          one, clear results back from the latest one, then record again. Close,
+          once every Match is played (the 3rd place Match too), turns the
+          Bracket&apos;s placings into Points Entries marked &quot;From
+          bracket&quot;; Reopen removes them so you can fix a Match and Close
+          again. While it&apos;s Closed, its settings except the name,
+          description, Group, Hosts and Placement Points are locked: Reopen
+          first (a Placement Points change applies at the next Close).
         </p>
         <h3 className="font-semibold">Squads and self-report</h3>
         <p className="text-foreground/70">

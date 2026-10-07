@@ -417,7 +417,7 @@ test("a Squad Bracket with self-report: a Participant reports, the other player 
     await firstContext.close();
 
     // The Final used Red Alpha's Semifinal: its Edit and Clear result are
-    // disabled, the reason beside them, and nothing resets (D1c).
+    // disabled, the reason in a tooltip, and nothing resets (D1c).
     await page.reload();
     await expect(matchCard(page, "Final")).toContainText(
       `Reported by ${REPORTER}`,
@@ -429,7 +429,14 @@ test("a Squad Bracket with self-report: a Participant reports, the other player 
     await expect(
       locked.getByRole("button", { name: `Clear result of ${semifinal}` }),
     ).toBeDisabled();
-    await expect(locked.locator('[data-slot="match-lock-reason"]')).toHaveText(
+    // The lock icon marks it; the reason is the disabled controls' tooltip
+    // (focus the wrapper), not text under every locked Match (R26 D8).
+    await expect(locked.locator('[data-slot="match-lock-icon"]')).toBeVisible();
+    await expect(locked.locator('[data-slot="match-lock-reason"]')).toHaveCount(
+      0,
+    );
+    await locked.locator('[data-slot="locked-control"]').first().focus();
+    await expect(page.locator('[data-slot="tooltip-content"]')).toHaveText(
       "A later Match already used this result. Change that Match first.",
     );
     await checkViewports(page, testInfo, "semifinal-locked");

@@ -613,13 +613,14 @@ is a **bye** (never the Final). A setting that would send on as many as it
 received is refused. A Round with any result is **locked**.
 
 **Edit a result.** Only the latest result along a path changes. A Match whose
-result a later Match already used shows **Edit** and **Clear result**
-disabled with "A later Match already used this result. Change that Match
-first." (visible text, so it shows on a phone); the server refuses it too.
+result a later Match already used shows a lock icon and **Edit** and
+**Clear result** disabled; the reason ("A later Match already used this
+result. Change that Match first.") is their tooltip, on keyboard focus or a
+tap; the server refuses it too.
 Clear back from the latest result. In a Group Bracket a Match is editable
 only while no later Round has a result; otherwise Edit and Clear result are
-disabled with "A later round already has a result. Change that round
-first." Editing a finished Round's result while the next Round has no result
+disabled, with "A later round already has a result. Change that round
+first." as their tooltip. Editing a finished Round's result while the next Round has no result
 is allowed; the next Round re-fills from the new advancers and anything you
 moved or set there is lost.
 
