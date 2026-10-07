@@ -2,6 +2,7 @@ import { and, eq, ne, or, sql } from "drizzle-orm";
 
 import { DBOrTx, db } from "@/db";
 import { type WarWeek, warWeek } from "@/db/schema";
+import type { FieldErrors } from "@/lib/result";
 import {
   type ClosingValues,
   DEFAULT_SETTINGS,
@@ -10,6 +11,7 @@ import {
   defaultWinner,
   latestWarWeek,
   moveError,
+  nextStartDateError,
   transitionError,
   unstartError,
 } from "@/lib/war-week-lifecycle";
@@ -188,13 +190,17 @@ async function takenError(
  * Create next War Week: inserts an `upcoming` War Week with default
  * settings and nothing copied (no Competitions, FAQ, Teams or roster), from
  * the War Week `ctx` names. Refused while the latest War Week by start date
- * is `upcoming` or `live` (`createNextWarWeekError`). Organizers are global.
+ * is `upcoming` or `live` (`createNextWarWeekError`), and when the new start
+ * date isn't after that War Week's end date (`nextStartDateError`). Organizers are global.
  */
 export async function createNextWarWeek(
   values: NextWarWeekValues,
   ctx: MutationContext,
   dbOrTx: DBOrTx = db,
-): Promise<{ ok: true; edition: string } | { ok: false; error: string }> {
+): Promise<
+  | { ok: true; edition: string }
+  | { ok: false; error: string; fieldErrors?: FieldErrors }
+> {
   try {
     return await dbOrTx.transaction(async (tx) => {
       const [source] = await tx
@@ -202,10 +208,17 @@ export async function createNextWarWeek(
         .from(warWeek)
         .where(eq(warWeek.id, ctx.warWeekId));
       if (!source) return { ok: false as const, error: WAR_WEEK_NOT_FOUND };
-      const unfinished = createNextWarWeekError(
-        latestWarWeek(await tx.select().from(warWeek)),
-      );
+      const latest = latestWarWeek(await tx.select().from(warWeek));
+      const unfinished = createNextWarWeekError(latest);
       if (unfinished) return { ok: false as const, error: unfinished };
+      const tooEarly = nextStartDateError(latest, values.startDate);
+      if (tooEarly) {
+        return {
+          ok: false as const,
+          error: tooEarly,
+          fieldErrors: { startDate: tooEarly },
+        };
+      }
       const taken = await takenError(values, tx);
       if (taken) return { ok: false as const, error: taken };
 

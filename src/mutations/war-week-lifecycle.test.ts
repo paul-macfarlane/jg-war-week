@@ -206,8 +206,8 @@ function next(overrides: Partial<NextWarWeekValues> = {}): NextWarWeekValues {
     edition: "tii",
     editionNumber: 9302,
     year: 9302,
-    startDate: "2100-01-01",
-    endDate: "2100-01-05",
+    startDate: "9999-01-01",
+    endDate: "9999-01-05",
     storyTheme: "Next one",
     ...overrides,
   };
@@ -638,8 +638,8 @@ describe.skipIf(!isLocalDatabase)("createNextWarWeek", () => {
       expect(created).toMatchObject({
         editionNumber: 9302,
         year: 9302,
-        startDate: "2100-01-01",
-        endDate: "2100-01-05",
+        startDate: "9999-01-01",
+        endDate: "9999-01-05",
         storyTheme: "Next one",
         status: "upcoming",
         winner: null,
@@ -671,6 +671,42 @@ describe.skipIf(!isLocalDatabase)("createNextWarWeek", () => {
         award: 0,
         announcement: 0,
       });
+    });
+  });
+
+  it("refuses a start on or before the latest War Week's end date, naming the Start date field, and writes nothing", async () => {
+    await inRolledBackTransaction(async (tx) => {
+      const { createNextWarWeek } =
+        await import("@/mutations/war-week-lifecycle");
+      const { live, schema } = await fixture(tx);
+      await makeLatest(tx, live.id);
+      await endFixtureWarWeek(tx, live.id);
+
+      const error =
+        "Start date must be after War Week TI ends (Mon, Jan 5, 9998).";
+      for (const startDate of ["9998-01-05", "9997-12-01"]) {
+        expect(
+          await createNextWarWeek(
+            next({ startDate, endDate: "9999-01-05" }),
+            ctxOf(live.id),
+            tx,
+          ),
+        ).toEqual({ ok: false, error, fieldErrors: { startDate: error } });
+      }
+      expect(
+        await tx
+          .select()
+          .from(schema.warWeek)
+          .where(eq(schema.warWeek.edition, "tii")),
+      ).toEqual([]);
+      // The day after it ends is allowed.
+      expect(
+        await createNextWarWeek(
+          next({ startDate: "9998-01-06" }),
+          ctxOf(live.id),
+          tx,
+        ),
+      ).toEqual({ ok: true, edition: "tii" });
     });
   });
 

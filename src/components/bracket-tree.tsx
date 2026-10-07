@@ -184,10 +184,13 @@ function SlotRow({
 }
 
 /**
- * A disabled Edit or Clear control of a locked Match. A disabled button gets
- * no focus or pointer events, so a focusable wrapper carries the tooltip with
- * the reason: shown on hover and keyboard focus, and on a tap (touch gives no
- * hover; the tooltip closes when focus moves elsewhere).
+ * A disabled Edit or Clear control of a locked Match. It is itself the
+ * tooltip trigger, a button that stays focusable and hoverable while
+ * disabled (`focusableWhenDisabled`: `aria-disabled`, never performs the
+ * action), so the global rule shows not-allowed over it. The reason shows on
+ * hover and keyboard focus, and on a tap (touch gives no hover; the tooltip
+ * closes when focus moves elsewhere). The reason is part of its accessible
+ * name, so it is announced once.
  */
 function LockedControl({
   reason,
@@ -203,25 +206,22 @@ function LockedControl({
     <Tooltip open={open} onOpenChange={setOpen}>
       <TooltipTrigger
         closeOnClick={false}
-        onClick={() => setOpen(true)}
-        render={
-          <span role="group" aria-label={`${label}: ${reason}`} tabIndex={0} />
-        }
+        // A disabled button drops onClick: a tap's pointer-up opens the tip.
+        onPointerUp={() => setOpen(true)}
         data-slot="locked-control"
-        className="focus-visible:ring-ring/50 inline-flex rounded-lg outline-none focus-visible:ring-3"
+        render={
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            className="data-disabled:text-muted-foreground data-disabled:hover:bg-background min-h-11 data-disabled:border-dashed sm:min-h-8"
+            aria-label={`${label}: ${reason}`}
+            disabled
+            focusableWhenDisabled
+          />
+        }
       >
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          // A disabled button swallows clicks: let the wrapper get the tap.
-          className="pointer-events-none min-h-11 sm:min-h-8"
-          aria-label={label}
-          disabled
-          tabIndex={-1}
-        >
-          {children}
-        </Button>
+        {children}
       </TooltipTrigger>
       <TooltipContent>{reason}</TooltipContent>
     </Tooltip>

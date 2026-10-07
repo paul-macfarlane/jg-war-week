@@ -10,6 +10,7 @@ import {
   latestWarWeek,
   lifecycleActionError,
   nextEditionDefaults,
+  nextStartDateError,
   parseClosingInput,
   parseNextWarWeekInput,
   tieTitle,
@@ -580,5 +581,25 @@ describe("Create next War Week's rule", () => {
     expect(createNextWarWeekError(xii)).toBe(
       "War Week XII hasn't happened yet. Create the next one after it ends.",
     );
+  });
+});
+
+describe("nextStartDateError", () => {
+  const xii = { edition: "xii", endDate: "2027-02-26" };
+
+  it("refuses a start on or before the latest War Week's end date, naming it", () => {
+    const message =
+      "Start date must be after War Week XII ends (Fri, Feb 26, 2027).";
+    expect(nextStartDateError(xii, "2027-02-26")).toBe(message);
+    expect(nextStartDateError(xii, "2026-03-01")).toBe(message);
+  });
+
+  it("allows a start the day after it ends, or any time later", () => {
+    expect(nextStartDateError(xii, "2027-02-27")).toBeNull();
+    expect(nextStartDateError(xii, "2028-02-20")).toBeNull();
+  });
+
+  it("allows any start when there is no War Week yet", () => {
+    expect(nextStartDateError(undefined, "2020-01-01")).toBeNull();
   });
 });
