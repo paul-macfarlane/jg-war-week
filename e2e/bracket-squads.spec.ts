@@ -8,6 +8,7 @@ import {
 import path from "node:path";
 
 import {
+  expectEntrantsSaved,
   expectSaved,
   openCompetitionPage,
   setFormat,
@@ -244,10 +245,7 @@ test("a Squad Bracket with self-report: a Participant reports, the other player 
     await page.getByRole("option", { name: "Squads", exact: true }).click();
     await page.getByRole("button", { name: "All Squads" }).click();
     await expect(page.getByText("Squads (4 chosen)")).toBeVisible();
-    await page.getByRole("button", { name: "Save Entrants" }).click();
-    await expect(
-      page.getByText("Entrants saved", { exact: true }),
-    ).toBeVisible();
+    await expectEntrantsSaved(page);
 
     // Self-report is a setting: it autosaves.
     const selfReport = page.getByRole("switch", {
