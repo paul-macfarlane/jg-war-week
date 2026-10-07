@@ -1,6 +1,7 @@
 import { z } from "zod";
 
 import type { WarWeek } from "@/db/schema";
+import { formatDateLabel, parseDateValue } from "@/lib/date-value";
 import type { Parsed } from "@/lib/result";
 import {
   parseWith,
@@ -213,6 +214,20 @@ export function createNextWarWeekError(
   return latest.status === "live"
     ? `End ${name} before creating the next one.`
     : `${name} hasn't happened yet. Create the next one after it ends.`;
+}
+
+/**
+ * Why the next War Week can't start on `startDate`, or null: it must be
+ * after the `latest` War Week's end date, so the latest by start date stays
+ * the one Create next War Week follows.
+ */
+export function nextStartDateError(
+  latest: Pick<WarWeek, "edition" | "endDate"> | undefined,
+  startDate: string,
+): string | null {
+  if (!latest || startDate > latest.endDate) return null;
+  const ends = parseDateValue(latest.endDate);
+  return `Start date must be after ${warWeekName(latest)} ends (${ends ? formatDateLabel(ends) : latest.endDate}).`;
 }
 
 const NUMERALS: [number, string][] = [

@@ -8,7 +8,8 @@ import { asOrganizer } from "./session";
 // Bracket (this spec owns it: created in XII, dropped by afterAll) with both
 // Semifinals and the Final recorded, so the Semifinals are locked. Each shows a lock icon; the old line under every one
 // ("A later Match already used this result.") is gone; the reason is the
-// tooltip of the disabled Edit and Clear result controls, reached by
+// tooltip of the disabled Edit and Clear result controls (each a button focusable
+// while disabled, cursor not-allowed), reached by
 // keyboard focus at 1440 and by a tap at 390. The scale demo is loaded in beforeAll and put back to
 // `localSeedFiles()` in afterAll.
 
@@ -126,11 +127,17 @@ test.describe("Locked Bracket Matches in the XII scale demo", () => {
 
         const first = controls.first();
         await first.scrollIntoViewIfNeeded();
-        await expect(
-          first.getByRole("button", { disabled: true }),
-        ).toBeDisabled();
+        // The control is itself the focusable-when-disabled button.
+        await expect(first).toHaveAttribute("aria-disabled", "true");
+        await expect(first).not.toHaveAttribute("disabled");
+        await expect(first).not.toHaveAttribute("tabindex", "-1");
+        await expect(first).toHaveText(/^(Edit|Clear result)$/);
+        expect(
+          await first.evaluate((el) => window.getComputedStyle(el).cursor),
+        ).toBe("not-allowed");
         if (touch) {
-          await first.tap();
+          // Playwright's actionability treats aria-disabled as not enabled.
+          await first.tap({ force: true });
         } else {
           await first.focus();
           await expect(first).toBeFocused();
@@ -138,6 +145,11 @@ test.describe("Locked Bracket Matches in the XII scale demo", () => {
         const tip = page.locator('[data-slot="tooltip-content"]');
         await expect(tip).toBeVisible();
         await expect(tip).toHaveText(REASON);
+        // Clicking it performs nothing: no sheet opens, nothing is cleared.
+        await first.click({ force: true });
+        await expect(page.getByRole("dialog")).toHaveCount(0);
+        await expect(page.getByRole("alertdialog")).toHaveCount(0);
+        await expect(icons).toHaveCount(2);
         await shoot(page, testInfo, `locked-${width}.png`);
       } finally {
         await context.close();

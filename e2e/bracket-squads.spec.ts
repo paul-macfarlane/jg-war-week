@@ -425,12 +425,12 @@ test("a Squad Bracket with self-report: a Participant reports, the other player 
     const locked = matchCard(page, semifinal);
     await expect(
       locked.getByRole("button", { name: `Edit ${semifinal}` }),
-    ).toBeDisabled();
+    ).toHaveAttribute("aria-disabled", "true");
     await expect(
       locked.getByRole("button", { name: `Clear result of ${semifinal}` }),
-    ).toBeDisabled();
+    ).toHaveAttribute("aria-disabled", "true");
     // The lock icon marks it; the reason is the disabled controls' tooltip
-    // (focus the wrapper), not text under every locked Match (R26 D8).
+    // (focus the control), not text under every locked Match (R26 D8).
     await expect(locked.locator('[data-slot="match-lock-icon"]')).toBeVisible();
     await expect(locked.locator('[data-slot="match-lock-reason"]')).toHaveCount(
       0,

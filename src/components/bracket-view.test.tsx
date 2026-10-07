@@ -294,8 +294,19 @@ describe("BracketView's Record result in the tree", () => {
       { bracket: played, entrants: four },
     );
     expect(recordButtons(html)).toEqual([]);
-    expect(html).toMatch(/<button[^>]*disabled[^>]*>Edit<\/button>/);
-    expect(html).toMatch(/<button[^>]*disabled[^>]*>Clear result<\/button>/);
+    // Focusable while disabled: aria-disabled, never the disabled attribute
+    // or a tabindex of -1, so the not-allowed cursor shows and Tab reaches it.
+    for (const text of ["Edit", "Clear result"]) {
+      const control = html.match(
+        new RegExp(
+          `<button[^>]*data-slot="locked-control"[^>]*>${text}</button>`,
+        ),
+      );
+      expect(control?.[0]).toMatch(/aria-disabled="true"/);
+      expect(control?.[0]).not.toMatch(/\sdisabled(=|\s|>)/);
+      expect(control?.[0]).not.toMatch(/tabindex="-1"/);
+      expect(control?.[0]).not.toMatch(/[\s"]pointer-events-none/);
+    }
     // The reason is the tooltip's, not printed under the Match.
     expect(html).toContain('data-slot="match-lock-icon"');
     expect(html).toContain('aria-label="Result locked"');

@@ -16,6 +16,13 @@ import { asOrganizer } from "./session";
 const PHONE = { width: 390, height: 844 };
 const DESKTOP = { width: 1440, height: 900 };
 
+/** `YYYY-MM-DD` plus `n` days. */
+function addDays(day: string, n: number): string {
+  const date = new Date(`${day}T00:00:00Z`);
+  date.setUTCDate(date.getUTCDate() + n);
+  return date.toISOString().slice(0, 10);
+}
+
 type Snapshot = { id: string; status: string };
 
 async function viewEdition(page: Page, edition: string) {
@@ -35,6 +42,7 @@ const setStatus = (edition: string, status: string) =>
 test("r26 Create next War Week shows only on the latest complete War Week and copies nothing", async ({
   browser,
 }, testInfo) => {
+  test.setTimeout(120_000);
   const before = await runQuery<Snapshot>(
     "select id, status from war_week order by edition_number",
   );
@@ -89,18 +97,54 @@ test("r26 Create next War Week shows only on the latest complete War Week and co
     });
     await page.setViewportSize(DESKTOP);
 
-    // Dates through the range picker, then the Story Theme.
-    await dialog.getByLabel("Dates").click();
-    const calendar = page
-      .getByRole("dialog")
-      .filter({ has: page.getByRole("button", { name: "Done" }) });
-    const cells = calendar.locator("td[data-day]");
-    await cells.nth(10).getByRole("button").click();
-    await cells.nth(14).getByRole("button").click();
-    const start = await cells.nth(10).getAttribute("data-day");
-    const end = await cells.nth(14).getAttribute("data-day");
-    await calendar.getByRole("button", { name: "Done" }).click();
+    // Dates through the range picker, navigated to the months after XII's
+    // end date (never the current calendar month), then the Story Theme.
+    const [xiiRow] = await runQuery<{ end_date: string }>(
+      "select end_date::text from war_week where edition = 'xii'",
+    );
+    const xiiEnds = xiiRow.end_date;
+    const pickRange = async (from: string, to: string) => {
+      await dialog.getByLabel("Dates").click();
+      const calendar = page
+        .getByRole("dialog")
+        .filter({ has: page.getByRole("button", { name: "Done" }) });
+      for (const day of [from, to]) {
+        const cell = calendar.locator(`td[data-day="${day}"]`);
+        for (let i = 0; i < 48 && (await cell.count()) === 0; i++) {
+          // Which way the calendar must go: compare with its first visible day.
+          const shown = await calendar
+            .locator("td[data-day]")
+            .first()
+            .getAttribute("data-day");
+          const toNext = day > shown!;
+          await calendar
+            .getByRole("button", {
+              name: toNext ? /Next Month/ : /Previous Month/,
+            })
+            .click();
+        }
+        await cell.getByRole("button").first().click();
+      }
+      await calendar.getByRole("button", { name: "Done" }).click();
+    };
     await dialog.getByLabel("Story Theme").fill("E2E next");
+
+    // A start on XII's last day is refused on the Dates field; nothing is made.
+    await pickRange(xiiEnds, addDays(xiiEnds, 4));
+    await dialog.getByRole("button", { name: "Create War Week" }).click();
+    await expect(
+      dialog.getByText(/^Start date must be after War Week XII ends \(/),
+    ).toBeVisible();
+    await expect(dialog).toBeVisible();
+    const [early] = await runQuery<{ n: string }>(
+      "select count(*)::text as n from war_week where edition = 'xiii'",
+    );
+    expect(early.n).toBe("0");
+
+    // Dates after XII's end are accepted.
+    const start = addDays(xiiEnds, 7);
+    const end = addDays(xiiEnds, 11);
+    await pickRange(start, end);
     await dialog.getByRole("button", { name: "Create War Week" }).click();
     await expect(page.getByText("War Week XIII created")).toBeVisible();
     await expect(dialog).toBeHidden();
@@ -144,6 +188,12 @@ test("r26 Create next War Week shows only on the latest complete War Week and co
       path: testInfo.outputPath("created-1440.png"),
       animations: "disabled",
     });
+
+    // XIII is now the latest and upcoming, so XII (complete) is no longer
+    // the latest: it loses the button. Fails if the rule were defeated by dates.
+    await viewEdition(page, "xii");
+    await expect(lifecycle.getByText("Archive", { exact: true })).toBeVisible();
+    await expect(button).toHaveCount(0);
   } finally {
     await context.clearCookies({ name: "admin_edition" });
     const keep = before.map((w) => w.id);

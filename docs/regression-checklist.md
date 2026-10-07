@@ -501,7 +501,9 @@ on the matching War Week page.
       Clear result are disabled and the Match shows a lock icon; the text "A
       later Match already used this result." is not printed under it, and the
       reason "Change that Match first." shows as a tooltip on the disabled
-      control by keyboard focus at 1440 and by a tap at 390. A posted change
+      control by keyboard focus (Tab reaches it) and hover at 1440 and by a
+      tap at 390; the pointer over it shows the not-allowed cursor, and
+      clicking it does nothing. A posted change
       is refused by the server. Clear the Final, then a semifinal's
       Edit is offered again. In a Group Bracket, once any later round has a
       result, every earlier Match's Edit and Clear result are disabled, with
@@ -630,7 +632,11 @@ on the matching War Week page.
       ("End <X> first."). Once the latest War Week is ended (End XII after
       XI), Create next War Week shows on it and only on it (not on an older
       Archive edition): it opens a dialog (a bottom sheet at 390) with
-      edition, number and year prefilled, dates and Story Theme; creating
+      edition, number and year prefilled, dates and Story Theme; a start date
+      on or before the latest War Week's end date is refused on the Dates
+      field ("Start date must be after War Week XII ends (<date>)."), and
+      once the new one exists the older War Week loses the button (the new,
+      Upcoming one is the latest); creating
       makes an Upcoming edition with default settings, no Competitions and no
       FAQ. End the current War Week: its confirm names any
       generated Bracket that isn't closed, any open Head-to-head or Best score
