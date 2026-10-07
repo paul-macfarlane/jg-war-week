@@ -36,7 +36,7 @@ War Weeker). **War Week** alone always means the event, never the app.
 | **Test sign-in**              | A maintainer tool at `/sign-in/test` for testing as any `@jahnelgroup.com` address (`+` aliases included) on staging, by typing a secret. Never on production (ADR 0008). |
 | **Company Tag**               | An optional affiliation label on a participant (LTI, IL, …).                                                                      |
 | **Organizer**                 | A signed-in `@jahnelgroup.com` user on the global Organizer list. Can change anything in any War Week (ADR 0002).                 |
-| **Host**                      | A **roster Participant** an Organizer assigns to a Competition of their War Week ("hosted by Tony M"), **picked by name** (no email shown), with or without an email on the roster (ADR 0012). Runs that Competition. Their access is worked out on every request: the session email matches their roster email. A Participant with no email, or a non-@jahnelgroup.com one, can be picked but can't sign in until an Organizer fixes the email. A Schedule Item's free-text `host` field is display copy, not the Host role. |
+| **Host**                      | A **roster Participant** an Organizer assigns to a Competition of their War Week ("hosted by Tony M"), **picked by name** (no email shown), with or without an email on the roster (ADR 0012). Runs that Competition. Their access is worked out on every request: the session email matches their roster email. A Participant with no email, or a non-@jahnelgroup.com one, can be picked but can't sign in until an Organizer fixes the email. A Schedule Item's Hosts are roster Participants shown as "Hosted by"; they don't hold the Host role (only a Competition's Hosts do). An item linked to a Competition has no Hosts of its own and shows that Competition's Hosts. |
 | **Admin**                     | The management area at `/admin`. Organizers use all of it; a Host sees only their Competitions and the Guide. A place, never a role: say Organizer or Host for people. |
 | **Competition**               | Anything that awards points. Scored as team or individual. Skill divisions are separate Competitions ("MTG Advanced", "MTG Beginner"). |
 | **Competition Group**         | An optional grouping of competitions ("Team Night Events").                                                                       |
@@ -159,6 +159,18 @@ The banned-term scan (`src/lib/banned-terms.test.ts`) reads the string literals,
 
 All Schedule Item times are ET wall-clock times; the Day supplies the date.
 Now/next is computed on the ET clock, whatever the viewer's timezone.
+
+- A Schedule Item's **start time is optional**. An item with none (a
+  day-long challenge, a drop-in) reads **"Any time"**, sorts **first** in its
+  Day (then by title), and is **never** on now or up next. An end time needs
+  a start time ("Add a start time first.") and must be after it.
+- A Schedule Item has zero or more **Hosts**, roster Participants of its War
+  Week, shown as "Hosted by" with their Avatars (names only, never an
+  email). Display only: they don't hold the Host role. An item linked to a
+  Competition shows that Competition's Hosts instead; saving an item with a
+  Competition discards any Hosts of its own.
+- Only a **Competition**-category item may link a Competition (optional
+  there); an item of any other category with a Competition is refused.
 
 - An item is **on now** from its start time (inclusive) to its end time
   (exclusive). An item with no end time counts as on for 60 minutes. An end
@@ -887,7 +899,9 @@ same rows with the same values (only `updated_at` moves).
   key within the War Week, and any row absent from the seed is deleted, so
   setup always matches the seed exactly after a load:
   - Day: `(war_week_id, date)`
-  - Schedule Item: `(day_id, start_time, title)`
+  - Schedule Item: `(day_id, start_time, title)`, nulls not distinct: no
+    start time is a key value, so two untimed items with one title can't
+    share a Day
   - Team: `(war_week_id, name)`
   - Participant: `(war_week_id, display_name)`
   - Competition: `(war_week_id, name)`
@@ -919,9 +933,15 @@ same rows with the same values (only `updated_at` moves).
   `entrants` (names; idempotent by Competition and target). A reload that removes or moves a Participant leaves their Squads to
   the Organizer.
 - A Competition's seed **description** is plain text or rich-text content; the loader stores plain text as rich text, one paragraph per line, so a seed restores descriptions after migration 0030 reset them.
-- **Hosts** aren't in seeds. A plain reload never touches the Hosts of a
-  Competition the seed keeps; `--reset` deletes the War Week's
-  Competitions, and their Hosts go with them.
+- A Competition's **Hosts** may be seeded as `hosts` (roster display
+  names; insert only). A plain reload never removes a Host of a Competition
+  the seed keeps, so an Organizer's added Host survives; `--reset` deletes
+  the War Week's Competitions, and their Hosts go with them.
+- A **Schedule Item's Hosts** aren't in seeds: the format has no `host` or
+  `hosts` on a Schedule Item and refuses either key. A reload never touches
+  an unlinked item's Hosts, which an Organizer added; when it saves an item
+  with a Competition, it deletes that item's Hosts (as the form does). A
+  Schedule Item may omit `startTime` (an "Any time" item).
 - **Organizer-owned data** is seed-initialized but never clobbered:
   - `status`, `winner` and `highlights` are applied only
     when a War Week is first inserted; the lifecycle actions and settings

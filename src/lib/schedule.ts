@@ -20,14 +20,29 @@ export type ScheduleEntry = Pick<
   | "startTime"
   | "endTime"
   | "title"
-  | "host"
   | "location"
   | "virtualLink"
   | "description"
   | "category"
 > & {
   competition: { id: string; name: string } | null;
+  /**
+   * Who the item shows as "Hosted by": its own Hosts, or, when it links a
+   * Competition, that Competition's Hosts. Names only, never an email.
+   */
+  hosts: ScheduleHost[];
 };
+
+/** A Schedule Item Host as the Schedule shows one: a name and an Avatar. */
+export type ScheduleHost = {
+  id: string;
+  displayName: string;
+  image: string | null;
+  teamColor: string | null;
+};
+
+/** What an item with no start time reads instead of a time. */
+export const ANY_TIME = "Any time";
 
 export type ScheduleDay = Pick<
   Day,
@@ -78,15 +93,17 @@ export function fromEasternClock(date: string, time: string): Date | null {
   return Number.isNaN(instant.getTime()) ? null : new Date(instant);
 }
 
+/** Untimed items first, then by start time, then by title. */
 function compareItems(a: ScheduleEntry, b: ScheduleEntry): number {
   return (
-    a.startTime.localeCompare(b.startTime) || a.title.localeCompare(b.title)
+    (a.startTime ?? "").localeCompare(b.startTime ?? "") ||
+    a.title.localeCompare(b.title)
   );
 }
 
 /**
  * Groups Schedule Items under their Days: Days by date, each Day's items by
- * start time then title.
+ * start time then title, untimed ("Any time") items first.
  */
 export function groupSchedule(
   days: (Pick<Day, "id" | "date" | "dayTheme"> &
@@ -114,10 +131,10 @@ function toSeconds(time: string): number {
 }
 
 /**
- * An item's span in seconds from its Day's midnight. An end time at or
+ * A timed item's span in seconds from its Day's midnight. An end time at or
  * before the start time runs past midnight into the next calendar day.
  */
-function span(item: ScheduleEntry): { start: number; end: number } {
+function span(item: TimedEntry): { start: number; end: number } {
   const start = toSeconds(item.startTime);
   if (!item.endTime) return { start, end: start + DEFAULT_DURATION_SECONDS };
   const end = toSeconds(item.endTime);
@@ -129,7 +146,15 @@ function previousDate(date: string): string {
   return format(subDays(parseISO(date), 1), "yyyy-MM-dd");
 }
 
+type TimedEntry = ScheduleEntry & { startTime: string };
+
+function isTimed(item: ScheduleEntry): item is TimedEntry {
+  return item.startTime !== null;
+}
+
+/** Never true for an untimed item: it is never Now. */
 function isOnAt(item: ScheduleEntry, seconds: number): boolean {
+  if (!isTimed(item)) return false;
   const { start, end } = span(item);
   return start <= seconds && seconds < end;
 }
@@ -156,9 +181,13 @@ export function computeNowNext(days: ScheduleDay[], at: Date): NowNext {
   let next: NowNext["next"] = null;
   for (const day of days) {
     if (day.date < clock.date) continue;
-    const upcoming = day.items.filter(
-      (item) => day.date > clock.date || toSeconds(item.startTime) > nowSeconds,
-    );
+    // An untimed item is never Next.
+    const upcoming = day.items
+      .filter(isTimed)
+      .filter(
+        (item) =>
+          day.date > clock.date || toSeconds(item.startTime) > nowSeconds,
+      );
     if (upcoming.length > 0) {
       const start = upcoming[0].startTime;
       next = {
@@ -173,15 +202,20 @@ export function computeNowNext(days: ScheduleDay[], at: Date): NowNext {
   return { today, beforeStart, now, next };
 }
 
-/** `HH:MM[:SS]` (an ET wall-clock time) as `7:05 AM`. */
-export function formatEtTime(time: string): string {
+/** `HH:MM[:SS]` (an ET wall-clock time) as `7:05 AM`; no time is "Any time". */
+export function formatEtTime(time: string | null): string {
+  if (time === null) return ANY_TIME;
   return format(parse(time.slice(0, 5), "HH:mm", new Date()), "h:mm a");
 }
 
-/** An item's times as `7:00 AM ET` or `6:00 PM – 10:00 PM ET`. */
+/**
+ * An item's times as `7:00 AM ET` or `6:00 PM – 10:00 PM ET`, or "Any time"
+ * for an item with no start time.
+ */
 export function formatTimeRange(
   item: Pick<ScheduleEntry, "startTime" | "endTime">,
 ): string {
+  if (item.startTime === null) return ANY_TIME;
   const start = formatEtTime(item.startTime);
   return item.endTime
     ? `${start} – ${formatEtTime(item.endTime)} ET`

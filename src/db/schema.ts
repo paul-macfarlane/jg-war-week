@@ -347,11 +347,11 @@ export const scheduleItem = pgTable(
     dayId: uuid("day_id")
       .notNull()
       .references(() => day.id, { onDelete: "cascade" }),
-    // Wall-clock times in ET; the Day supplies the date.
-    startTime: time("start_time").notNull(),
+    // Wall-clock times in ET; the Day supplies the date. No start time is
+    // an "Any time" item (CONTEXT.md, Schedule display rules).
+    startTime: time("start_time"),
     endTime: time("end_time"),
     title: varchar("title", { length: 200 }).notNull(),
-    host: varchar("host", { length: 200 }),
     location: varchar("location", { length: 200 }),
     virtualLink: varchar("virtual_link", { length: 500 }),
     description: jsonb("description").$type<Content>(),
@@ -363,8 +363,30 @@ export const scheduleItem = pgTable(
     updatedAt: timestamp("updated_at").notNull().defaultNow(),
   },
   (table) => [
-    unique().on(table.dayId, table.startTime, table.title),
+    // Nulls not distinct: two untimed items with one title can't share a Day.
+    unique().on(table.dayId, table.startTime, table.title).nullsNotDistinct(),
     index("schedule_item_competition_id_idx").on(table.competitionId),
+  ],
+);
+
+/**
+ * A Schedule Item's Hosts: roster Participants of its War Week, shown as
+ * "Hosted by" (display only; they don't hold the Host role, ADR 0012). An
+ * item linked to a Competition has none; it shows the Competition's Hosts.
+ */
+export const scheduleItemHost = pgTable(
+  "schedule_item_host",
+  {
+    scheduleItemId: uuid("schedule_item_id")
+      .notNull()
+      .references(() => scheduleItem.id, { onDelete: "cascade" }),
+    participantId: uuid("participant_id")
+      .notNull()
+      .references(() => participant.id, { onDelete: "cascade" }),
+  },
+  (table) => [
+    primaryKey({ columns: [table.scheduleItemId, table.participantId] }),
+    index("schedule_item_host_participant_id_idx").on(table.participantId),
   ],
 );
 

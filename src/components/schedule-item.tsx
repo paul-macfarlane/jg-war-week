@@ -6,7 +6,6 @@ import {
   PartyPopper,
   Shapes,
   Trophy,
-  User,
   Utensils,
   Video,
 } from "lucide-react";
@@ -93,20 +92,12 @@ export function ScheduleItemCard({
         <CategoryBadge category={item.category} />
       </div>
       <h3 className="text-base font-semibold">{item.title}</h3>
-      {item.host || item.location ? (
+      {item.location ? (
         <div className="text-foreground/70 flex flex-wrap gap-x-4 gap-y-1 text-sm">
-          {item.host ? (
-            <span className="inline-flex items-center gap-1">
-              <User aria-hidden className="size-3.5" />
-              {item.host}
-            </span>
-          ) : null}
-          {item.location ? (
-            <span className="inline-flex items-center gap-1">
-              <MapPin aria-hidden className="size-3.5" />
-              {item.location}
-            </span>
-          ) : null}
+          <span className="inline-flex items-center gap-1">
+            <MapPin aria-hidden className="size-3.5" />
+            {item.location}
+          </span>
         </div>
       ) : null}
       {item.description ? (

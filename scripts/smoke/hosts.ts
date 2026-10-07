@@ -45,9 +45,16 @@ const LOCKED_WHILE_CLOSED =
 
 /**
  * Removes the smoke Host's roster Participants, and with them every
- * `competition_host` row they have (a Host is a roster Participant, ADR 0012).
+ * `competition_host` and `schedule_item_host` row they have (a Host is a
+ * roster Participant, ADR 0012; both cascade, the Schedule Item Host row is
+ * deleted first anyway so the smoke never relies on it).
  */
 export async function deleteSmokeHosts() {
+  await runQuery(
+    `delete from schedule_item_host where participant_id in
+       (select id from participant where email = $1)`,
+    [SMOKE_HOST_EMAIL],
+  );
   await runQuery(`delete from participant where email = $1`, [
     SMOKE_HOST_EMAIL,
   ]);
@@ -132,6 +139,7 @@ export async function assertHostChecks(sessions: {
       "smoke-participant@jahnelgroup.com",
     );
     await assertFormerHostRefused(fixture);
+    await assertScheduleItemHostRefused(fixture);
   } finally {
     await deleteSmokeHosts().catch((error) =>
       fail("delete the smoke Host's roster entry and Host rows", String(error)),
@@ -363,7 +371,7 @@ async function assertHostRefusedOrganizerAreas(fixture: HostFixture) {
             startTime: "23:10",
             endTime: "23:50",
             title: scheduleTitle,
-            host: "",
+            hostIds: [],
             location: "",
             virtualLink: "",
             category: "competition",
@@ -905,6 +913,66 @@ async function assertFormerHostRefused(fixture: HostFixture) {
       return !result.ok && result.error === NOT_HOST_REFUSAL
         ? null
         : `result=${JSON.stringify(result)}`;
+    },
+  );
+}
+
+/**
+ * Spec R25 AC4: hosting only a Schedule Item is display only. Run after
+ * `assertFormerHostRefused` has removed the smoke Host's Competition: the
+ * smoke Host is back on the roster with a `schedule_item_host` row, their
+ * only Host row, and an admin Competition page still refuses them.
+ */
+async function assertScheduleItemHostRefused(fixture: HostFixture) {
+  await runCheck(
+    "GET /admin/competitions/[id] as a Participant who hosts only a Schedule Item shows the refusal",
+    async () => {
+      await deleteSmokeHosts();
+      await runQuery(
+        `insert into participant (war_week_id, display_name, email) values ($1, 'Smoke Host', $2)`,
+        [fixture.xiId, SMOKE_HOST_EMAIL],
+      );
+      const inserted = await runQuery<{ n: string }>(
+        `with item as (
+           select si.id from schedule_item si join day d on d.id = si.day_id
+           where d.war_week_id = $1 and si.competition_id is null
+           order by si.id limit 1
+         ), host as (
+           insert into schedule_item_host (schedule_item_id, participant_id)
+           select item.id, p.id from item, participant p
+           where p.email = $2 and p.war_week_id = $1
+           returning 1
+         )
+         select count(*) as n from host`,
+        [fixture.xiId, SMOKE_HOST_EMAIL],
+      );
+      const [rows] = await runQuery<{ competition: string; schedule: string }>(
+        `select
+           (select count(*) from competition_host ch join participant p
+              on p.id = ch.participant_id where p.email = $1) as competition,
+           (select count(*) from schedule_item_host sh join participant p
+              on p.id = sh.participant_id where p.email = $1) as schedule`,
+        [SMOKE_HOST_EMAIL],
+      );
+      const res = await fetch(
+        `${BASE_URL}/admin/competitions/${fixture.hostCompetitionId}`,
+        { headers: { cookie: fixture.session.cookie } },
+      );
+      const body = await res.text();
+      const result = {
+        inserted: Number(inserted[0]?.n),
+        competitionHostRows: Number(rows.competition),
+        scheduleItemHostRows: Number(rows.schedule),
+        status: res.status,
+        refused: body.includes(ADMIN_REFUSAL_TEXT),
+      };
+      return result.inserted === 1 &&
+        result.competitionHostRows === 0 &&
+        result.scheduleItemHostRows === 1 &&
+        result.status === 200 &&
+        result.refused
+        ? null
+        : JSON.stringify(result);
     },
   );
 }

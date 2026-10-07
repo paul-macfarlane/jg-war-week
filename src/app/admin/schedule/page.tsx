@@ -8,7 +8,7 @@ import { sanitizeContent } from "@/lib/rich-text/content";
 import { formatTimeRange } from "@/lib/schedule";
 import { scheduleItemInputFrom } from "@/lib/setup-schedule-faq";
 import { formatDateRange } from "@/lib/war-week-display";
-import { getSchedule } from "@/queries/schedule";
+import { getSchedule, getScheduleItemHostIds } from "@/queries/schedule";
 import { getSetupDays } from "@/queries/setup";
 import { getCompetitionOptions } from "@/queries/setup-schedule-faq";
 
@@ -27,8 +27,9 @@ export default async function AdminSchedulePage() {
     await loadAdminPage("/admin/schedule", "organizers");
   if (!allowed) return <AdminRefused warWeek={warWeek} email={email} />;
 
-  const [schedule, setupDays, competitions] = await Promise.all([
+  const [schedule, hostIds, setupDays, competitions] = await Promise.all([
     getSchedule(warWeek.id),
+    getScheduleItemHostIds(warWeek.id),
     getSetupDays(warWeek),
     getCompetitionOptions(warWeek),
   ]);
@@ -55,6 +56,7 @@ export default async function AdminSchedulePage() {
           ...item,
           dayId: day.id,
           competitionId: item.competition?.id ?? null,
+          hostIds: hostIds.get(item.id) ?? [],
           description: description?.ok ? description.content : null,
         }),
       };

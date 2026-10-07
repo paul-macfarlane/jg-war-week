@@ -53,7 +53,7 @@ const EMPTY: ScheduleItemInput = {
   startTime: "",
   endTime: "",
   title: "",
-  host: "",
+  hostIds: [],
   location: "",
   virtualLink: "",
   category: "social",
@@ -101,7 +101,10 @@ export function ScheduleItemForm({
     setFields((current) => ({ ...current, [key]: value }));
   }
 
-  function text(key: Exclude<keyof ScheduleItemInput, "description">) {
+  /** The fields an input or select holds as one string. */
+  type TextKey = Exclude<keyof ScheduleItemInput, "description" | "hostIds">;
+
+  function text(key: TextKey) {
     return {
       name: key,
       value: fields[key],
@@ -111,7 +114,7 @@ export function ScheduleItemForm({
   }
 
   /** Name, value and change wiring for a custom control. */
-  function control(key: Exclude<keyof ScheduleItemInput, "description">) {
+  function control(key: TextKey) {
     return {
       name: key,
       value: fields[key],
@@ -180,7 +183,6 @@ export function ScheduleItemForm({
             </FieldLabel>
             <TimeCombobox
               id="schedule-start-time"
-              required
               aria-invalid={!!fieldErrors.startTime}
               {...control("startTime")}
             />
@@ -237,17 +239,6 @@ export function ScheduleItemForm({
               {...control("competitionId")}
             />
             <FieldError>{fieldErrors.competitionId}</FieldError>
-          </Field>
-          <Field data-invalid={!!fieldErrors.host}>
-            <FieldLabel htmlFor="schedule-host">Host (optional)</FieldLabel>
-            <Input
-              id="schedule-host"
-              maxLength={200}
-              className="h-11 sm:h-9"
-              aria-invalid={!!fieldErrors.host}
-              {...text("host")}
-            />
-            <FieldError>{fieldErrors.host}</FieldError>
           </Field>
           <Field data-invalid={!!fieldErrors.location}>
             <FieldLabel htmlFor="schedule-location">

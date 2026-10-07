@@ -1,4 +1,4 @@
-import { type SQL, and, eq, ne, notInArray, sql } from "drizzle-orm";
+import { type SQL, and, eq, inArray, ne, notInArray, sql } from "drizzle-orm";
 import type {
   IndexColumn,
   PgColumn,
@@ -25,6 +25,7 @@ import {
   placement,
   pointsEntry,
   scheduleItem,
+  scheduleItemHost,
   team,
   warWeek,
 } from "@/db/schema";
@@ -452,15 +453,15 @@ async function syncDays(
 
   for (const daySeed of seed.days) {
     const dayId = resolve(dayIds, daySeed.date);
-    // A Schedule Item's natural key includes its time and title, so the
-    // absent ones are found by the ids the upsert kept.
-    await upsertDeletingAbsent(tx, scheduleItem, {
+    // A Schedule Item's natural key includes its time (none for an "Any
+    // time" item; the key is nulls not distinct) and title, so the absent
+    // ones are found by the ids the upsert kept.
+    const items = await upsertDeletingAbsent(tx, scheduleItem, {
       rows: daySeed.scheduleItems.map((item) => ({
         dayId,
-        startTime: item.startTime,
+        startTime: item.startTime ?? null,
         endTime: item.endTime ?? null,
         title: item.title,
-        host: item.host ?? null,
         location: item.location ?? null,
         virtualLink: item.virtualLink ?? null,
         description: item.description ?? null,
@@ -470,7 +471,6 @@ async function syncDays(
       target: [scheduleItem.dayId, scheduleItem.startTime, scheduleItem.title],
       set: {
         endTime: sql`excluded.end_time`,
-        host: sql`excluded.host`,
         location: sql`excluded.location`,
         virtualLink: sql`excluded.virtual_link`,
         description: sql`excluded.description`,
@@ -482,6 +482,18 @@ async function syncDays(
       key: scheduleItem.id,
       keep: (kept) => kept.map((k) => k.id),
     });
+    // An item with a Competition shows the Competition's Hosts, so it keeps
+    // none of its own (as the Schedule Item form saves it). An unlinked
+    // item's Hosts, which an Organizer added, are never touched.
+    const linked = items.filter((item) => item.competitionId !== null);
+    if (linked.length > 0) {
+      await tx.delete(scheduleItemHost).where(
+        inArray(
+          scheduleItemHost.scheduleItemId,
+          linked.map((item) => item.id),
+        ),
+      );
+    }
   }
 }
 

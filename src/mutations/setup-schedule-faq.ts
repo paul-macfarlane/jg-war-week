@@ -1,7 +1,14 @@
 import { and, asc, eq, inArray, max, ne, sql } from "drizzle-orm";
 
 import { DBOrTx, db } from "@/db";
-import { competition, day, faqItem, scheduleItem } from "@/db/schema";
+import {
+  competition,
+  day,
+  faqItem,
+  participant,
+  scheduleItem,
+  scheduleItemHost,
+} from "@/db/schema";
 import {
   type FaqItemValues,
   type ScheduleItemValues,
@@ -16,6 +23,7 @@ import type { MutationContext, MutationResult } from "@/mutations/types";
 
 const SCHEDULE_ITEM_NOT_FOUND = "That Schedule Item no longer exists.";
 const FAQ_ITEM_NOT_FOUND = "That FAQ Item no longer exists.";
+const HOST_NOT_ON_ROSTER = "A Host must be on this War Week's roster.";
 
 /** The War Week's Days, as a subquery for "an item of this War Week". */
 function warWeekDayIds(warWeekId: string, dbOrTx: DBOrTx) {
@@ -50,11 +58,68 @@ async function scheduleItemRefusal(
         exceptItemId ? ne(scheduleItem.id, exceptItemId) : undefined,
       ),
     );
-  return scheduleItemGuardError(values, {
+  const guard = scheduleItemGuardError(values, {
     dayIds: days.map((row) => row.id),
     competitionIds: competitions.map((row) => row.id),
     otherItems,
   });
+  if (guard) return guard;
+  return (await hostsOnRoster(hostsToSave(values), ctx, tx))
+    ? null
+    : HOST_NOT_ON_ROSTER;
+}
+
+/**
+ * The Hosts an item saves with: the posted ones, deduplicated, or none when
+ * it links a Competition (it shows the Competition's Hosts; the form hides
+ * the field, so posted ones are discarded, not refused).
+ */
+function hostsToSave(
+  values: Pick<ScheduleItemValues, "hostIds" | "competitionId">,
+): string[] {
+  return values.competitionId === null ? [...new Set(values.hostIds)] : [];
+}
+
+/** Whether every one of `hostIds` is on the War Week's roster. */
+async function hostsOnRoster(
+  hostIds: string[],
+  ctx: MutationContext,
+  tx: DBOrTx,
+): Promise<boolean> {
+  if (hostIds.length === 0) return true;
+  const onRoster = await tx
+    .select({ id: participant.id })
+    .from(participant)
+    .where(
+      and(
+        eq(participant.warWeekId, ctx.warWeekId),
+        inArray(participant.id, hostIds),
+      ),
+    );
+  return onRoster.length === hostIds.length;
+}
+
+/**
+ * Replaces an item's Hosts with those it saves with: deletes its
+ * `schedule_item_host` rows, then inserts the new ones (none with a
+ * Competition, so linking one clears them).
+ */
+async function replaceHosts(
+  scheduleItemId: string,
+  values: Pick<ScheduleItemValues, "hostIds" | "competitionId">,
+  tx: DBOrTx,
+): Promise<void> {
+  await tx
+    .delete(scheduleItemHost)
+    .where(eq(scheduleItemHost.scheduleItemId, scheduleItemId));
+  const hostIds = hostsToSave(values);
+  if (hostIds.length > 0) {
+    await tx
+      .insert(scheduleItemHost)
+      .values(
+        hostIds.map((participantId) => ({ scheduleItemId, participantId })),
+      );
+  }
 }
 
 export async function createScheduleItem(
@@ -68,7 +133,12 @@ export async function createScheduleItem(
       await locked(day, values.dayId, ctx, tx);
       const refusal = await scheduleItemRefusal(values, ctx, tx);
       if (refusal) return { ok: false, error: refusal };
-      await tx.insert(scheduleItem).values(values);
+      const { hostIds, ...columns } = values;
+      const [created] = await tx
+        .insert(scheduleItem)
+        .values(columns)
+        .returning({ id: scheduleItem.id });
+      await replaceHosts(created.id, { ...columns, hostIds }, tx);
       return { ok: true };
     }),
   );
@@ -87,9 +157,10 @@ export async function updateScheduleItem(
       await locked(day, values.dayId, ctx, tx);
       const refusal = await scheduleItemRefusal(values, ctx, tx, id);
       if (refusal) return { ok: false, error: refusal };
+      const { hostIds, ...columns } = values;
       const updated = await tx
         .update(scheduleItem)
-        .set({ ...values, updatedAt: sql`now()` })
+        .set({ ...columns, updatedAt: sql`now()` })
         .where(
           and(
             eq(scheduleItem.id, id),
@@ -97,9 +168,11 @@ export async function updateScheduleItem(
           ),
         )
         .returning({ id: scheduleItem.id });
-      return updated.length > 0
-        ? { ok: true }
-        : { ok: false, error: SCHEDULE_ITEM_NOT_FOUND };
+      if (updated.length === 0) {
+        return { ok: false, error: SCHEDULE_ITEM_NOT_FOUND };
+      }
+      await replaceHosts(id, { ...columns, hostIds }, tx);
+      return { ok: true };
     }),
   );
 }

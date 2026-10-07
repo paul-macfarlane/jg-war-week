@@ -95,4 +95,42 @@ describe.skipIf(!isLocalDatabase)("getHostedCompetitions", () => {
       expect(await getHostedCompetitions("tony@gmail.com", tx)).toEqual([]);
     });
   });
+
+  it("gives a Participant who hosts only a Schedule Item no Host role", async () => {
+    await inRolledBackTransaction(async (tx) => {
+      const { getHostedCompetitions } = await import("@/queries/organizers");
+      const { schema, warWeekId, chessId } = await fixture(tx, null);
+      const [sam] = await tx
+        .insert(schema.participant)
+        .values({
+          warWeekId,
+          displayName: "Sam",
+          email: "sam@jahnelgroup.com",
+        })
+        .returning({ id: schema.participant.id });
+      const [day] = await tx
+        .insert(schema.day)
+        .values({ warWeekId, date: "2099-01-02", dayTheme: "Day" })
+        .returning({ id: schema.day.id });
+      const [item] = await tx
+        .insert(schema.scheduleItem)
+        .values({ dayId: day.id, title: "Board games", category: "social" })
+        .returning({ id: schema.scheduleItem.id });
+      await tx
+        .insert(schema.scheduleItemHost)
+        .values({ scheduleItemId: item.id, participantId: sam.id });
+
+      expect(await getHostedCompetitions("sam@jahnelgroup.com", tx)).toEqual(
+        [],
+      );
+
+      // Hosting the Competition itself is what grants the role.
+      await tx
+        .insert(schema.competitionHost)
+        .values({ competitionId: chessId, participantId: sam.id });
+      expect(await getHostedCompetitions("sam@jahnelgroup.com", tx)).toEqual([
+        { competitionId: chessId, warWeekId },
+      ]);
+    });
+  });
 });

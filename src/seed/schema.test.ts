@@ -97,6 +97,80 @@ describe("warWeekSeedSchema", () => {
     rejectionOf({ ...loadFixture(), overrideBackground: "light-green" });
   });
 
+  describe("Schedule Items", () => {
+    /** The fixture with one more item on its first Day. */
+    const withItem = (item: object) => {
+      const fixture = loadFixture();
+      const [first, ...rest] = fixture.days;
+      return {
+        ...fixture,
+        days: [
+          { ...first, scheduleItems: [...first.scheduleItems, item] },
+          ...rest,
+        ],
+      };
+    };
+
+    it("accepts an item with no start time", () => {
+      const seed = warWeekSeedSchema.parse(
+        withItem({ title: "Step Challenge", category: "other" }),
+      );
+      expect(seed.days[0].scheduleItems.at(-1)).toMatchObject({
+        title: "Step Challenge",
+      });
+      expect(seed.days[0].scheduleItems.at(-1)?.startTime ?? null).toBeNull();
+    });
+
+    it("rejects a host or hosts key on an item", () => {
+      expect(
+        rejectionOf(
+          withItem({ title: "Quiz", category: "social", host: "Jet Breuer" }),
+        ),
+      ).toEqual([
+        expect.stringMatching(/^days\.0\.scheduleItems\.\d+: .*host/),
+      ]);
+      expect(
+        rejectionOf(
+          withItem({ title: "Quiz", category: "social", hosts: ["Tony"] }),
+        ),
+      ).toEqual([
+        expect.stringMatching(/^days\.0\.scheduleItems\.\d+: .*hosts/),
+      ]);
+    });
+
+    it("rejects a Competition on any category but competition", () => {
+      const fixture = loadFixture();
+      expect(
+        rejectionOf(
+          withItem({
+            title: "Bouncy Pong social",
+            category: "social",
+            competition: fixture.competitions[0].name,
+          }),
+        ),
+      ).toEqual([
+        expect.stringMatching(/^days\.0\.scheduleItems\.\d+\.competition: /),
+      ]);
+    });
+
+    it("rejects an end time without a start time", () => {
+      expect(
+        rejectionOf(
+          withItem({ title: "Lego", category: "other", endTime: "10:00" }),
+        ),
+      ).toEqual([
+        expect.stringMatching(/^days\.0\.scheduleItems\.\d+\.endTime: /),
+      ]);
+    });
+
+    it("rejects two untimed items with the same title on a Day", () => {
+      const item = { title: "Lego", category: "other" };
+      const once = withItem(item);
+      once.days[0].scheduleItems.push(item);
+      expect(rejectionOf(once)).toHaveLength(1);
+    });
+  });
+
   it("rejects duplicate day dates", () => {
     const fixture = loadFixture();
     rejectionOf({ ...fixture, days: [...fixture.days, fixture.days[0]] });
@@ -532,6 +606,8 @@ describe("warWeekSeedSchema", () => {
   it("accepts an `other` Schedule Item category", () => {
     const fixture = loadFixture();
     fixture.days[1].scheduleItems[0].category = "other";
+    // Only a competition-category item may link a Competition.
+    delete fixture.days[1].scheduleItems[0].competition;
     const seed = warWeekSeedSchema.parse(fixture);
     expect(seed.days[1].scheduleItems[0].category).toBe("other");
   });

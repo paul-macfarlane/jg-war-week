@@ -98,7 +98,6 @@
           "title": "9th Annual Settlers of Catan Tourney",
           "category": "competition",
           "competition": "Settlers of Catan",
-          "host": "Tony Mercadante",
           "location": "JGHQ"
         },
         {
@@ -134,14 +133,12 @@
           "title": "BeastMode Workout",
           "category": "competition",
           "competition": "Beast Mode Workout",
-          "host": "Jesse Lucier",
           "location": "JGHQ"
         },
         {
           "startTime": "11:00",
           "title": "Headshot Photoshoot",
           "category": "social",
-          "host": "Jet Breuer",
           "location": "JGHQ"
         },
         {
@@ -209,7 +206,6 @@
           "startTime": "11:00",
           "title": "Headshot Photoshoot",
           "category": "social",
-          "host": "Jet Breuer",
           "location": "JGHQ"
         },
         {
@@ -283,21 +279,18 @@
           "startTime": "11:00",
           "title": "Headshot Photoshoot",
           "category": "social",
-          "host": "Jet Breuer",
           "location": "JGHQ"
         },
         {
           "startTime": "14:00",
           "title": "Build Your Wellness Bag",
           "category": "social",
-          "host": "Dani Milliken",
           "location": "JGHQ"
         },
         {
           "startTime": "17:00",
           "title": "Athena Event",
-          "category": "social",
-          "host": "Emily"
+          "category": "social"
         },
         {
           "startTime": "17:00",
@@ -341,7 +334,6 @@
           "startTime": "11:00",
           "title": "Headshot Photoshoot",
           "category": "social",
-          "host": "Jet Breuer",
           "location": "JGHQ"
         },
         {

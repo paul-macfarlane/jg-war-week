@@ -457,6 +457,96 @@ describe.skipIf(!isLocalDatabase)(
   },
 );
 
+describe.skipIf(!isLocalDatabase)("loadWarWeekSeed Schedule Items", () => {
+  /** A seed with Catan, a roster of one, and the given Day 2099-01-02 items. */
+  const withItems = (scheduleItems: object[]) =>
+    seed("si", 7, "upcoming", {
+      participants: [{ displayName: "Ana" }],
+      competitions: [{ name: "Catan", scoring: "individual" }],
+      days: [{ date: "2099-01-02", dayTheme: "One", scheduleItems }],
+    });
+
+  async function helpers(tx: DBTx, warWeekId: string) {
+    const schema = await import("@/db/schema");
+    const { eq } = await import("drizzle-orm");
+    const [ana] = await tx
+      .select({ id: schema.participant.id })
+      .from(schema.participant)
+      .where(eq(schema.participant.warWeekId, warWeekId));
+    const items = async () =>
+      tx
+        .select({
+          id: schema.scheduleItem.id,
+          title: schema.scheduleItem.title,
+          startTime: schema.scheduleItem.startTime,
+          competitionId: schema.scheduleItem.competitionId,
+        })
+        .from(schema.scheduleItem)
+        .innerJoin(schema.day, eq(schema.day.id, schema.scheduleItem.dayId))
+        .where(eq(schema.day.warWeekId, warWeekId))
+        .orderBy(schema.scheduleItem.title);
+    const addHost = (scheduleItemId: string) =>
+      tx
+        .insert(schema.scheduleItemHost)
+        .values({ scheduleItemId, participantId: ana.id });
+    const hostsOf = async (scheduleItemId: string) =>
+      (
+        await tx
+          .select({ participantId: schema.scheduleItemHost.participantId })
+          .from(schema.scheduleItemHost)
+          .where(eq(schema.scheduleItemHost.scheduleItemId, scheduleItemId))
+      ).map((row) => row.participantId);
+    return { anaId: ana.id, items, addHost, hostsOf };
+  }
+
+  it("keeps an untimed item on reload: the same id, with the Host an Organizer added", async () => {
+    await inRolledBackTransaction(async (tx) => {
+      const { loadWarWeekSeed } = await import("@/seed/load");
+      const untimed = await withItems([
+        { title: "Step Challenge", category: "other" },
+      ]);
+      const warWeek = await loadWarWeekSeed(untimed, tx);
+      const h = await helpers(tx, warWeek.id);
+      const [first] = await h.items();
+      expect(first).toMatchObject({ title: "Step Challenge", startTime: null });
+      await h.addHost(first.id);
+
+      await loadWarWeekSeed(untimed, tx);
+      expect(await h.items()).toEqual([first]);
+      expect(await h.hostsOf(first.id)).toEqual([h.anaId]);
+    });
+  });
+
+  it("deletes an item's Hosts when a reload links it to a Competition, and keeps an unlinked item's", async () => {
+    await inRolledBackTransaction(async (tx) => {
+      const { loadWarWeekSeed } = await import("@/seed/load");
+      const games = { startTime: "18:00", title: "Game night" };
+      const lego = { title: "Drop-in Lego", category: "other" };
+      const warWeek = await loadWarWeekSeed(
+        await withItems([{ ...games, category: "competition" }, lego]),
+        tx,
+      );
+      const h = await helpers(tx, warWeek.id);
+      const [legoRow, gamesRow] = await h.items();
+      await h.addHost(gamesRow.id);
+      await h.addHost(legoRow.id);
+
+      await loadWarWeekSeed(
+        await withItems([
+          { ...games, category: "competition", competition: "Catan" },
+          lego,
+        ]),
+        tx,
+      );
+      const [, linked] = await h.items();
+      expect(linked.id).toBe(gamesRow.id);
+      expect(linked.competitionId).not.toBeNull();
+      expect(await h.hostsOf(gamesRow.id)).toEqual([]);
+      expect(await h.hostsOf(legoRow.id)).toEqual([h.anaId]);
+    });
+  });
+});
+
 describe.skipIf(!isLocalDatabase)("loadWarWeekSeed Awards", () => {
   it("loads an Award by name and a reload changes nothing", async () => {
     await inRolledBackTransaction(async (tx) => {
