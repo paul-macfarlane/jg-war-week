@@ -77,6 +77,14 @@ step after he merges; this PR cannot prove it.
 
 ## [SCOPE CHANGE]
 
+- **Decision 4 / AC12 at 390** (approved by Paul, 2026-10-07): the aggregate
+  review (F1) held the form to one row at every width. Built that way, each
+  time control at 390 showed about 66px of a 93px "10:30 AM" (clipped) and its
+  list wrapped. Paul chose: on a phone, Day on its own row and Start time and
+  End time sharing the next, aligned; one row from `sm` up. The spec's
+  Decision 4 and AC12 carry the amendment; AC12's e2e asserts it and that a
+  picked time isn't clipped.
+
 ## [AI CODE REVIEW]
 
 ## [CLOSEOUT]

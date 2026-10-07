@@ -1,6 +1,6 @@
 ---
 title: Schedule items (Epic R25)
-status: in-progress
+status: ai-review
 grilled: 2026-10-06 (see ../regression-2026-10/grilling-2026-10-06.md)
 created: 2026-10-06
 source: Paul's final regression feedback, items S7–S11 (../regression-2026-10/feedback-final.md)
@@ -14,7 +14,7 @@ the maintainer's guide, the regression checklist and `/about`, and R26
 deletes `src/mcp/`. R25 branches from `staging` after R26 merges. Its
 migration takes the next free number then (`0035` today) · **Red-team:**
 required (Drizzle schema change; findings of 2026-10-06 resolved below) ·
-**Status:** in-progress
+**Status:** ai-review
 
 ## Summary
 
@@ -104,6 +104,10 @@ Participants.
      name; a typed title is never overwritten.
 4. **Layout.** Day, Start time and End time line up on one baseline at
    every width (labels, helper text and control heights match).
+   **Amended 2026-10-07 (Paul):** on a phone (below `sm`) Day has its own
+   row and Start time and End time share the next, aligned with each other;
+   all three on one row at 390 left about 66px per time and clipped
+   "10:30 AM".
 5. **Seed.**
    - The seed format drops `host` and gains no `hosts`. Every seed's
      free-text `host` is removed (see "Data and deployed environments").
@@ -175,7 +179,8 @@ Participants.
       on another category (vitest).
 - [ ] Day, Start time and End time line up at 1440 and 390: in e2e, their
       controls' top and bottom edges match within 1px, and screenshots are
-      committed.
+      committed. (Amended 2026-10-07: at 390, Start time and End time match
+      each other under Day, and a picked "10:30 AM" is not clipped.)
 - [ ] A seed with an untimed item loads (vitest on the seed schema), and
       the seed schema refuses a Schedule item `host` or `hosts` key.
 - [ ] Untimed items read "Any time" on `/admin/schedule` too (e2e).

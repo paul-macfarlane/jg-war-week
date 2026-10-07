@@ -194,8 +194,13 @@ export function ScheduleItemForm({
       aria-label="Schedule Item"
     >
       <FieldGroup className="px-4">
-        <div className="grid grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)_minmax(0,1fr)] items-start gap-2 sm:gap-4">
-          <Field data-invalid={!!fieldErrors.dayId}>
+        {/* One row from sm up; on a phone, Day has its own row and the times
+            share the next, so "10:30 AM" stays readable. */}
+        <div className="grid grid-cols-2 items-start gap-4 sm:grid-cols-3">
+          <Field
+            data-invalid={!!fieldErrors.dayId}
+            className="col-span-2 sm:col-span-1"
+          >
             <FieldLabel htmlFor="schedule-day">Day</FieldLabel>
             <OptionSelect
               id="schedule-day"

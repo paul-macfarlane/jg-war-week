@@ -275,7 +275,7 @@ test.describe("R25 Schedule items", () => {
   });
 
   for (const [label, viewport] of VIEWPORTS) {
-    test(`AC12 Day, Start time and End time sit on one row at ${label}`, async ({
+    test(`AC12 Day, Start time and End time line up at ${label}`, async ({
       context,
       page,
     }, testInfo) => {
@@ -299,19 +299,38 @@ test.describe("R25 Schedule items", () => {
         for (const box of boxes) {
           expect(Math.abs(box.height - boxes[0].height)).toBeLessThanOrEqual(1);
         }
-        // One row at every width: top and bottom edges match, and each
-        // control starts to the right of the one before.
-        for (const [index, box] of boxes.entries()) {
-          expect(Math.abs(box.y - boxes[0].y)).toBeLessThanOrEqual(1);
+        // At 1440 all three share one row; at 390 Day has its own row and
+        // Start time and End time share the next (approved 2026-10-07).
+        const [dayBox, ...timeBoxes] = boxes;
+        const row = label === "1440" ? boxes : timeBoxes;
+        for (const [index, box] of row.entries()) {
+          expect(Math.abs(box.y - row[0].y)).toBeLessThanOrEqual(1);
           expect(
-            Math.abs(box.y + box.height - (boxes[0].y + boxes[0].height)),
+            Math.abs(box.y + box.height - (row[0].y + row[0].height)),
           ).toBeLessThanOrEqual(1);
           if (index > 0) {
-            const previous = boxes[index - 1];
+            const previous = row[index - 1];
             expect(box.x).toBeGreaterThanOrEqual(previous.x + previous.width);
           }
         }
+        if (label === "390") {
+          expect(timeBoxes[0].y).toBeGreaterThanOrEqual(
+            dayBox.y + dayBox.height,
+          );
+        }
       }).toPass();
+      // A picked time reads in full: the input doesn't clip "10:30 AM".
+      await pickTime(form, "schedule-start-time", "10:30 AM");
+      await pickTime(form, "schedule-end-time", "11:45 PM");
+      for (const id of ["schedule-start-time", "schedule-end-time"]) {
+        const widths = await form
+          .locator(`#${id}`)
+          .evaluate((input: HTMLInputElement) => ({
+            client: input.clientWidth,
+            scroll: input.scrollWidth,
+          }));
+        expect(widths.scroll).toBeLessThanOrEqual(widths.client);
+      }
       await shoot(page, testInfo, `form-alignment-${label}`);
     });
   }
