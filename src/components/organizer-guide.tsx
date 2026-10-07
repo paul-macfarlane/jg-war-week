@@ -31,7 +31,7 @@ export function OrganizerGuide({
     FAQ: "FAQ Items and their order on the public FAQ.",
     Finale: "Open the Finale on the projector, and order or hide its slides.",
     Settings:
-      "Story Theme, dates, mode, labels, links and the Appearance Theme; the Lifecycle box (Start, End, Unstart, Reopen) and Create next War Week.",
+      "Story Theme, dates, mode, labels, links and the Appearance Theme; the Lifecycle box (Start, End, Unstart, Reopen, and Create next War Week once the latest War Week has ended).",
     Organizers: "Who the Organizers are.",
     Guide: "This page.",
   };
@@ -357,15 +357,16 @@ export function OrganizerGuide({
           this one (it shows the Winner it will record — first place in the
           Standings, a &quot;Tie: A &amp; B&quot; when Teams or Participants
           tie, blank when nobody scored, with no way to type a different one —
-          and any highlights) before the next can Start. Create next War Week,
-          further down Settings, copies what you choose (settings by default;
-          Competitions, without Hosts, and the FAQ are off) and opens the new
-          edition as upcoming, so you can set it up while this one stays live.
-          The End confirm names any Bracket that isn&apos;t closed: close it
-          first so its placings count (it warns, it doesn&apos;t stop you). The
-          header&apos;s edition switcher (in More on a phone) moves the admin
-          between editions you may administer — a banner marks the Archive so
-          you don&apos;t mistake it for the live one.
+          and any highlights) before the next can Start. Once the latest War
+          Week has ended, its Lifecycle box shows Create next War Week: it
+          copies nothing (default settings, no Competitions, no FAQ) and opens
+          the new edition as upcoming. It isn&apos;t offered while the latest
+          War Week is upcoming or live, or on an older one. The End confirm
+          names any Bracket that isn&apos;t closed: close it first so its
+          placings count (it warns, it doesn&apos;t stop you). The header&apos;s
+          edition switcher (in More on a phone) moves the admin between editions
+          you may administer — a banner marks the Archive so you don&apos;t
+          mistake it for the live one.
         </p>
       </section>
 

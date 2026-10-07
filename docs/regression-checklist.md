@@ -549,7 +549,6 @@ on the matching War Week page.
       pickable and marked "Can't sign in". Pick one (it saves at once),
       remove it, and open the Competition as that Host once their roster email
       is set (with no email nobody signs in as them: the admin page refuses).
-      Create next War Week copies no Hosts.
 - [ ] **Competition page: rich-text description.** Write a description with
       a heading, a list, a link and an image by URL; it saves on its own.
       On `/<edition>/competitions/<id>` the Participant sees it formatted,
@@ -600,11 +599,18 @@ on the matching War Week page.
       "The last Organizer can't be removed." If others are listed, delete
       their rows from the local `organizer` table for this check and put
       them back after; never remove a real Organizer in the app.
-- [ ] **Lifecycle.** On Settings (the Lifecycle box and Create next War
-      Week live there, not on a separate page; the seed-overwrite warning
-      shows there too, and only there), Create next War Week makes an Upcoming edition (copy
-      settings only). Start on it is refused while the current one is live
-      ("End <X> first."). End the current War Week: its confirm names any
+- [ ] **Lifecycle.** On Settings (the Lifecycle box and its Create next
+      War Week button live there, not on a separate page; the seed-overwrite
+      warning shows there too, and only there), at 1440 and 390: while the
+      latest War Week by start date is Upcoming or Live (XII in the seed) there
+      is no Create next War Week button and no hint, on it or on any older
+      War Week. Start on XII is refused while the current one is live
+      ("End <X> first."). Once the latest War Week is ended (End XII after
+      XI), Create next War Week shows on it and only on it (not on an older
+      Archive edition): it opens a dialog (a bottom sheet at 390) with
+      edition, number and year prefilled, dates and Story Theme; creating
+      makes an Upcoming edition with default settings, no Competitions and no
+      FAQ. End the current War Week: its confirm names any
       generated Bracket that isn't closed, any open Head-to-head or Best score
       Competition with at least one Match or Attempt and any open Participation
       Competition with anyone ticked (linked to its Competition page), and on End it records the Winner

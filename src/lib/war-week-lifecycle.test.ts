@@ -4,7 +4,10 @@ import type { Parsed } from "@/lib/result";
 import type { Standings } from "@/lib/standings";
 import {
   STATUS_LABELS,
+  canCreateNextWarWeek,
+  createNextWarWeekError,
   defaultWinner,
+  latestWarWeek,
   lifecycleActionError,
   nextEditionDefaults,
   parseClosingInput,
@@ -227,7 +230,7 @@ describe("parseNextWarWeekInput", () => {
     storyTheme: " Dune ",
   };
 
-  it("lowercases the edition, reads numbers and defaults the copy options", () => {
+  it("lowercases the edition and reads numbers", () => {
     expect(parseNextWarWeekInput(input)).toEqual({
       ok: true,
       value: {
@@ -237,11 +240,25 @@ describe("parseNextWarWeekInput", () => {
         startDate: "2027-02-21",
         endDate: "2027-02-26",
         storyTheme: "Dune",
-        copySettings: true,
-        copyCompetitions: false,
-        copyFaq: false,
       },
     });
+  });
+
+  it("ignores copy options: Create next War Week copies nothing", () => {
+    const parsed = parseNextWarWeekInput({
+      ...input,
+      copySettings: true,
+      copyCompetitions: true,
+      copyFaq: true,
+    } as Parameters<typeof parseNextWarWeekInput>[0]);
+    expect(parsed.ok && Object.keys(parsed.value).sort()).toEqual([
+      "edition",
+      "editionNumber",
+      "endDate",
+      "startDate",
+      "storyTheme",
+      "year",
+    ]);
   });
 
   it.each([
@@ -511,5 +528,57 @@ describe("lifecycle parsers' field errors", () => {
         editionNumber: "Edition number must be at least 1.",
       },
     });
+  });
+});
+
+describe("Create next War Week's rule", () => {
+  const week = (
+    id: string,
+    status: Status,
+    startDate: string,
+    editionNumber = 1,
+  ) => ({ id, status, startDate, editionNumber, edition: id });
+  const xi = week("xi", "complete", "2026-02-22", 11);
+  const xii = week("xii", "upcoming", "2027-02-21", 12);
+
+  it("latestWarWeek is the latest by start date, ties to the highest number", () => {
+    expect(latestWarWeek([])).toBeUndefined();
+    expect(latestWarWeek([xii, xi])).toBe(xii);
+    const a = week("a", "complete", "2027-01-01", 1);
+    const b = week("b", "complete", "2027-01-01", 2);
+    expect(latestWarWeek([b, a])).toBe(b);
+  });
+
+  it("allows creating from the latest War Week once it is complete", () => {
+    expect(canCreateNextWarWeek(xi, xi)).toBe(true);
+  });
+
+  it.each<Status>(["upcoming", "live"])(
+    "refuses while the latest War Week is %s",
+    (status) => {
+      const latest = { ...xii, status };
+      expect(canCreateNextWarWeek(latest, latest)).toBe(false);
+      expect(createNextWarWeekError(latest)).toMatch(/XII/);
+    },
+  );
+
+  it("shows nothing when viewing an older complete War Week", () => {
+    const latest = week("xii", "complete", "2027-02-21", 12);
+    expect(canCreateNextWarWeek(xi, latest)).toBe(false);
+    expect(createNextWarWeekError(latest)).toBeNull();
+  });
+
+  it("is allowed on the server when there is no War Week yet", () => {
+    expect(createNextWarWeekError(undefined)).toBeNull();
+    expect(canCreateNextWarWeek(xi, undefined)).toBe(false);
+  });
+
+  it("says what to do first, naming the edition", () => {
+    expect(createNextWarWeekError({ ...xii, status: "live" })).toBe(
+      "End War Week XII before creating the next one.",
+    );
+    expect(createNextWarWeekError(xii)).toBe(
+      "War Week XII hasn't happened yet. Create the next one after it ends.",
+    );
   });
 });
