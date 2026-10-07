@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 
+import { Avatar } from "@/components/avatar";
 import { RichText } from "@/components/rich-text";
 import type { ScheduleItem } from "@/db/schema";
 import { type ScheduleEntry, formatTimeRange } from "@/lib/schedule";
@@ -99,6 +100,32 @@ export function ScheduleItemCard({
             {item.location}
           </span>
         </div>
+      ) : null}
+      {item.hosts.length > 0 ? (
+        <p
+          data-testid="schedule-item-hosts"
+          className="text-foreground/70 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm"
+        >
+          <span>Hosted by</span>
+          {item.hosts.map((host, index) => (
+            <span
+              key={host.id}
+              data-testid="schedule-item-host"
+              className="inline-flex items-center gap-1.5"
+            >
+              <Avatar
+                name={host.displayName}
+                teamColor={host.teamColor}
+                image={host.image}
+                className="size-5"
+              />
+              <span className="text-foreground">
+                {host.displayName}
+                {index < item.hosts.length - 1 ? "," : ""}
+              </span>
+            </span>
+          ))}
+        </p>
       ) : null}
       {item.description ? (
         <div className="text-sm">

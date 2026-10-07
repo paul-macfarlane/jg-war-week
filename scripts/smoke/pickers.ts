@@ -71,6 +71,100 @@ async function assertNoEmail(
   }
 }
 
+const SCHEDULE_MARKER_TITLES = [
+  "R25 Picker Marker unlinked item",
+  "R25 Picker Marker linked item",
+];
+
+/**
+ * R25: the Schedule pages show Hosts by name and never an email. One marker
+ * roster entry hosts an unlinked Schedule Item and the other hosts a
+ * Competition a Schedule Item links; both names must appear on `/xi/schedule`
+ * (so the check can fail) and no roster email anywhere on either page.
+ */
+async function assertNoRosterEmailOnSchedulePages(
+  xiId: string,
+  sessions: { organizer: SmokeSession; notOrganizer: SmokeSession },
+  emails: string[],
+  organizerEmail: string,
+  participantEmail: string,
+) {
+  const names = MARKER_EMAILS.map(
+    (email) => `R22 Picker Marker ${email.split("@")[1]}`,
+  );
+  try {
+    const [day] = await runQuery<{ id: string }>(
+      `select id from day where war_week_id = $1 order by date limit 1`,
+      [xiId],
+    );
+    const [competition] = await runQuery<{ id: string }>(
+      `select id from competition where war_week_id = $1 order by name limit 1`,
+      [xiId],
+    );
+    const [unlinked] = await runQuery<{ id: string }>(
+      `insert into schedule_item (day_id, start_time, title, category)
+       values ($1, '03:15', $2, 'social') returning id`,
+      [day.id, SCHEDULE_MARKER_TITLES[0]],
+    );
+    await runQuery(
+      `insert into schedule_item (day_id, start_time, title, category, competition_id)
+       values ($1, '03:20', $2, 'competition', $3)`,
+      [day.id, SCHEDULE_MARKER_TITLES[1], competition.id],
+    );
+    await runQuery(
+      `insert into schedule_item_host (schedule_item_id, participant_id)
+       select $1, id from participant where email = $2`,
+      [unlinked.id, MARKER_EMAILS[0]],
+    );
+    await runQuery(
+      `insert into competition_host (competition_id, participant_id)
+       select $1, id from participant where email = $2`,
+      [competition.id, MARKER_EMAILS[1]],
+    );
+    const shown = await bodiesOf("/xi/schedule", sessions.notOrganizer);
+    const missing = shown.flatMap(({ kind, body }) =>
+      kind === "html"
+        ? names
+            .filter((name) => !body.includes(name))
+            .map((n) => `${kind} lacks ${n}`)
+        : [],
+    );
+    if (missing.length === 0)
+      ok("both marker Hosts' names show on /xi/schedule");
+    else
+      fail("both marker Hosts' names show on /xi/schedule", missing.join("; "));
+    await assertNoEmail(
+      "no roster email in /xi/schedule with Hosts shown",
+      "/xi/schedule",
+      sessions.notOrganizer,
+      emails,
+      participantEmail,
+    );
+    await assertNoEmail(
+      "no roster email in /admin/schedule with Hosts shown",
+      "/admin/schedule",
+      sessions.organizer,
+      emails,
+      organizerEmail,
+    );
+  } catch (error) {
+    fail("the Schedule Host email check", String(error));
+  } finally {
+    await runQuery(
+      `delete from competition_host where participant_id in
+         (select id from participant where email = any($1))`,
+      [MARKER_EMAILS],
+    ).catch((error) =>
+      fail("remove the marker Competition Host", String(error)),
+    );
+    await runQuery(`delete from schedule_item where title = any($1)`, [
+      SCHEDULE_MARKER_TITLES,
+    ]).catch((error) =>
+      fail("remove the marker Schedule Items", String(error)),
+    );
+  }
+}
+
 /**
  * No picker leaks a Participant's email (People and admin, Decision 3): the
  * rendered HTML and the RSC payload of the Participant Competition page, the
@@ -138,6 +232,13 @@ export async function assertNoRosterEmailInPickers(
         hostEmail,
       );
     }
+    await assertNoRosterEmailOnSchedulePages(
+      xiId,
+      sessions,
+      emails,
+      organizerEmail,
+      participantEmail,
+    );
     for (const path of ["/admin/discretionary-points", "/admin/awards"]) {
       await assertNoEmail(
         `no roster email in ${path}`,

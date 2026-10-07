@@ -16,6 +16,7 @@ import {
   useFocusFirstInvalid,
 } from "@/components/form-field-errors";
 import { OptionSelect } from "@/components/option-select";
+import { ParticipantPicker } from "@/components/participant-picker";
 import { RichTextEditor } from "@/components/rich-text-editor";
 import {
   SetupRowError,
@@ -25,6 +26,7 @@ import {
 import { TimeCombobox } from "@/components/time-combobox";
 import {
   Field,
+  FieldDescription,
   FieldError,
   FieldGroup,
   FieldLabel,
@@ -32,6 +34,7 @@ import {
 } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import type { ScheduleItem } from "@/db/schema";
+import type { ParticipantOption } from "@/lib/participant-options";
 import type { Content } from "@/lib/rich-text/content";
 import { formatDayHeading } from "@/lib/schedule";
 import type { ScheduleItemInput } from "@/lib/setup-schedule-faq";
@@ -73,6 +76,7 @@ export function ScheduleItemForm({
   initial,
   days,
   competitions,
+  hostOptions,
   onSaved,
 }: {
   /** The War Week this page was rendered for; creates post it. */
@@ -82,6 +86,8 @@ export function ScheduleItemForm({
   initial?: ScheduleItemInput;
   days: { id: string; date: string; dayTheme: string }[];
   competitions: { id: string; name: string }[];
+  /** The roster, for the Hosts picker: names and Avatars, never an email. */
+  hostOptions: ParticipantOption[];
   onSaved?: () => void;
 }) {
   const router = useRouter();
@@ -120,6 +126,29 @@ export function ScheduleItemForm({
       value: fields[key],
       onValueChange: (value: string) => set(key, value),
     };
+  }
+
+  /** Category first: a Competition belongs only to the Competition category. */
+  function setCategory(category: string) {
+    setFields((current) => ({
+      ...current,
+      category,
+      competitionId: category === "competition" ? current.competitionId : "",
+    }));
+  }
+
+  /** A linked Competition's Hosts are its own, so the item keeps none. */
+  function setCompetition(competitionId: string) {
+    setFields((current) => {
+      const name = competitions.find((c) => c.id === competitionId)?.name;
+      return {
+        ...current,
+        competitionId,
+        hostIds: competitionId ? [] : current.hostIds,
+        // Fills an empty title only; a typed title is never overwritten.
+        title: current.title.trim() === "" && name ? name : current.title,
+      };
+    });
   }
 
   const dayOptions = days.map((day) => ({
@@ -165,7 +194,7 @@ export function ScheduleItemForm({
       aria-label="Schedule Item"
     >
       <FieldGroup className="px-4">
-        <div className="grid gap-4 sm:grid-cols-3">
+        <div className="grid items-start gap-4 sm:grid-cols-3">
           <Field data-invalid={!!fieldErrors.dayId}>
             <FieldLabel htmlFor="schedule-day">Day</FieldLabel>
             <OptionSelect
@@ -179,7 +208,7 @@ export function ScheduleItemForm({
           </Field>
           <Field data-invalid={!!fieldErrors.startTime}>
             <FieldLabel htmlFor="schedule-start-time">
-              Start time (ET)
+              Start (optional)
             </FieldLabel>
             <TimeCombobox
               id="schedule-start-time"
@@ -189,9 +218,7 @@ export function ScheduleItemForm({
             <FieldError>{fieldErrors.startTime}</FieldError>
           </Field>
           <Field data-invalid={!!fieldErrors.endTime}>
-            <FieldLabel htmlFor="schedule-end-time">
-              End time (ET, optional)
-            </FieldLabel>
+            <FieldLabel htmlFor="schedule-end-time">End (optional)</FieldLabel>
             <TimeCombobox
               id="schedule-end-time"
               start={fields.startTime}
@@ -201,6 +228,10 @@ export function ScheduleItemForm({
             <FieldError>{fieldErrors.endTime}</FieldError>
           </Field>
         </div>
+        <FieldDescription className="-mt-2">
+          Times are Eastern (ET). With no start time the item reads &ldquo;Any
+          time&rdquo;.
+        </FieldDescription>
 
         <Field data-invalid={!!fieldErrors.title}>
           <FieldLabel htmlFor="schedule-title">Title</FieldLabel>
@@ -223,23 +254,29 @@ export function ScheduleItemForm({
               required
               aria-invalid={!!fieldErrors.category}
               options={CATEGORIES}
-              {...control("category")}
+              name="category"
+              value={fields.category}
+              onValueChange={setCategory}
             />
             <FieldError>{fieldErrors.category}</FieldError>
           </Field>
-          <Field data-invalid={!!fieldErrors.competitionId}>
-            <FieldLabel htmlFor="schedule-competition">
-              Competition (optional)
-            </FieldLabel>
-            <EntityCombobox
-              id="schedule-competition"
-              aria-invalid={!!fieldErrors.competitionId}
-              items={competitionItems}
-              placeholder="No Competition"
-              {...control("competitionId")}
-            />
-            <FieldError>{fieldErrors.competitionId}</FieldError>
-          </Field>
+          {fields.category === "competition" ? (
+            <Field data-invalid={!!fieldErrors.competitionId}>
+              <FieldLabel htmlFor="schedule-competition">
+                Competition (optional)
+              </FieldLabel>
+              <EntityCombobox
+                id="schedule-competition"
+                aria-invalid={!!fieldErrors.competitionId}
+                items={competitionItems}
+                placeholder="No Competition"
+                name="competitionId"
+                value={fields.competitionId}
+                onValueChange={setCompetition}
+              />
+              <FieldError>{fieldErrors.competitionId}</FieldError>
+            </Field>
+          ) : null}
           <Field data-invalid={!!fieldErrors.location}>
             <FieldLabel htmlFor="schedule-location">
               Location (optional)
@@ -254,6 +291,28 @@ export function ScheduleItemForm({
             <FieldError>{fieldErrors.location}</FieldError>
           </Field>
         </div>
+
+        {fields.competitionId ? null : (
+          <Field data-invalid={!!fieldErrors.hostIds}>
+            <FieldLabel htmlFor="schedule-hosts">Hosts (optional)</FieldLabel>
+            <ParticipantPicker
+              multiple
+              id="schedule-hosts"
+              aria-label="Hosts"
+              aria-invalid={!!fieldErrors.hostIds}
+              options={hostOptions}
+              value={fields.hostIds}
+              onValueChange={(hostIds) => set("hostIds", hostIds)}
+              placeholder="Search the roster by name"
+              emptyText="No one on the roster matches."
+            />
+            <FieldDescription>
+              Shown as &ldquo;Hosted by&rdquo; on the Schedule. It doesn&apos;t
+              give anyone access.
+            </FieldDescription>
+            <FieldError>{fieldErrors.hostIds}</FieldError>
+          </Field>
+        )}
 
         <Field data-invalid={!!fieldErrors.virtualLink}>
           <FieldLabel htmlFor="schedule-virtual-link">

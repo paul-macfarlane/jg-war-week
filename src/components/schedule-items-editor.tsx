@@ -9,6 +9,7 @@ import {
   SetupAddButton,
   SetupListRow,
 } from "@/components/setup-row";
+import type { ParticipantOption } from "@/lib/participant-options";
 import { formatDayHeading } from "@/lib/schedule";
 import type { ScheduleItemInput } from "@/lib/setup-schedule-faq";
 
@@ -29,6 +30,7 @@ export function ScheduleItemsEditor({
   warWeekId,
   days,
   competitions,
+  hostOptions,
 }: {
   /** The War Week this page was rendered for; creates post it. */
   warWeekId: string;
@@ -40,11 +42,14 @@ export function ScheduleItemsEditor({
   }[];
   /** The Competitions this viewer may link an item to. */
   competitions: { id: string; name: string }[];
+  /** The roster, for each form's Hosts picker. */
+  hostOptions: ParticipantOption[];
 }) {
   const formProps = {
     warWeekId,
     days: days.map(({ id, date, dayTheme }) => ({ id, date, dayTheme })),
     competitions,
+    hostOptions,
   };
   return (
     <div {...SETUP_EDITOR} className="flex flex-col gap-6">
