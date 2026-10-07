@@ -500,7 +500,8 @@ on the matching War Week page.
       reads "Who took part"). Settings: *(individual)* Points per
       Participant; *(teams)* Placement Points 3/2/1 by headcount (there is no
       per-Participant N and no per-person mode); turn on
-      Self check-in. Tick two Participants, untick one, then Close: the
+      Self check-in. Tick two Participants (each box stays ticked through the save and
+      reload keeps it; unticking holds too), untick one, then Close: the
       generated Points Entries ("From participation") appear in the leaderboard's points breakdown
       and the Standings move. Closed, the ticks and the Settings are disabled with their reason (the server's
       refusals are covered by unit tests and smoke). Reopen withdraws them. Changing the scoring while anyone is ticked is locked ("Locked once the
