@@ -1,6 +1,6 @@
 ---
 title: Schedule items (Epic R25)
-status: ai-review
+status: done
 grilled: 2026-10-06 (see ../regression-2026-10/grilling-2026-10-06.md)
 created: 2026-10-06
 source: Paul's final regression feedback, items S7–S11 (../regression-2026-10/feedback-final.md)
@@ -14,7 +14,7 @@ the maintainer's guide, the regression checklist and `/about`, and R26
 deletes `src/mcp/`. R25 branches from `staging` after R26 merges. Its
 migration takes the next free number then (`0035` today) · **Red-team:**
 required (Drizzle schema change; findings of 2026-10-06 resolved below) ·
-**Status:** ai-review
+**Status:** done
 
 ## Summary
 
